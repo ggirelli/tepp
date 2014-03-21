@@ -169,6 +169,10 @@ GraphMaker <- function() {
     #
     # Return:
     #   Message
+    #
+    # TODO:
+    #   - Issue in merging
+    #   - Does not read files
     print("Merging")
     # Declare parallelism
     cl <- makeCluster(gm$clusters)
