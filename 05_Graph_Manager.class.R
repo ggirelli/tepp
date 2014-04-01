@@ -93,6 +93,19 @@ GraphBuilder <- function(clusters=0, verbose=FALSE) {
       subclonal.val="subclonal",
       print.table=FALSE
     ) {
+      # Builds graphs, can discriminate between single- and multi-sample cases.
+      #
+      # Args:
+      #   gb: current GraphBuilder instance.
+      #	  genes.label: label of the gene's id column.
+      #	  clonality.label: label of the clonality status column.
+      #   clonal.val: value of clonality for clonal genes.
+      #   subclonal.val: value of clonality for subclonal genes.
+      #   print.table: whether or not to print the adjacency tables.
+      #
+      # Returns:
+      #	Modified GraphBuilder instance
+
       if(is.null(gb$isMultiSample)) {
         # Single sample data
         # Make empty adjacency matrix
@@ -180,8 +193,48 @@ GraphManager <- function(clusters=0, verbose=FALSE) {
   
   # Define GraphManager attributes
   gm <- list(
+    # Number of cluster for parallel computing
+    clusters = clusters,
+    
+    # Boolean value to determine verbosity
+    verbose = verbose,
+
     # GraphBuilder instance
-    builder=GraphBuilder(clusters=clusters, verbose=verbose)
+    builder=GraphBuilder(clusters=clusters, verbose=verbose),
+
+    mergeGraphs=function(graph.list) {
+		# Merges multiple graphs.
+		#
+		# Args:
+		#   graph.list: list of graphml files.
+
+	    if(gm$verbose) print("Merging")
+	    # Declare parallelism
+	    cores <- makeCluster(gm$clusters)
+	    registerDoParallel(cores)
+	    # Get edges
+	    edges <- foreach(i=1:length(graph.list), .combine=rbind) %dopar% {
+	      library('igraph')
+	      file.name <- graph.list[i]
+	      get.edgelist(read.graph(file.path('.', file.name), format='graphml'))
+	    }
+	    stopCluster(cores)
+	    # Build new graph
+	    if(gm$verbose) print("Building total graph")
+	    g <- graph.empty()
+	    if(gm$verbose) print("Built empty graph")
+	    if(gm$verbose) print("Adding vertices")
+	    g <- g + vertices(unique(as.vector(edges)))
+	    if(gm$verbose) print("Added vertices")
+	    if(gm$verbose) print("Adding edges")
+	    edges <- as.vector(t(edges))
+	    g <- g + edges(edges)
+	    if(gm$verbose) print("Added edges")
+	    if(gm$verbose) print("Writing graph")
+	    write.graph(g, file=file.path('.', 'total_graph.graphml'), format="graphml")
+	    if(gm$verbose) print("Written")
+	    if(gm$verbose) print('Graphs merged')
+    }
   )
   
   # Explicitely define GraphManager class
