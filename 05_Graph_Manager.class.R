@@ -106,6 +106,9 @@ GraphBuilder <- function(clusters=0, verbose=FALSE) {
       # Returns:
       #	Modified GraphBuilder instance
 
+      # If needed, create output directory
+      if (!file.exists('./sample-graphs/')) dir.create(file.path('./sample-graphs/'))
+      if (!file.exists('./sample-data/') && print.table) dir.create(file.path('./sample-tabs/'))
       if(is.null(gb$isMultiSample)) {
         # Single sample data
         # Make empty adjacency matrix
@@ -134,9 +137,6 @@ GraphBuilder <- function(clusters=0, verbose=FALSE) {
         if(gb$verbose) print('Built graph')
       } else {
         # Multi sample data
-		# If needed, create output directory
-		if (!file.exists('./sample-graphs/')) dir.create(file.path('./sample-graphs/'))
-		if (!file.exists('./sample-data/') && print.table) dir.create(file.path('./sample-tabs/'))
         # Declare parallelism
         par <- makeCluster(gb$clusters)
         registerDoParallel(par)
@@ -203,10 +203,10 @@ GraphManager <- function(clusters=0, verbose=FALSE) {
     builder=GraphBuilder(clusters=clusters, verbose=verbose),
 
     mergeGraphs=function(graph.list) {
-		# Merges multiple graphs.
-		#
-		# Args:
-		#   graph.list: list of graphml files.
+  		# Merges multiple graphs.
+  		#
+  		# Args:
+  		#   graph.list: list of graphml files.
 
 	    if(gm$verbose) print("Merging")
 	    # Declare parallelism
@@ -216,23 +216,40 @@ GraphManager <- function(clusters=0, verbose=FALSE) {
 	    edges <- foreach(i=1:length(graph.list), .combine=rbind) %dopar% {
 	      library('igraph')
 	      file.name <- graph.list[i]
-	      get.edgelist(read.graph(file.path('.', file.name), format='graphml'))
+        g <- read.graph(file.path('.', file.name), format='graphml')
+        cbind(get.edgelist(g),get.edge.attribute(g, 'weight'))
 	    }
 	    stopCluster(cores)
 	    # Build new graph
-	    if(gm$verbose) print("Building total graph")
+	    if(gm$verbose) print("Building empty graph")
 	    g <- graph.empty()
-	    if(gm$verbose) print("Built empty graph")
 	    if(gm$verbose) print("Adding vertices")
 	    g <- g + vertices(unique(as.vector(edges)))
-	    if(gm$verbose) print("Added vertices")
-	    if(gm$verbose) print("Adding edges")
-	    edges <- as.vector(t(edges))
-	    g <- g + edges(edges)
-	    if(gm$verbose) print("Added edges")
+      # Get weights
+      if(gm$verbose) print('Preparing edges weights')
+      edgelist <- cbind(edges[,1],edges[,2])
+      # Duplicated and unique edges
+      multi <- which(duplicated(edgelist) | duplicated(edgelist, fromLast=TRUE))
+      uni <- which(!(duplicated(edgelist) | duplicated(edgelist, fromLast=TRUE)))
+      # Prepare edges array
+      weights <- 1:length(edgelist[,1])
+      weights[] <- 0
+      # Assign weights to unique edges
+      weights[uni] <- as.integer(edges[uni,3])
+      # Prepare matrix with weights of duplicated edges
+      cores <- makeCluster(gm$clusters)
+      registerDoParallel(cores)
+      t <- foreach(i=1:length(multi), .combine=rbind) %dopar% c(multi[i],edges[multi[i],1],edges[multi[i],2],sum(as.integer(edges[which(edges[,1]==edges[multi[i],1] & edges[,2]==edges[multi[i],2]),3])))
+      stopCluster(cores)
+      # Assign weights to duplicated edges
+      weights[as.integer(t[which(!duplicated(cbind(t[,2],t[,3]))),1])] <- as.integer(t[which(!duplicated(cbind(t[,2],t[,3]))),4])
+      # Remove duplicated edges
+      weights <- weights[which(weights>=1)]
+      if(gm$verbose) print("Adding edges")
+      edgelist <- as.vector(t(unique(cbind(edges[,1],edges[,2]))))
+      g <- g + edges(edgelist, weight=weights)
 	    if(gm$verbose) print("Writing graph")
 	    write.graph(g, file=file.path('.', 'total_graph.graphml'), format="graphml")
-	    if(gm$verbose) print("Written")
 	    if(gm$verbose) print('Graphs merged')
     }
   )
