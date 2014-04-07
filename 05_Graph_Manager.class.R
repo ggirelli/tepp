@@ -30,17 +30,22 @@ GraphBuilder <- function(clusters=0, verbose=FALSE) {
       # Read data
       if(gb$verbose) print('Reading whole data')
       data <- read.table(file.path, header=header, sep=sep, row.names=row.names)
+
       # Save raw data into GraphBuilder instance
       gb$data <- data
       
       # Check for multi-sampling
       if(is.null(sample.column)) {
+
         # If single-sample file
         return(gb)
+
       } else {
+
         # If multi-sample file
         gb <- gb$splitData(data, sample.column)
         return(gb)
+
       }
     },
     
@@ -56,26 +61,32 @@ GraphBuilder <- function(clusters=0, verbose=FALSE) {
       #	Modified GraphBuilder instance
       
       if(gb$verbose) print('Splitting whole data')
+
       # Prepare sample list without duplicates
       sample.list <- unique(data[,sample.column])
+
       # If needed, create output directory
       if (!file.exists('./sample-data/')) {
         dir.create(file.path('./sample-data/'))
       }
+
       # Declare parallelism
       par <- makeCluster(clusters)
       registerDoParallel(par)
       # Split original data table for each sample in data.frames
       # and save them in temporary directory
       foreach(i=1:length(sample.list)) %dopar% {
+
         # On which sample are we working?
         sample.id <- sample.list[i]
         # Get row_ids from original data table for the working_sample
         row.ids <- which(data[,sample.column]==sample.id)
         # Write selected rows
         write.table(data[row.ids,], file=file.path('./sample-data/', sample.list[i]))
+
       }
       stopCluster(par)
+
       # Terminate
       if(gb$verbose) print('Data splitted')
       gb$split <- TRUE
@@ -109,15 +120,26 @@ GraphBuilder <- function(clusters=0, verbose=FALSE) {
       # If needed, create output directory
       if (!file.exists('./sample-graphs/')) dir.create(file.path('./sample-graphs/'))
       if (!file.exists('./sample-data/') && print.table) dir.create(file.path('./sample-tabs/'))
+
       if(is.null(gb$isMultiSample)) {
-        # Single sample data
+
+        #--------------------#
+        # Single sample data #
+        #--------------------#
+
         # Make empty adjacency matrix
-        adjacency.matrix <- matrix(0, nrow=length(gb$data[,genes.label]), ncol=length(gb$data[,genes.label]))
+        adjacency.matrix <- matrix(
+          0,
+          nrow=length(gb$data[,genes.label]),
+          ncol=length(gb$data[,genes.label])
+        )
         rownames(adjacency.matrix) <- gb$data[,genes.label]
         colnames(adjacency.matrix) <- gb$data[,genes.label]
+
         # Distinguish clonal and subclonal
         genes.clonal <- which(gb$data[,clonality.label]==clonal.val)
         genes.subclonal <- which(gb$data[,clonality.label]==subclonal.val)
+
         # Fill matrix
         for (i in seq(length(genes.clonal))){
           for (j in seq(length(genes.subclonal))){
@@ -125,37 +147,55 @@ GraphBuilder <- function(clusters=0, verbose=FALSE) {
               adjacency.matrix[genes.clonal[i], genes.subclonal[j]] + 1
           }
         }
+
         # Write small matrix
         if (print.table) {
           file.name <- paste('tab_', sample.id, '.dat', sep = "")
           write.table(adjacency.matrix, file = file.path('.', file.name))
         }
+
+        # Build and write graph
         g <- graph.adjacency(adjacency.matrix, mode="directed", weighted=TRUE)
         file.name <- paste('gra_', sample.id, '.graphml', sep = "")
         write.graph(g, file = file.path('.', file.name), format='graphml')
+
         # Terminate
         if(gb$verbose) print('Built graph')
+
       } else {
-        # Multi sample data
+
+        #-------------------#
+        # Multi sample data #
+        #-------------------#
+
+        if(gb$verbose) print('Building graphs')
+        sample.list <- unique(gb$data[,gb$sample.column])
+
         # Declare parallelism
         par <- makeCluster(gb$clusters)
         registerDoParallel(par)
-        if(gb$verbose) print('Building graphs')
-        sample.list <- unique(gb$data[,gb$sample.column])
         # Make graph of every sample
         response <- foreach(i=1:length(sample.list)) %dopar% {
           library('igraph')
+
           # Working sample
           sample.id <- sample.list[i]
           # Read data
           data <- read.table(file.path('./sample-data/', sample.id), header = TRUE)
+
           # Make empty adjacency matrix
-          adjacency.matrix <- matrix(0, nrow=length(data[,genes.label]), ncol=length(data[,genes.label]))
+          adjacency.matrix <- matrix(
+            0,
+            nrow=length(data[,genes.label]),
+            ncol=length(data[,genes.label])
+          )
           rownames(adjacency.matrix) <- data[,genes.label]
           colnames(adjacency.matrix) <- data[,genes.label]
+
           # Distinguish clonal and subclonal
           genes.clonal <- which(data[,clonality.label]==clonal.val)
           genes.subclonal <- which(data[,clonality.label]==subclonal.val)
+
           # Fill matrix
           for (i in seq(length(genes.clonal))){
             for (j in seq(length(genes.subclonal))){
@@ -163,18 +203,24 @@ GraphBuilder <- function(clusters=0, verbose=FALSE) {
                 adjacency.matrix[genes.clonal[i], genes.subclonal[j]] + 1
             }
           }
+
           # Write small matrix
           if (print.table) {
             file.name <- paste('tab_', sample.id, '.dat', sep = "")
             write.table(adjacency.matrix, file = file.path('./sample-tabs/', file.name))
           }
+
+          # Build and write graph
           g <- graph.adjacency(adjacency.matrix, mode="directed", weighted=TRUE)
           file.name <- paste('gra_', sample.id, '.graphml', sep = "")
           write.graph(g, file = file.path('./sample-graphs/', file.name), format='graphml')
+
           # Terminate
           return(paste('Built graph for', sample.id, sep=' '))
+
         }
         stopCluster(par)
+
         if(gb$verbose) print(response)
         if(gb$verbose) print('All graphs built')
       }
@@ -209,22 +255,27 @@ GraphManager <- function(clusters=0, verbose=FALSE) {
   		#   graph.list: list of graphml files.
 
 	    if(gm$verbose) print("Merging")
+
 	    # Declare parallelism
 	    cores <- makeCluster(gm$clusters)
 	    registerDoParallel(cores)
 	    # Get edges
 	    edges <- foreach(i=1:length(graph.list), .combine=rbind) %dopar% {
 	      library('igraph')
+
 	      file.name <- graph.list[i]
         g <- read.graph(file.path('.', file.name), format='graphml')
         cbind(get.edgelist(g),get.edge.attribute(g, 'weight'))
+
 	    }
 	    stopCluster(cores)
+
 	    # Build new graph
 	    if(gm$verbose) print("Building empty graph")
 	    g <- graph.empty()
 	    if(gm$verbose) print("Adding vertices")
 	    g <- g + vertices(unique(as.vector(edges)))
+
       # Get weights
       if(gm$verbose) print('Preparing edges weights')
       edgelist <- cbind(edges[,1],edges[,2])
@@ -239,17 +290,35 @@ GraphManager <- function(clusters=0, verbose=FALSE) {
       # Prepare matrix with weights of duplicated edges
       cores <- makeCluster(gm$clusters)
       registerDoParallel(cores)
-      t <- foreach(i=1:length(multi), .combine=rbind) %dopar% c(multi[i],edges[multi[i],1],edges[multi[i],2],sum(as.integer(edges[which(edges[,1]==edges[multi[i],1] & edges[,2]==edges[multi[i],2]),3])))
+      t <- foreach(i=1:length(multi), .combine=rbind) %dopar% {
+
+        c(
+          multi[i],
+          edges[multi[i],1],
+          edges[multi[i],2],
+          sum(as.integer(edges[which(
+            edges[,1]==edges[multi[i],1] & edges[,2]==edges[multi[i],2]
+          ),3])))
+
+      }
       stopCluster(cores)
+
       # Assign weights to duplicated edges
-      weights[as.integer(t[which(!duplicated(cbind(t[,2],t[,3]))),1])] <- as.integer(t[which(!duplicated(cbind(t[,2],t[,3]))),4])
+      weights[as.integer(t[which(!duplicated(cbind(t[,2],t[,3]))),1])] <-
+        as.integer(t[which(!duplicated(cbind(t[,2],t[,3]))),4])
       # Remove duplicated edges
       weights <- weights[which(weights>=1)]
+
+      # Add edges
       if(gm$verbose) print("Adding edges")
       edgelist <- as.vector(t(unique(cbind(edges[,1],edges[,2]))))
       g <- g + edges(edgelist, weight=weights)
+
+      # Write graph
 	    if(gm$verbose) print("Writing graph")
 	    write.graph(g, file=file.path('.', 'total_graph.graphml'), format="graphml")
+
+      # Terminate
 	    if(gm$verbose) print('Graphs merged')
     }
   )
