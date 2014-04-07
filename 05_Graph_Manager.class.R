@@ -332,22 +332,22 @@ GraphManager <- function(clusters=0, verbose=FALSE) {
       # Merges two graphs with common edge/vertex attributes
       #
       # Args:
-      # g.one, g.two: the graphs to be merged
-      # attr.v.list: list of vertex attributes to keep in the merged graph
+      #   g.one, g.two: the graphs to be merged
+      #   attr.v.list: list of vertex attributes to keep in the merged graph
       #       each attribute MUST be present in both g.one and g.two
-      # attr.e.list: list of edge attributes to keep in the merged graph
+      #   attr.e.list: list of edge attributes to keep in the merged graph
       #       each attribute MUST be present in both g.one and g.two
-      # attr.v.id: attribute used to identify each vertex (default: 'name')
-      # attr.v.action: how to act with each vertex attribute (e.g.: 'sum')
+      #   attr.v.id: attribute used to identify each vertex (default: 'name')
+      #   attr.v.action: how to act with each vertex attribute (e.g.: 'sum')
       #         attr.v.action$ATTR <- ACTION_STRING
-      # attr.e.action: how to act with each edge attribute (e.g.: 'sum')
+      #   attr.e.action: how to act with each edge attribute (e.g.: 'sum')
       #         attr.e.action$ATTR <- ACTION_STRING
       #
       # ACTION_STRING values:
-      # 'sum': sum the values after applying as.numeric()
+      #   'sum': sum the values after applying as.numeric()
       #
       # Return:
-      #
+      #    merge graph
       
       # (1) if attributes in g.one and g.two are different, abort operation
       if(!identical(
