@@ -347,7 +347,7 @@ GraphManager <- function(clusters=0, verbose=FALSE) {
       #   'sum': sum the values after applying as.numeric()
       #
       # Return:
-      #    merge graph
+      #    Merge graph
       
       # (1) if attributes in g.one and g.two are different, abort operation
       if(!identical(
@@ -379,8 +379,8 @@ GraphManager <- function(clusters=0, verbose=FALSE) {
       for(i in 1:length(V(g.two))) {
 
         # Select vertex
-        v <- V(g.two)[i]
-        v.id <- eval(parse(text=paste('V(g.two)[', i,']$',attr.v.id, sep='')))
+        v.temp <- V(g.two)[i]
+        eval(parse(text=paste('v.id <- V(g.two)[', i,']$',attr.v.id, sep='')))
         
         # If vertex is already present
         if(v.id %in% v.merge.id.list) {
