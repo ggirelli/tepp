@@ -24,8 +24,8 @@ mergeGraphCouple.jointAttr <- function(g.one, g.two, attr.v.list=c(), attr.e.lis
 	#	Merge graph
 	
 	# (1) if attributes in g.one and g.two are different, abort operation
-	if(!identical(
-		list.vertex.attributes(g.one),
+	if(!identical
+		(list.vertex.attributes(g.one),
 		list.vertex.attributes(g.two)
 	)) return(graph.empty()) # vertex
 	if(!identical(
