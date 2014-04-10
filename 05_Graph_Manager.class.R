@@ -102,7 +102,7 @@ GraphBuilder <- function(clusters=0, verbose=FALSE) {
       clonality.label="clonality.status",
       clonal.val="clonal",
       subclonal.val="subclonal",
-      print.table=FALSE
+      table.out=FALSE
     ) {
       # Builds graphs, can discriminate between single- and multi-sample cases.
       #
@@ -112,14 +112,14 @@ GraphBuilder <- function(clusters=0, verbose=FALSE) {
       #	  clonality.label: label of the clonality status column.
       #   clonal.val: value of clonality for clonal genes.
       #   subclonal.val: value of clonality for subclonal genes.
-      #   print.table: whether or not to print the adjacency tables.
+      #   table.out: whether or not to print the adjacency tables.
       #
       # Returns:
       #	Modified GraphBuilder instance
 
       # If needed, create output directory
       if (!file.exists('./sample-graphs/')) dir.create(file.path('./sample-graphs/'))
-      if (!file.exists('./sample-data/') && print.table) dir.create(file.path('./sample-tabs/'))
+      if (file.exists('./sample-data/') && table.out) dir.create(file.path('./sample-tabs/'))
 
       if(is.null(gb$isMultiSample)) {
 
@@ -149,7 +149,7 @@ GraphBuilder <- function(clusters=0, verbose=FALSE) {
         }
 
         # Write small matrix
-        if (print.table) {
+        if (table.out) {
           file.name <- paste('tab_', sample.id, '.dat', sep = "")
           write.table(adjacency.matrix, file = file.path('.', file.name))
         }
@@ -180,6 +180,7 @@ GraphBuilder <- function(clusters=0, verbose=FALSE) {
 
           # Working sample
           sample.id <- sample.list[i]
+
           # Read data
           data <- read.table(file.path('./sample-data/', sample.id), header = TRUE)
 
@@ -205,7 +206,7 @@ GraphBuilder <- function(clusters=0, verbose=FALSE) {
           }
 
           # Write small matrix
-          if (print.table) {
+          if (table.out) {
             file.name <- paste('tab_', sample.id, '.dat', sep = "")
             write.table(adjacency.matrix, file = file.path('./sample-tabs/', file.name))
           }
@@ -248,7 +249,7 @@ GraphManager <- function(clusters=0, verbose=FALSE) {
     # GraphBuilder instance
     builder=GraphBuilder(clusters=clusters, verbose=verbose),
 
-    mergeGraphs.noattr=function(graph.list) {
+    mergeGraphs.noAttr=function(graph.list) {
   		# Merges multiple graphs.
   		#
   		# Args:
