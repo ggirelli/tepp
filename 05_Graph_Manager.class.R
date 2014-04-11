@@ -28,7 +28,7 @@ GraphBuilder <- function(clusters=0, verbose=FALSE) {
       #   Modified GraphBuilder instance
       
       # Read data
-      if(gb$verbose) print('Reading whole data')
+      if(gb$verbose) cat('Reading whole data\n')
       data <- read.table(file.path, header=header, sep=sep, row.names=row.names)
 
       # Save raw data into GraphBuilder instance
@@ -60,7 +60,7 @@ GraphBuilder <- function(clusters=0, verbose=FALSE) {
       # Returns:
       #	Modified GraphBuilder instance
       
-      if(gb$verbose) print('Splitting whole data')
+      if(gb$verbose) cat('Splitting whole data\n')
 
       # Prepare sample list without duplicates
       sample.list <- unique(data[,sample.column])
@@ -88,7 +88,7 @@ GraphBuilder <- function(clusters=0, verbose=FALSE) {
       stopCluster(par)
 
       # Terminate
-      if(gb$verbose) print('Data splitted')
+      if(gb$verbose) cat('Data splitted\n')
       gb$split <- TRUE
       gb$isMultiSample <- TRUE
       gb$sample.column <- sample.column
@@ -96,14 +96,7 @@ GraphBuilder <- function(clusters=0, verbose=FALSE) {
       return(gb)
     },
     
-    buildGraph = function(
-      gb,
-      genes.label="Gene.id",
-      clonality.label="clonality.status",
-      clonal.val="clonal",
-      subclonal.val="subclonal",
-      table.out=FALSE
-    ) {
+    buildGraph = function(gb, genes.label="Gene.id", clonality.label="clonality.status", clonal.val="clonal", subclonal.val="subclonal", table.out=FALSE ) {
       # Builds graphs, can discriminate between single- and multi-sample cases.
       #
       # Args:
@@ -160,7 +153,7 @@ GraphBuilder <- function(clusters=0, verbose=FALSE) {
         write.graph(g, file = file.path('.', file.name), format='graphml')
 
         # Terminate
-        if(gb$verbose) print('Built graph')
+        if(gb$verbose) cat('Built graph\n')
 
       } else {
 
@@ -168,7 +161,7 @@ GraphBuilder <- function(clusters=0, verbose=FALSE) {
         # Multi sample data #
         #-------------------#
 
-        if(gb$verbose) print('Building graphs')
+        if(gb$verbose) cat('Building graphs\n')
         sample.list <- unique(gb$data[,gb$sample.column])
 
         # Declare parallelism
@@ -222,8 +215,8 @@ GraphBuilder <- function(clusters=0, verbose=FALSE) {
         }
         stopCluster(par)
 
-        if(gb$verbose) print(response)
-        if(gb$verbose) print('All graphs built')
+        if(gb$verbose) cat(response,'\n')
+        if(gb$verbose) cat('All graphs built\n')
       }
     }
   )
@@ -255,7 +248,7 @@ GraphManager <- function(clusters=0, verbose=FALSE) {
   		# Args:
   		#   graph.list: list of graphml files.
 
-	    if(gm$verbose) print("Merging")
+	    if(gm$verbose) cat("Merging\n")
 
 	    # Declare parallelism
 	    cores <- makeCluster(gm$clusters)
@@ -272,13 +265,13 @@ GraphManager <- function(clusters=0, verbose=FALSE) {
 	    stopCluster(cores)
 
 	    # Build new graph
-	    if(gm$verbose) print("Building empty graph")
+	    if(gm$verbose) cat("Building empty graph\n")
 	    g <- graph.empty()
-	    if(gm$verbose) print("Adding vertices")
+	    if(gm$verbose) cat("Adding vertices\n")
 	    g <- g + vertices(unique(as.vector(edges)))
 
       # Get weights
-      if(gm$verbose) print('Preparing edges weights')
+      if(gm$verbose) cat('Preparing edges weights\n')
       edgelist <- cbind(edges[,1],edges[,2])
       # Duplicated and unique edges
       multi <- which(duplicated(edgelist) | duplicated(edgelist, fromLast=TRUE))
@@ -292,235 +285,26 @@ GraphManager <- function(clusters=0, verbose=FALSE) {
       cores <- makeCluster(gm$clusters)
       registerDoParallel(cores)
       t <- foreach(i=1:length(multi), .combine=rbind) %dopar% {
-
-        c(
-          multi[i],
-          edges[multi[i],1],
-          edges[multi[i],2],
-          sum(as.integer(edges[which(
-            edges[,1]==edges[multi[i],1] & edges[,2]==edges[multi[i],2]
-          ),3])))
-
+        c(multi[i], edges[multi[i],1], edges[multi[i],2], sum(as.integer(edges[which(edges[,1]==edges[multi[i],1] & edges[,2]==edges[multi[i],2]),3])))
       }
       stopCluster(cores)
 
       # Assign weights to duplicated edges
-      weights[as.integer(t[which(!duplicated(cbind(t[,2],t[,3]))),1])] <-
-        as.integer(t[which(!duplicated(cbind(t[,2],t[,3]))),4])
+      weights[as.integer(t[which(!duplicated(cbind(t[,2],t[,3]))),1])] <- as.integer(t[which(!duplicated(cbind(t[,2],t[,3]))),4])
       # Remove duplicated edges
       weights <- weights[which(weights>=1)]
 
       # Add edges
-      if(gm$verbose) print("Adding edges")
+      if(gm$verbose) cat("Adding edges\n")
       edgelist <- as.vector(t(unique(cbind(edges[,1],edges[,2]))))
       g <- g + edges(edgelist, weight=weights)
 
       # Write graph
-	    if(gm$verbose) print("Writing graph")
+	    if(gm$verbose) cat("Writing graph\n")
 	    write.graph(g, file=file.path('.', 'total_graph.graphml'), format="graphml")
 
       # Terminate
-	    if(gm$verbose) print('Graphs merged')
-    },
-
-    mergeGraphCouple.jointAttr=function(
-      g.one, g.two,
-      attr.v.list=c(), attr.e.list=c(),
-      attr.v.id='name',
-      attr.v.action=list(), attr.e.action=list()
-      ) {
-      #
-      # Merges two graphs with common edge/vertex attributes
-      #
-      # Args:
-      #   g.one, g.two: the graphs to be merged
-      #   attr.v.list: list of vertex attributes to keep in the merged graph
-      #       each attribute MUST be present in both g.one and g.two
-      #   attr.e.list: list of edge attributes to keep in the merged graph
-      #       each attribute MUST be present in both g.one and g.two
-      #   attr.v.id: attribute used to identify each vertex (default: 'name')
-      #   attr.v.action: how to act with each vertex attribute (e.g.: 'sum')
-      #         attr.v.action$ATTR <- ACTION_STRING
-      #   attr.e.action: how to act with each edge attribute (e.g.: 'sum')
-      #         attr.e.action$ATTR <- ACTION_STRING
-      #
-      # ACTION_STRING values:
-      #   'sum': sum the values after applying as.numeric()
-      #
-      # Return:
-      #    Merge graph
-      
-      # (1) if attributes in g.one and g.two are different, abort operation
-      if(!identical(
-        list.vertex.attributes(g.one),
-        list.vertex.attributes(g.two)
-      )) return(graph.empty()) # vertex
-      if(!identical(
-        list.edge.attributes(g.one),
-        list.edge.attributes(g.two)
-      )) return(graph.empty()) #edge
-
-      ###############
-      # Start merge #
-      ###############
-      g.merge <- g.one
-
-      #----------#
-      # Vertices #
-      #----------#
-
-      # Prepare final graph vertices id by id
-      v.merge.id.list <- c()
-      for(i in 1:length(V(g.merge))) eval(parse(text=paste(
-        'v.merge.id.list <- append(v.merge.id.list,V(g.merge)[',
-          i, ']$', attr.v.id, ')', sep=''
-      )))
-
-      # Scroll through g.two vertices
-      for(i in 1:length(V(g.two))) {
-
-        # Select vertex
-        v.temp <- V(g.two)[i]
-        eval(parse(text=paste('v.id <- V(g.two)[', i,']$',attr.v.id, sep='')))
-        
-        # If vertex is already present
-        if(v.id %in% v.merge.id.list) {
-          
-          # Act on the attributes
-          for(attr in attr.v.list) {
-
-            # Retrieve the action associated to the attribute
-            eval(parse(text=paste(
-              'attr.action <- attr.v.action$', attr,
-            sep='')))
-
-            # Verify if there is an action associated to the attribute
-            if(!is.null(attr.action) && identical(attr.action, 'sum')) {
-
-              # Get g.two attribute value
-              eval(parse(text=paste(
-                'a.two <- V(g.two)[', i, ']$', attr,
-              sep='')))
-
-              # Get g.one attribute
-              eval(parse(text=paste(
-                'a.one <- V(g.one)[which(v.merge.id.list == v.id)]$',
-                attr, sep=''
-              )))
-
-              # Assign attributes sum to g.merge vertex
-              eval(parse(text=paste(
-                'V(g.merge)[which(v.merge.id.list == v.id)]$', attr,
-                ' <- as.numeric(a.one) + as.numeric(a.two)'
-              , sep='')))
-            }
-          }
-        } else {
-          
-          attrs <- ''
-          for(attr in attr.v.list) {
-
-            # Retrieve attribute value
-            eval(parse(text=paste(
-              'val <- V(g.two)[', i, ']$', attr, sep=''
-            )))
-
-            # Insert required comma
-            if(!identical(attrs, '')) attrs <- paste(attrs, ',', sep='')
-
-            # Prepare attributes assignment string
-            attrs <- paste(attrs, attr, '=\'', val, '\'', sep=' ')
-          }
-          
-          if(!identical(attrs, '')) attrs <- paste(',', attrs, sep=' ')
-          
-          # Add all the vertices with their attributes
-          
-          eval(parse(text=paste(
-            'g.merge <- g.merge + vertex(\'', v.id, '\'', attrs, ')',
-          sep='')))
-        }
-      }
-
-      #------#
-      # Edge #
-      #------#
-
-      # Prepare final graph edges
-      e.merge.list <- get.edgelist(g.merge)
-      e.merge.list <- paste(e.merge.list[,1], e.merge.list[,2], sep=' <-- ')
-
-      # Scroll through g.two edges
-      for(i in 1:length(get.edgelist(g.two)[,1])) {
-
-        # Select edge
-        e.temp <- get.edgelist(g.two)[i,]
-
-        # If edge is already present
-        if(paste(e.temp[1], e.temp[2], sep=' <-- ') %in% e.merge.list) {
-
-          # Act on the attributes
-          for(attr in attr.e.list) {
-
-            # Retrieve the action associated to the attribute
-            eval(parse(text=paste(
-              'attr.action <- attr.e.action$', attr,
-            sep='')))
-
-            # Verify if there is an action associated to the attribute
-            if(!is.null(attr.action) && identical(attr.action, 'sum')) {
-
-              # Get g.two attribute value
-              eval(parse(text=paste(
-                'a.two <- E(g.two)[', i, ']$', attr,
-              sep='')))
-
-              # Get g.one attribute
-              eval(parse(text=paste(
-                'a.one <- E(g.one)[which(e.merge.list == paste(',
-                  'e.temp[1], e.temp[2], sep=\' <-- \'))]$', attr,
-              sep='')))
-
-              # Assign attributes sum to g.merge vertex
-              eval(parse(text=paste(
-                'E(g.merge)[which(e.merge.list == paste(',
-                  'e.temp[1], e.temp[2], sep=\' <-- \'))]$', attr,
-                ' <- as.numeric(a.one) + as.numeric(a.two)'
-              , sep='')))
-            }
-          }
-        } else {
-          attrs <- ''
-          for(attr in attr.e.list) {
-
-            # Retrieve attribute value
-            eval(parse(text=paste(
-              'val <- E(g.two)[', i, ']$', attr, sep=''
-            )))
-
-            # Insert required comma
-            if(!identical(attrs, '')) attrs <- paste(attrs, ',', sep='')
-
-            # Prepare attributes assignment string
-            attrs <- paste(attrs, attr, '=', val, sep=' ')
-          }
-          if(!identical(attrs, '')) attrs <- paste(',', attrs, sep=' ')
-
-          # Add all the edges with their attributes
-          cmd <- paste(
-            'g.merge <- g.merge + edge(c(\'',
-            e.temp[1], '\',\'', e.temp[2],
-            '\')', attrs, ')',
-          sep='')
-          eval(parse(text=cmd))
-
-        }
-      }
-
-      #-----------#
-      # Terminate #
-      #-----------#
-      return(g.merge)
+	    if(gm$verbose) cat('Graphs merged\n')
     }
   )
   
