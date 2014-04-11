@@ -274,14 +274,17 @@ GraphManager <- function(clusters=0, verbose=FALSE) {
       if(gm$verbose) cat('Preparing edges weights\n')
       edgelist <- cbind(edges[,1],edges[,2])
       # Duplicated and unique edges
+      if(gm$verbose) cat('* Find duplicated and unique edges\n')
       multi <- which(duplicated(edgelist) | duplicated(edgelist, fromLast=TRUE))
       uni <- which(!(duplicated(edgelist) | duplicated(edgelist, fromLast=TRUE)))
       # Prepare edges array
+      if(gm$verbose) cat('* Prepare edges\' weights\n')
       weights <- 1:length(edgelist[,1])
       weights[] <- 0
       # Assign weights to unique edges
       weights[uni] <- as.integer(edges[uni,3])
       # Prepare matrix with weights of duplicated edges
+      if(gm$verbose) cat('* Retrieve weights of duplicated edges\n')
       cores <- makeCluster(gm$clusters)
       registerDoParallel(cores)
       t <- foreach(i=1:length(multi), .combine=rbind) %dopar% {
@@ -290,8 +293,10 @@ GraphManager <- function(clusters=0, verbose=FALSE) {
       stopCluster(cores)
 
       # Assign weights to duplicated edges
+      if(gm$verbose) cat('* Assign edges weights\n')
       weights[as.integer(t[which(!duplicated(cbind(t[,2],t[,3]))),1])] <- as.integer(t[which(!duplicated(cbind(t[,2],t[,3]))),4])
       # Remove duplicated edges
+      if(gm$verbose) cat('* Remove duplicated edges\n')
       weights <- weights[which(weights>=1)]
 
       # Add edges
@@ -319,7 +324,7 @@ GraphManager <- function(clusters=0, verbose=FALSE) {
       # The distances as numeric vector
 
       # Vertices #
-      v.merge <- c(eval(parse(text=paste('V(g.one)$', attr.v.id, sep=''))), eval(parse(text=paste('V(g.two)$', attr.v.id, sep=''))))
+      v.merge <- c(eval(parse(text=paste0('V(g.one)$', attr.v.id))), eval(parse(text=paste0('V(g.two)$', attr.v.id))))
       v.merge <- v.merge[which(duplicated(v.merge) | duplicated(v.merge, fromLast=TRUE))]
 
       # Edges #
