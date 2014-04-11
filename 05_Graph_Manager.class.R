@@ -95,24 +95,24 @@ GraphBuilder <- function(clusters=0, verbose=FALSE) {
       gb$data <- data
       return(gb)
     },
-    
-    buildGraph = function(gb, genes.label="Gene.id", clonality.label="clonality.status", clonal.val="clonal", subclonal.val="subclonal", table.out=FALSE ) {
-      # Builds graphs, can discriminate between single- and multi-sample cases.
+
+    build=function(gb, genes.label="Gene.id", clonality.label="clonality.status", clonal.val="clonal", subclonal.val="subclonal") {
+      # Builds adjacency matrix, homologous-clonality matrices and graph
+      # It can discriminate between single- and multi-sample cases.
       #
       # Args:
       #   gb: current GraphBuilder instance.
-      #	  genes.label: label of the gene's id column.
-      #	  clonality.label: label of the clonality status column.
+      #   genes.label: label of the gene's id column.
+      #   clonality.label: label of the clonality status column.
       #   clonal.val: value of clonality for clonal genes.
       #   subclonal.val: value of clonality for subclonal genes.
-      #   table.out: whether or not to print the adjacency tables.
       #
       # Returns:
-      #	Modified GraphBuilder instance
+      # Modified GraphBuilder instance
 
       # If needed, create output directory
       if (!file.exists('./sample-graphs/')) dir.create(file.path('./sample-graphs/'))
-      if (file.exists('./sample-data/') && table.out) dir.create(file.path('./sample-tabs/'))
+      if (!file.exists('./sample-tables/')) dir.create(file.path('./sample-tables/'))
 
       if(is.null(gb$isMultiSample)) {
 
@@ -133,19 +133,50 @@ GraphBuilder <- function(clusters=0, verbose=FALSE) {
         genes.clonal <- which(gb$data[,clonality.label]==clonal.val)
         genes.subclonal <- which(gb$data[,clonality.label]==subclonal.val)
 
-        # Fill matrix
-        for (i in seq(length(genes.clonal))){
-          for (j in seq(length(genes.subclonal))){
-            adjacency.matrix[genes.clonal[i], genes.subclonal[j]] <-
-              adjacency.matrix[genes.clonal[i], genes.subclonal[j]] + 1
+        # Make empty homologous-clonality matrices
+        homo.clonal.matrix <- matrix(0, nrow=length(genes.clonal), ncol=length(genes.clonal))
+        rownames(homo.clonal.matrix) <- gb$data[genes.clonal,genes.label]
+        colnames(homo.clonal.matrix) <- gb$data[genes.clonal,genes.label]
+        homo.subclonal.matrix <- matrix(0, nrow=length(genes.subclonal), ncol=length(genes.subclonal))
+        rownames(homo.subclonal.matrix) <- gb$data[genes.subclonal,genes.label]
+        colnames(homo.subclonal.matrix) <- gb$data[genes.subclonal,genes.label]
+
+        if(length(genes.clonal) != 0) {
+          # Fill matrices
+          for(i in seq(length(genes.clonal))){
+
+            if(length(genes.subclonal) != 0) {
+              # Fill adjacency matrix
+              for(j in seq(length(genes.subclonal))){
+                adjacency.matrix[genes.clonal[i], genes.subclonal[j]] <- adjacency.matrix[genes.clonal[i], genes.subclonal[j]] + 1
+              }
+            }
+
+            # Fill homologous.clonal
+            for(j in seq(length(genes.clonal))) {
+              # Empty main diagonal
+              if(i != j) homo.clonal.matrix[i, j] <- homo.clonal.matrix[i, j] +1
+            }
           }
         }
 
-        # Write small matrix
-        if (table.out) {
-          file.name <- paste('tab_', sample.id, '.dat', sep = "")
-          write.table(adjacency.matrix, file = file.path('.', file.name))
+        if(length(genes.subclonal) != 0) {
+          # Fill homologous.subclonal
+          for(i in seq(length(genes.subclonal))){
+            for(j in seq(length(genes.subclonal))) {
+              # Empty main diagonal
+              if(i != j) homo.subclonal.matrix[i, j] <- homo.subclonal.matrix[i, j] +1
+            }
+          }
         }
+
+        # Write matrices
+        file.name <- paste('adjTab_', sample.id, '.dat', sep = "")
+        write.table(adjacency.matrix, file = file.path('.', file.name))
+        file.name <- paste('homCloTab_', sample.id, '.dat', sep = "")
+        write.table(homo.subclonal.matrix, file = file.path('.', file.name))
+        file.name <- paste('homSubTab_', sample.id, '.dat', sep = "")
+        write.table(homo.subclonal.matrix, file = file.path('.', file.name))
 
         # Build and write graph
         g <- graph.adjacency(adjacency.matrix, mode="directed", weighted=TRUE)
@@ -170,7 +201,7 @@ GraphBuilder <- function(clusters=0, verbose=FALSE) {
         # Make graph of every sample
         response <- foreach(i=1:length(sample.list)) %dopar% {
           library('igraph')
-
+          
           # Working sample
           sample.id <- sample.list[i]
 
@@ -190,19 +221,48 @@ GraphBuilder <- function(clusters=0, verbose=FALSE) {
           genes.clonal <- which(data[,clonality.label]==clonal.val)
           genes.subclonal <- which(data[,clonality.label]==subclonal.val)
 
-          # Fill matrix
-          for (i in seq(length(genes.clonal))){
-            for (j in seq(length(genes.subclonal))){
-              adjacency.matrix[genes.clonal[i], genes.subclonal[j]] <-
-                adjacency.matrix[genes.clonal[i], genes.subclonal[j]] + 1
+          # Make empty homologous-clonality matrices
+          homo.clonal.matrix <- matrix(0, nrow=length(genes.clonal), ncol=length(genes.clonal))
+          rownames(homo.clonal.matrix) <- gb$data[genes.clonal,genes.label]
+          colnames(homo.clonal.matrix) <- gb$data[genes.clonal,genes.label]
+          homo.subclonal.matrix <- matrix(0, nrow=length(genes.subclonal), ncol=length(genes.subclonal))
+          rownames(homo.subclonal.matrix) <- gb$data[genes.subclonal,genes.label]
+          colnames(homo.subclonal.matrix) <- gb$data[genes.subclonal,genes.label]
+
+          if(length(genes.clonal) != 0) {
+            # Fill matrices
+            for(i in seq(length(genes.clonal))){
+
+              if(length(genes.subclonal) != 0) {
+                # Fill adjacency matrix
+                for(j in seq(length(genes.subclonal))) adjacency.matrix[genes.clonal[i], genes.subclonal[j]] <- adjacency.matrix[genes.clonal[i], genes.subclonal[j]] + 1
+              }
+
+              # Fill homologous.clonal
+              for(j in seq(length(genes.clonal))) {
+                # Empty main diagonal
+                if(i != j) homo.clonal.matrix[i, j] <- homo.clonal.matrix[i, j] +1
+              }
+            }
+
+            if(length(genes.subclonal) != 0) {
+              # Fill homologous.subclonal
+              for(i in seq(length(genes.subclonal))){
+                for(j in seq(length(genes.subclonal))) {
+                  # Empty main diagonal
+                  if(i != j) homo.subclonal.matrix[i, j] <- homo.subclonal.matrix[i, j] +1
+                }
+              }
             }
           }
 
-          # Write small matrix
-          if (table.out) {
-            file.name <- paste('tab_', sample.id, '.dat', sep = "")
-            write.table(adjacency.matrix, file = file.path('./sample-tabs/', file.name))
-          }
+          # Write matrices
+          file.name <- paste('adjTab_', sample.id, '.dat', sep = "")
+          write.table(adjacency.matrix, file = file.path('./sample-tables/', file.name))
+          file.name <- paste('homCloTab_', sample.id, '.dat', sep = "")
+          write.table(homo.clonal.matrix, file = file.path('./sample-tables/', file.name))
+          file.name <- paste('homSubTab_', sample.id, '.dat', sep = "")
+          write.table(homo.subclonal.matrix, file = file.path('./sample-tables/', file.name))
 
           # Build and write graph
           g <- graph.adjacency(adjacency.matrix, mode="directed", weighted=TRUE)
@@ -210,13 +270,13 @@ GraphBuilder <- function(clusters=0, verbose=FALSE) {
           write.graph(g, file = file.path('./sample-graphs/', file.name), format='graphml')
 
           # Terminate
-          return(paste('Built graph for', sample.id, sep=' '))
+          return(paste('* Built matrices and graph for', sample.id, sep=' '))
 
         }
         stopCluster(par)
 
         if(gb$verbose) for(answ in response) cat(answ,'\n')
-        if(gb$verbose) cat('All graphs built\n')
+        if(gb$verbose) cat('All matrices and graphs built\n')
       }
     }
   )
