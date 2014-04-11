@@ -215,7 +215,7 @@ GraphBuilder <- function(clusters=0, verbose=FALSE) {
         }
         stopCluster(par)
 
-        if(gb$verbose) cat(response,'\n')
+        if(gb$verbose) for(answ in response) cat(answ,'\n')
         if(gb$verbose) cat('All graphs built\n')
       }
     }
