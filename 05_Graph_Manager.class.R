@@ -305,6 +305,41 @@ GraphManager <- function(clusters=0, verbose=FALSE) {
 
       # Terminate
 	    if(gm$verbose) cat('Graphs merged\n')
+    },
+
+    graphsDistance.noAttr=function(g.one, g.two, attr.v.id='name') {
+      # Calculates the distance between two graphs
+      # Edges and vertices attributes are ignored during intersection
+      #
+      # Args:
+      # g.one, g.two: the two graphs
+      # attr.v.id: id vertex attribute
+      #
+      # Returns:
+      # The distances as numeric vector
+
+      # Vertices #
+      v.merge <- c(eval(parse(text=paste('V(g.one)$', attr.v.id, sep=''))), eval(parse(text=paste('V(g.two)$', attr.v.id, sep=''))))
+      v.merge <- v.merge[which(duplicated(v.merge) | duplicated(v.merge, fromLast=TRUE))]
+
+      # Edges #
+      e.merge <- rbind(get.edgelist(g.one),get.edgelist(g.two))
+      e.merge.p <- paste(e.merge[,1], e.merge[,2], sep='-->')
+      e.merge <- e.merge[which(duplicated(e.merge.p) | duplicated(e.merge.p, fromLast=TRUE)),]
+
+      # Intersection #
+      g.merge <- graph.empty()
+      g.merge <- g.merge + vertices(v.merge)
+      g.merge <- g.merge + edges(c(t(e.merge)))
+      g.merge <- delete.vertices(g.merge, which(degree(g.merge, V(g.merge)) == 0))
+
+      # First distance #
+      d1 <- 1 - length(V(g.merge)) / max(length(V(g.one)), length(V(g.two)))
+
+      # Second distance #
+      d2 <- 1 - sum(degree(g.merge, V(g.merge))/2) / max(sum(degree(g.one, V(g.one))), sum(degree(g.two, V(g.two))))
+
+      return(c(d1,d2))
     }
   )
   
