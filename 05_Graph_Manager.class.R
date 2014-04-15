@@ -319,7 +319,7 @@ GraphManager <- function(clusters=0, verbose=FALSE) {
 
         file.name <- graph.list[i]
         g <- read.graph(file.path('.', file.name), format='graphml')
-        get.edgelist(g)
+        cbind(get.edgelist(g), get.edge.attribute(g, 'weight'))
 
       }
       stopCluster(cores)
@@ -330,13 +330,13 @@ GraphManager <- function(clusters=0, verbose=FALSE) {
 
       # Vertices
       if(gm$verbose) cat("Adding vertices\n")
-      g <- g + vertices(unique(as.vector(edges)))
+      g <- g + vertices(unique(as.vector(cbind(edges[,1], edges[,2]))))
 
       # Edges
       if(gm$verbose) cat("Adding edges\n")
-      g <- g + edges(as.vector(t(edges)))
+      g <- g + edges(as.vector(t(cbind(edges[,1], edges[,2]))))
       if(gm$verbose) cat("Adding weights\n")
-      E(g)$weight <- 1
+      E(g)$weight <- cbind(as.numeric(edges[,3]))
       g <- simplify(g, remove.multiple=TRUE, remove.loops=FALSE, edge.attr.comb=list(weight="sum", "ignore"))
 
       # Write graph
