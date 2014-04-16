@@ -11,7 +11,7 @@ GraphBuilder <- function(clusters=0, verbose=FALSE) {
     # Boolean value to determine verbosity
     verbose = verbose,
     
-    readData = function(file.path, header=TRUE, sep='\t', row.names=NULL, sample.column=NULL) {
+    readData = function(file.path, header=TRUE, sep='\t', row.names=NULL, sample.column=NULL, abe.type='dummy') {
       # Reads data
       #
       # Args:
@@ -26,7 +26,7 @@ GraphBuilder <- function(clusters=0, verbose=FALSE) {
       #
       # Returns:
       #   Modified GraphBuilder instance
-      
+
       # Read data
       if(gb$verbose) cat('Reading whole data\n')
       data <- read.table(file.path, header=header, sep=sep, row.names=row.names)
@@ -43,13 +43,13 @@ GraphBuilder <- function(clusters=0, verbose=FALSE) {
       } else {
 
         # If multi-sample file
-        gb <- gb$splitData(data, sample.column)
+        gb <- gb$splitData(data, sample.column, abe.type=abe.type)
         return(gb)
 
       }
     },
     
-    splitData = function(data, sample.column, clusters=gb$clusters) {
+    splitData = function(data, sample.column, clusters=gb$clusters, abe.type='dummy') {
       # Splits multi-sample data
       #
       # Args:
@@ -59,15 +59,16 @@ GraphBuilder <- function(clusters=0, verbose=FALSE) {
       #
       # Returns:
       #	Modified GraphBuilder instance
-      
+
       if(gb$verbose) cat('Splitting whole data\n')
 
       # Prepare sample list without duplicates
       sample.list <- unique(data[,sample.column])
 
       # If needed, create output directory
-      if (!file.exists('./sample-data/')) {
-        dir.create(file.path('./sample-data/'))
+      data.dir <- paste0('./sample-data-', abe.type, '/')
+      if (!file.exists(data.dir)) {
+        dir.create(file.path(data.dir))
       }
 
       # Declare parallelism
@@ -82,7 +83,7 @@ GraphBuilder <- function(clusters=0, verbose=FALSE) {
         # Get row_ids from original data table for the working_sample
         row.ids <- which(data[,sample.column]==sample.id)
         # Write selected rows
-        write.table(data[row.ids,], file=file.path('./sample-data/', sample.list[i]))
+        write.table(data[row.ids,], file=file.path(data.dir, sample.list[i]))
 
       }
       stopCluster(par)
@@ -96,7 +97,7 @@ GraphBuilder <- function(clusters=0, verbose=FALSE) {
       return(gb)
     },
 
-    build=function(gb, genes.label="Gene.id", clonality.label="clonality.status", clonal.val="clonal", subclonal.val="subclonal") {
+    build=function(gb, genes.label="Gene.id", clonality.label="clonality.status", clonal.val="clonal", subclonal.val="subclonal", abe.type="dummy") {
       # Builds adjacency matrix, homologous-clonality matrices and graph
       # It can discriminate between single- and multi-sample cases.
       #
@@ -109,10 +110,6 @@ GraphBuilder <- function(clusters=0, verbose=FALSE) {
       #
       # Returns:
       # Modified GraphBuilder instance
-
-      # If needed, create output directory
-      if (!file.exists('./sample-graphs/')) dir.create(file.path('./sample-graphs/'))
-      if (!file.exists('./sample-tables/')) dir.create(file.path('./sample-tables/'))
 
       if(is.null(gb$isMultiSample)) {
 
@@ -171,24 +168,24 @@ GraphBuilder <- function(clusters=0, verbose=FALSE) {
         }
 
         # Write matrices
-        file.name <- paste('adjTab_', sample.id, '.dat', sep = "")
+        file.name <- paste('adjTab_', sample.id, '-', abe.type, '.dat', sep = "")
         write.table(adjacency.matrix, file = file.path('.', file.name))
-        file.name <- paste('homCloTab_', sample.id, '.dat', sep = "")
+        file.name <- paste('homCloTab_', sample.id, '-', abe.type, '.dat', sep = "")
         write.table(homo.subclonal.matrix, file = file.path('.', file.name))
-        file.name <- paste('homSubTab_', sample.id, '.dat', sep = "")
+        file.name <- paste('homSubTab_', sample.id, '-', abe.type, '.dat', sep = "")
         write.table(homo.subclonal.matrix, file = file.path('.', file.name))
 
         # Build and write EvoPath graph
         g <- graph.adjacency(adjacency.matrix, mode="directed", weighted=TRUE)
-        file.name <- paste('gra_', sample.id, '.graphml', sep = "")
+        file.name <- paste('gra_', sample.id, '-', abe.type, '.graphml', sep = "")
         write.graph(g, file = file.path('.', file.name), format='graphml')
         # Build and write Cooc graphs
-        g <- graph.adjacency(homo.clonal.matrix, mode="undirected", weighted=TRUE)
-        file.name <- paste('graClo_', sample.id, '.graphml', sep = "")
-        write.graph(g, file = file.path('.', file.name), format='graphml')
-        g <- graph.adjacency(homo.subclonal.matrix, mode="undirected", weighted=TRUE)
-        file.name <- paste('graSub_', sample.id, '.graphml', sep = "")
-        write.graph(g, file = file.path('.', file.name), format='graphml')
+        #g <- graph.adjacency(homo.clonal.matrix, mode="undirected", weighted=TRUE)
+        #file.name <- paste('graClo_', sample.id, '-', abe.type, '.graphml', sep = "")
+        #write.graph(g, file = file.path('.', file.name), format='graphml')
+        #g <- graph.adjacency(homo.subclonal.matrix, mode="undirected", weighted=TRUE)
+        #file.name <- paste('graSub_', sample.id, '-', abe.type, '.graphml', sep = "")
+        #write.graph(g, file = file.path('.', file.name), format='graphml')
 
         # Terminate
         if(gb$verbose) cat('Built graph\n')
@@ -198,6 +195,10 @@ GraphBuilder <- function(clusters=0, verbose=FALSE) {
         #-------------------#
         # Multi sample data #
         #-------------------#
+
+        # If needed, create output directory
+        if (!file.exists(paste0('./sample-graphs-', abe.type, '/'))) dir.create(file.path(paste0('./sample-graphs-', abe.type, '/')))
+        if (!file.exists(paste0('./sample-tables-', abe.type, '/'))) dir.create(file.path(paste0('./sample-tables-', abe.type, '/')))
 
         if(gb$verbose) cat('Building graphs\n')
         sample.list <- unique(gb$data[,gb$sample.column])
@@ -213,7 +214,7 @@ GraphBuilder <- function(clusters=0, verbose=FALSE) {
           sample.id <- sample.list[i]
 
           # Read data
-          data <- read.table(file.path('./sample-data/', sample.id), header = TRUE)
+          data <- read.table(file.path(paste0('./sample-data-', abe.type, '/', sample.id)), header = TRUE)
 
           # Make empty adjacency matrix
           adjacency.matrix <- matrix(
@@ -262,26 +263,25 @@ GraphBuilder <- function(clusters=0, verbose=FALSE) {
               }
             }
           }
-
+          
           # Write matrices
           file.name <- paste('adjTab_', sample.id, '.dat', sep = "")
-          write.table(adjacency.matrix, file = file.path('./sample-tables/', file.name))
+          write.table(adjacency.matrix, file = file.path(paste0('./sample-tables-', abe.type, '/'), file.name))
           file.name <- paste('homCloTab_', sample.id, '.dat', sep = "")
-          write.table(homo.clonal.matrix, file = file.path('./sample-tables/', file.name))
+          write.table(homo.clonal.matrix, file = file.path(paste0('./sample-tables-', abe.type, '/'), file.name))
           file.name <- paste('homSubTab_', sample.id, '.dat', sep = "")
-          write.table(homo.subclonal.matrix, file = file.path('./sample-tables/', file.name))
-
+          write.table(homo.subclonal.matrix, file = file.path(paste0('./sample-tables-', abe.type, '/'), file.name))
           # Build and write graph
           g <- graph.adjacency(adjacency.matrix, mode="directed", weighted=TRUE)
           file.name <- paste('gra_', sample.id, '.graphml', sep = "")
-          write.graph(g, file = file.path('./sample-graphs/', file.name), format='graphml')
+          write.graph(g, file = file.path(paste0('./sample-graphs-', abe.type, '/'), file.name), format='graphml')
           # Build and write Cooc graphs
-          g <- graph.adjacency(homo.clonal.matrix, mode="undirected", weighted=TRUE)
-          file.name <- paste('graClo_', sample.id, '.graphml', sep = "")
-          write.graph(g, file = file.path('.', file.name), format='graphml')
-          g <- graph.adjacency(homo.subclonal.matrix, mode="undirected", weighted=TRUE)
-          file.name <- paste('graSub_', sample.id, '.graphml', sep = "")
-          write.graph(g, file = file.path('.', file.name), format='graphml')
+          #g <- graph.adjacency(homo.clonal.matrix, mode="undirected", weighted=TRUE)
+          #file.name <- paste('graClo_', sample.id, '.graphml', sep = "")
+          #write.graph(g, file = file.path('./sample-graphs', abe.type, '/', file.name), format='graphml')
+          #g <- graph.adjacency(homo.subclonal.matrix, mode="undirected", weighted=TRUE)
+          #file.name <- paste('graSub_', sample.id, '.graphml', sep = "")
+          #write.graph(g, file = file.path('./sample-graphs', abe.type, '/', file.name), format='graphml')
 
           # Terminate
           return(paste('* Built matrices and graph for', sample.id, sep=' '))
