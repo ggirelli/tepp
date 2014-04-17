@@ -1,5 +1,5 @@
-clusters    20
+clusters    10
 verbose TRUE
-file-PM ../Tables/20140317.TCGA.246FreezeSamples.PM.txt
-file-Loss   ../Tables/20140317.TCGA.246FreezeSamples.Loss.txt
-file-Gain   ../Tables/20140317.TCGA.246FreezeSamples.Gain.txt
+file-PM Tables/20140317.TCGA.246FreezeSamples.PM.txt
+file-Loss   Tables/20140317.TCGA.246FreezeSamples.Loss.txt
+file-Gain   Tables/20140317.TCGA.246FreezeSamples.Gain.txt
