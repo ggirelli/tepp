@@ -104,6 +104,19 @@ GraphManager <- function(clusters=0, verbose=FALSE) {
 
     # Build SSMAs
     buildSSMA = function(sample.id, genes.label="Gene.id", clonality.label="clonality.status", clonal.val="clonal", subclonal.val="subclonal", abe.list=c('PM', 'Gain', 'Loss', 'RR')) {
+      # Splits multi-sample data
+      #
+      # Args:
+      #   sample.id: id of the sample to analyze
+      #   genes.label: label of the gene's id column.
+      #   clonality.label: label of the clonality status column.
+      #   clonal.val: value of clonality for clonal genes.
+      #   subclonal.val: value of clonality for subclonal genes.
+      #   abe.list: list of aberration types
+      #
+      # Returns:
+      #   None, prints graph in ./sample-graphs/
+
       # Read data
       data <- list()
       for(abe in abe.list) {
@@ -112,7 +125,7 @@ GraphManager <- function(clusters=0, verbose=FALSE) {
       }
 
       # Make empty graph
-      g <- graph.empty()
+      g <- graph.empty(directed=TRUE)
 
       # Get clonals
       for(abe in abe.list) {
@@ -127,14 +140,45 @@ GraphManager <- function(clusters=0, verbose=FALSE) {
       }
       
       # Remove uncertain.clonality
-      g <- delete.vertices(g, V(g)[clonality == 'uncertain.clonal'])
-      g <- delete.vertices(g, V(g)[clonality == 'uncertain.subclonal'])
+      g <- delete.vertices(g, V(g)[clonality.status == 'uncertain.clonal'])
+      g <- delete.vertices(g, V(g)[clonality.status == 'uncertain.subclonal'])
+      
+      # Prepare edges list
+      g <- g + edges(c(t(expand.grid(c(V(g)[clonality.status == 'clonal']), c(V(g)[clonality.status == 'subclonal'])))))
+      E(g)$weight <- 1
+
+      # If needed, create output directory
+      data.dir <- paste0('./sample-graphs/')
+      if (!file.exists(data.dir)) {
+        dir.create(file.path(data.dir))
+      }
+
+      # Output graph
+      write.graph(g, file.path(data.dir, paste0('gra_', sample.id, '.graphml')), format='graphml')
     },
 
     # Manage building
     build = function(abe.list, genes.label="Gene.id", clonality.label="clonality.status", clonal.val="clonal", subclonal.val="subclonal", sample.list=gm$sample.list) {
-      #for(sample in sample.list) gm$buildSSMA(sample, genes.label=genes.label, clonality.label=clonality.label, clonal.val=clonal.val, subclonal.val=subclonal.val, abe.list=abe.list)
-      gm$buildSSMA(sample.list[1], genes.label=genes.label, clonality.label=clonality.label, clonal.val=clonal.val, subclonal.val=subclonal.val, abe.list=abe.list)
+      # Splits multi-sample data
+      #
+      # Args:
+      #   abe.list: list of aberration types
+      #   genes.label: label of the gene's id column.
+      #   clonality.label: label of the clonality status column.
+      #   clonal.val: value of clonality for clonal genes.
+      #   subclonal.val: value of clonality for subclonal genes.
+      #   sample.list: list of samples to analyze
+      #
+      # Returns:
+      #   None
+
+      for(sample in sample.list) {
+        cat('\nWorking on', sample)
+        gm$buildSSMA(sample, genes.label=genes.label, clonality.label=clonality.label, clonal.val=clonal.val, subclonal.val=subclonal.val, abe.list=abe.list)
+        cat('\nPrinted graph:', sample)
+      }
+
+      #gb$buildMSMA()
     }
   )
   
