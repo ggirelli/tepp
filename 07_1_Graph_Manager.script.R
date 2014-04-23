@@ -16,6 +16,10 @@ for(arg in args) if(!grepl('^(-v=(TRUE|FALSE|T|F)|-c=[0-9]*|-p=[a-zA-Z0-9()./_~-
 clusters <- 4
 verbose <- TRUE
 file.list <- list()
+genes.label <- "Gene.id"
+white.list <- list()
+black.list <- list()
+clean <- FALSE
 
 # Read number of clusters
 for(arg in args) if(grepl('^-c=[0-9]*$', arg))  clusters <- as.numeric(strsplit(arg, '-c=')[[1]][2])
@@ -26,13 +30,20 @@ for(arg in args) if(grepl('^-v=(TRUE|FALSE|T|F)$', arg)) verbose <- as.logical(s
 for(arg in args) if(grepl('^-p=[a-zA-Z0-9()./_~-]*$', arg)) {
   file.name <- strsplit(arg, '-p=')[[1]][2]
   if(file.exists(file.name)) {
-    file <- read.table(file.name, head=FALSE)
-    clusters <- as.numeric(as.matrix(file[which(file[, 1] == 'clusters'), 2]))
-    verbose <- as.logical(file[which(file[, 1] == 'verbose'), 2])
-    file.list$PM <- toString(file[which(file[, 1] == 'file-PM'), 2])
-    file.list$Gain <- toString(file[which(file[, 1] == 'file-Gain'), 2])
-    file.list$Loss <- toString(file[which(file[, 1] == 'file-Loss'), 2])
-    file.list$RR <- toString(file[which(file[, 1] == 'file-RR'), 2])
+    ff <- read.table(file.name, head=FALSE)
+    clusters <- as.numeric(as.matrix(ff[which(ff[, 1] == 'clusters'), 2]))
+    verbose <- as.logical(ff[which(ff[, 1] == 'verbose'), 2])
+    file.list$PM <- toString(ff[which(ff[, 1] == 'file-PM'), 2])
+    file.list$Gain <- toString(ff[which(ff[, 1] == 'file-Gain'), 2])
+    file.list$Loss <- toString(ff[which(ff[, 1] == 'file-Loss'), 2])
+    file.list$RR <- toString(ff[which(ff[, 1] == 'file-RR'), 2])
+
+    genes.label <- toString(ff[which(ff[, 1] == 'genes.label'), 2])
+    white.list <- toString(ff[which(ff[, 1] == 'white.list'), 2])
+    if(white.list != '') white.list <- read.table(white.list, header=FALSE, sep='\t')[,1]
+    black.list <- toString(ff[which(ff[, 1] == 'black.list'), 2])
+    if(black.list != '') black.list <- read.table(black.list, header=FALSE, sep='\t')[,1]
+    clean <- as.logical(ff[which(ff[, 1] == 'clean'), 2])
   }
 }
 
@@ -47,6 +58,26 @@ cat('Gain-data: ', file.list$Gain, '\n')
 cat('Loss-data: ', file.list$Loss, '\n')
 cat('RR-data: ', file.list$RR, '\n\n')
 
+cat('Gene label: \'', genes.label, '\'\n')
+if(clean) {
+  cat('Running clean\n')
+}
+cat('\n')
+
+if(length(white.list) != 0 && white.list != '') {
+  cat('White list from: ', toString(ff[which(ff[, 1] == 'white.list'), 2]), '\n')
+  print(white.list)
+} else {
+  cat('No white list specified\n')
+}
+if(length(black.list) != 0 && black.list != '') {
+  cat('\nBlack list from: ', toString(ff[which(ff[, 1] == 'black.list'), 2]), '\n')
+  print(black.list)
+} else {
+  cat('\nNo black list specified\n')
+}
+cat('\n')
+
 #---------#
 # Execute #
 #---------#
@@ -54,7 +85,7 @@ cat('RR-data: ', file.list$RR, '\n\n')
 system.time({
 
   # Declare GraphManager instance
-  gm <- GraphManager(clusters=clusters, verbose=verbose)
+  gm <- GraphManager(clusters=clusters, verbose=verbose, genes.label=genes.label, white.list=white.list, black.list=black.list, clean=clean)
   cat('\n')
 
   #-------------------#

@@ -1,5 +1,5 @@
 # Class to build and manage graphs
-GraphManager <- function(clusters=0, verbose=FALSE) {
+GraphManager <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white.list=list(), black.list=list(), clean=FALSE) {
   library('igraph')
   library('doParallel')
   
@@ -11,11 +11,21 @@ GraphManager <- function(clusters=0, verbose=FALSE) {
     # Boolean value to determine verbosity
     verbose = verbose,
 
+    # Gene.id label
+    genes.label = genes.label,
+
+    # Gene white/black-list
+    white.list = white.list,
+    black.list = black.list,
+
+    # Clean: keeps only whitelisted genes
+    clean = clean,
+
     # Sample list
     sammple.list = list(),
     
     # Reads data
-    readData = function(file.path, header=TRUE, sep='\t', row.names=NULL, sample.column=NULL, abe.type='dummy', temp.sample.list=list()) {
+    readData = function(file.path, header=TRUE, sep='\t', row.names=NULL, sample.column=NULL, genes.label=gm$genes.label, white.list=gm$white.list, abe.type='dummy', temp.sample.list=list(), clean=gm$clean) {
       #
       # Args:
       #   file.path: the name of the file which the data are to be
@@ -40,20 +50,29 @@ GraphManager <- function(clusters=0, verbose=FALSE) {
       # Check for multi-sampling
       if( is.null(sample.column)) {
 
+        if(clean && length(white.list) != 0) {
+
+          for(i in seq(length(data[,1]))) {
+            id <- eval(parse(text=paste0('data$', genes.label, '[i]')))
+            if(!(id %in% white.list)) data <- data[-i]
+          }
+
+        }
+
         # If single-sample file
         return(gm)
 
       } else {
 
         # If multi-sample file
-        gmnew <- gm$splitData(data, sample.column, abe.type=abe.type, temp.sample.list=temp.sample.list)
+        gmnew <- gm$splitData(data, sample.column, genes.label=genes.label, white.list=white.list, abe.type=abe.type, temp.sample.list=temp.sample.list, clean=clean)
         return(gmnew)
 
       }
     },
     
     # Splits data
-    splitData = function(data, sample.column, clusters=gm$clusters, abe.type='dummy', temp.sample.list=list()) {
+    splitData = function(data, sample.column, clusters=gm$clusters, genes.label=gm$genes.label, white.list=gm$white.list, abe.type='dummy', temp.sample.list=list(), clean=gm$clean) {
       # Splits multi-sample data
       #
       # Args:
@@ -65,10 +84,8 @@ GraphManager <- function(clusters=0, verbose=FALSE) {
       #	Modified GraphBuilder instance
       
       if(gm$verbose) cat('Splitting', abe.type, 'data\n')
-
       # Prepare sample list without duplicates
       sample.list <- unique(data[,sample.column])
-
       # If needed, create output directory
       data.dir <- paste0('./sample-data-', abe.type, '/')
       if (!file.exists(data.dir)) {
@@ -85,9 +102,10 @@ GraphManager <- function(clusters=0, verbose=FALSE) {
         # On which sample are we working?
         sample.id <- sample.list[i]
         # Get row_ids from original data table for the working_sample
-        row.ids <- which(data[,sample.column]==sample.id)
+        row.ids <- which(data[,sample.column] == sample.id)
+        if(clean && length(white.list) != 0) row.ids <- intersect(which(data[,sample.column] == sample.id), which(data[,genes.label] %in% white.list))
         # Write selected rows
-        write.table(data[row.ids,], file=file.path(data.dir, sample.list[i]))
+        if(length(row.ids) != 0) write.table(data[row.ids,], file=file.path(data.dir, sample.list[i]))
 
       }
       stopCluster(par)
@@ -100,61 +118,6 @@ GraphManager <- function(clusters=0, verbose=FALSE) {
       gm$data <- data
       gm$sample.list <- unique(c(as.character(temp.sample.list), as.character(sample.list)))
       return(gm)
-    },
-
-    # Build SSMAs
-    buildSSMA = function(sample.id, genes.label="Gene.id", clonality.label="clonality.status", clonal.val="clonal", subclonal.val="subclonal", abe.list=c('PM', 'Gain', 'Loss', 'RR')) {
-      # Splits multi-sample data
-      #
-      # Args:
-      #   sample.id: id of the sample to analyze
-      #   genes.label: label of the gene's id column.
-      #   clonality.label: label of the clonality status column.
-      #   clonal.val: value of clonality for clonal genes.
-      #   subclonal.val: value of clonality for subclonal genes.
-      #   abe.list: list of aberration types
-      #
-      # Returns:
-      #   None, prints graph in ./sample-graphs/
-
-      # Read data
-      data <- list()
-      for(abe in abe.list) {
-        f.name <- eval(parse(text=paste0('"sample-data-', abe, '/', sample.id, '"')))
-        if(file.exists(f.name)) eval(parse(text=paste0('data$', abe, ' <- read.table(f.name , header=TRUE)')))
-      }
-
-      # Make empty graph
-      g <- graph.empty(directed=TRUE)
-
-      # Get clonals
-      for(abe in abe.list) {
-
-        genes <- eval(parse(text=paste0('data$', abe, '$', genes.label)))
-        clonality <- eval(parse(text=paste0('data$', abe, '$', clonality.label)))
-        aberration <- seq(length(genes))
-        aberration[] <- abe
-
-        # Add to graph
-        g <- add.vertices(g, length(genes), attr=list(name=as.character(genes), clonality.status=as.character(clonality), abe.type=aberration))
-      }
-      
-      # Remove uncertain.clonality
-      g <- delete.vertices(g, V(g)[clonality.status == 'uncertain.clonal'])
-      g <- delete.vertices(g, V(g)[clonality.status == 'uncertain.subclonal'])
-      
-      # Prepare edges list
-      g <- g + edges(c(t(expand.grid(c(V(g)[clonality.status == 'clonal']), c(V(g)[clonality.status == 'subclonal'])))))
-      E(g)$weight <- 1
-
-      # If needed, create output directory
-      data.dir <- paste0('./sample-graphs/')
-      if (!file.exists(data.dir)) {
-        dir.create(file.path(data.dir))
-      }
-
-      # Output graph
-      write.graph(g, file.path(data.dir, paste0('gra_', sample.id, '.graphml')), format='graphml')
     },
 
     # Build MSMA
@@ -177,11 +140,13 @@ GraphManager <- function(clusters=0, verbose=FALSE) {
         library('igraph')
 
         file.name <- graph.list[i]
-        g <- read.graph(file.path('./sample-graphs/', file.name), format='graphml')
-        edgelist <- get.edgelist(g)
-        if(length(edgelist) != 0) {
-          edgelist.n <- get.edgelist(g, name=FALSE)
-          cbind(edgelist, E(g)$weight, V(g)[edgelist.n[,1]]$abe.type, V(g)[edgelist.n[,2]]$abe.type)
+        if(file.exists(file.path('./sample-graphs/', file.name))) {
+          g <- read.graph(file.path('./sample-graphs/', file.name), format='graphml')
+          edgelist <- get.edgelist(g)
+          if(length(edgelist) != 0) {
+            edgelist.n <- get.edgelist(g, name=FALSE)
+            cbind(edgelist, E(g)$weight, V(g)[edgelist.n[,1]]$abe.type, V(g)[edgelist.n[,2]]$abe.type)
+          }
         }
       }
       stopCluster(cores)
@@ -193,13 +158,13 @@ GraphManager <- function(clusters=0, verbose=FALSE) {
       # Vertices
       #(2) Then scroll the table (tricky) to get each node and its attributes and add them to the MSMA.
       if(gm$verbose) cat("Preparing sources\n")
-      source.table <- paste(edges[,1], edges[,4], sep='##')
+      source.table <- paste(edges[,1], edges[,4], sep='~')
       if(gm$verbose) cat("Preparing targets\n")
-      target.table <- paste(edges[,2], edges[,5], sep='##')
+      target.table <- paste(edges[,2], edges[,5], sep='~')
       if(gm$verbose) cat("Preparing vertices\n")
       vertices.table <- unique(c(source.table, target.table))
       if(gm$verbose) cat("Adding vertices with attributes\n")
-      g <- add.vertices(g, nv=length(vertices.table), attr=list(name=vertices.table, abe.type=matrix(unlist(strsplit(vertices.table, '##')), nrow=2)[2,]))
+      g <- add.vertices(g, nv=length(vertices.table), attr=list(name=vertices.table, aberration=matrix(unlist(strsplit(vertices.table, '~')), nrow=2)[2,]))
 
       # Edges
       if(gm$verbose) cat("Adding edges\n")
@@ -214,7 +179,7 @@ GraphManager <- function(clusters=0, verbose=FALSE) {
 
       # Resetting vertex names
       if(gm$verbose) cat("Resetting vertex names\n")
-      V(g)$name <- matrix(unlist(strsplit(V(g)$name, '##')), nrow=2)[1,]
+      V(g)$HUGO <- matrix(unlist(strsplit(V(g)$name, '~')), nrow=2)[1,]
 
       # Write graph
       if(gm$verbose) cat("Writing graph\n")
@@ -228,7 +193,7 @@ GraphManager <- function(clusters=0, verbose=FALSE) {
     },
 
     # Manage building
-    build = function(abe.list, genes.label="Gene.id", clonality.label="clonality.status", clonal.val="clonal", subclonal.val="subclonal", sample.list=gm$sample.list) {
+    build = function(abe.list, genes.label=gm$genes.label, clonality.label="clonality.status", clonal.val="clonal", subclonal.val="subclonal", sample.list=gm$sample.list) {
       # Splits multi-sample data
       #
       # Args:
@@ -250,46 +215,47 @@ GraphManager <- function(clusters=0, verbose=FALSE) {
       # Execute buildSSMA for each sample
       foreach(sample.id=sample.list) %dopar% {
         library('igraph')
-
+        
         # Read data
         data <- list()
         for(abe in abe.list) {
           f.name <- eval(parse(text=paste0('"sample-data-', abe, '/', sample.id, '"')))
-          if(file.exists(f.name)) eval(parse(text=paste0('data$', abe, ' <- read.table(f.name , header=TRUE)')))
-        }
-
-        # Make empty graph
-        g <- graph.empty(directed=TRUE)
-
-        # Get clonals
-        for(abe in abe.list) {
-
-          genes <- eval(parse(text=paste0('data$', abe, '$', genes.label)))
-          clonality <- eval(parse(text=paste0('data$', abe, '$', clonality.label)))
-          aberration <- seq(length(genes))
-          aberration[] <- abe
-
-          # Add to graph
-          g <- add.vertices(g, length(genes), attr=list(name=as.character(genes), clonality.status=as.character(clonality), abe.type=aberration))
+          if(file.exists(f.name)) eval(parse(text=paste0('data$', abe, ' <- read.table(f.name , header=TRUE, sep=" ")')))
         }
         
-        # Remove uncertain.clonality
-        g <- delete.vertices(g, V(g)[clonality.status == 'uncertain.clonal'])
-        g <- delete.vertices(g, V(g)[clonality.status == 'uncertain.subclonal'])
-        
-        # Prepare edges list
-        g <- g + edges(c(t(expand.grid(c(V(g)[clonality.status == 'clonal']), c(V(g)[clonality.status == 'subclonal'])))))
-        E(g)$weight <- 1
+        if(length(data) != 0) {
+          # Make empty graph
+          g <- graph.empty(directed=TRUE)
 
-        # If needed, create output directory
-        data.dir <- paste0('./sample-graphs/')
-        if (!file.exists(data.dir)) {
-          dir.create(file.path(data.dir))
+          # Get clonals
+          for(abe in abe.list) {
+
+            genes <- eval(parse(text=paste0('data$', abe, '$', genes.label)))
+            clonality <- eval(parse(text=paste0('data$', abe, '$', clonality.label)))
+            aberration <- seq(length(genes))
+            aberration[] <- tolower(abe)
+
+            # Add to graph
+            g <- add.vertices(g, length(genes), attr=list(name=as.character(genes), clonality.status=as.character(clonality), abe.type=aberration))
+          }
+          
+          # Remove uncertain.clonality
+          g <- delete.vertices(g, V(g)[clonality.status == 'uncertain.clonal'])
+          g <- delete.vertices(g, V(g)[clonality.status == 'uncertain.subclonal'])
+          
+          # Prepare edges list
+          g <- g + edges(c(t(expand.grid(c(V(g)[clonality.status == 'clonal']), c(V(g)[clonality.status == 'subclonal'])))))
+          E(g)$weight <- 1
+
+          # If needed, create output directory
+          data.dir <- paste0('./sample-graphs/')
+          if (!file.exists(data.dir)) {
+            dir.create(file.path(data.dir))
+          }
+
+          # Output graph
+          write.graph(g, file.path(data.dir, paste0('gra_', sample.id, '.graphml')), format='graphml')
         }
-
-        # Output graph
-        write.graph(g, file.path(data.dir, paste0('gra_', sample.id, '.graphml')), format='graphml')
-
       }
       stopCluster(par)
 
