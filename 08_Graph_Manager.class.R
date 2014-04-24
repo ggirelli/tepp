@@ -300,8 +300,8 @@ GraphManager <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
 
       if(gm$verbose) cat("\nWriting graph\n")
       write.graph(g.total, file.path('.', 'total_graph.graphml'), format='graphml')
-      write.graph(g.clonal, file.path('.', 'clonal_graph.graphml'), format='graphml')
-      write.graph(g.subclonal, file.path('.', 'subclonal_graph.graphml'), format='graphml')
+      #write.graph(g.clonal, file.path('.', 'clonal_graph.graphml'), format='graphml')
+      #write.graph(g.subclonal, file.path('.', 'subclonal_graph.graphml'), format='graphml')
 
       if(gm$verbose) cat("\nFIN\n\n")
     }
