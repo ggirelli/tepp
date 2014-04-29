@@ -133,73 +133,8 @@ GraphManager <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
       return(gm)
     },
 
-    # Build MSMA
-    buildMSMA = function(graph.list, directed=TRUE) {
-      # Merges SSMAs into a single MSMA summing the edge's weight
-      #
-      # Args:
-      #   graph.list:
-      #
-      # Return:
-      #
-
-      # Declare parallelism
-      cores <- makeCluster(gm$clusters)
-      registerDoParallel(cores)
-      # Get edges
-      edges <- foreach(i=1:length(graph.list), .combine=rbind) %dopar% {
-        library('igraph')
-
-        file.name <- graph.list[i]
-        if(file.exists(file.path('./sample-graphs/', file.name))) {
-          g <- read.graph(file.path('./sample-graphs/', file.name), format='graphml')
-          edgelist <- get.edgelist(g)
-          if(length(edgelist) != 0) {
-            edgelist.n <- get.edgelist(g, name=FALSE)
-            cbind(edgelist, E(g)$weight, V(g)[edgelist.n[,1]]$abe.type, V(g)[edgelist.n[,2]]$abe.type)
-          }
-        }
-      }
-      stopCluster(cores)
-      # Build new graph
-      if(gm$verbose) cat("Building empty graph\n")
-      g <- graph.empty(directed=directed)
-
-      # Vertices
-      #(2) Then scroll the table (tricky) to get each node and its attributes and add them to the MSMA.
-      if(gm$verbose) cat("Preparing sources\n")
-      source.table <- paste(edges[,1], edges[,4], sep='~')
-      if(gm$verbose) cat("Preparing targets\n")
-      target.table <- paste(edges[,2], edges[,5], sep='~')
-      if(gm$verbose) cat("Preparing vertices\n")
-      vertices.table <- unique(c(source.table, target.table))
-      if(gm$verbose) cat("Adding vertices with attributes\n")
-      g <- add.vertices(g, nv=length(vertices.table), attr=list(name=vertices.table, aberration=matrix(unlist(strsplit(vertices.table, '~')), nrow=2)[2,], HUGO=matrix(unlist(strsplit(vertices.table, '~')), nrow=2)[1,]))
-
-      # Edges
-      if(gm$verbose) cat("Adding edges\n")
-      #(3) Then add all the edges identifying the nodes based on their attributes.
-      g <- g + edges(c(t(cbind(source.table, target.table))))
-      if(gm$verbose) cat("Adding edges' weight\n")
-      E(g)$weight <- as.numeric(edges[,3])
-
-      #(4) Finally apply 'simplify' to remove multiple edges and sum their weights.
-      if(gm$verbose) cat("Simplifying\n")
-      g <- simplify(g, remove.multiple=TRUE, remove.loops=FALSE, edge.attr.comb=list(weight="sum", "ignore"))
-
-
-      if(gm$verbose) cat('\nMaximum edge weight: ', max(E(g)$weight), '\n')
-      if(gm$verbose) cat('Maximum vertex degree: ', max(degree(g, V(g))), '\n')
-
-      # Terminate
-      if(gm$verbose) cat('Graphs merged\n')
-
-      return(g)
-    },
-
-    # Manage building
-    build = function(abe.list, genes.label=gm$genes.label, clonality.label="clonality.status", clonal.val=gm$clonal.val, subclonal.val=gm$subclonal.val, sample.list=gm$sample.list) {
-      # Splits multi-sample data
+    buildFinalSSMA = function(abe.list, genes.label=gm$genes.label, clonality.label="clonality.status", clonal.val=gm$clonal.val, subclonal.val=gm$subclonal.val, sample.list=gm$sample.list) {
+      # Build SSMAs for final MSMA
       #
       # Args:
       #   abe.list: list of aberration types
@@ -212,7 +147,6 @@ GraphManager <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
       # Returns:
       #   None
 
-      if(gm$verbose) cat('# Preparing SSMAs.\n')
       # Declare parallelism
       par <- makeCluster(clusters)
       registerDoParallel(par)
@@ -243,8 +177,6 @@ GraphManager <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
 
             # Add to graph
             g <- add.vertices(g, length(genes), attr=list(name=as.character(genes), clonality.status=as.character(clonality), abe.type=aberration))
-            g.clonal <- add.vertices(g.clonal, length(genes[which(clonality %in% clonal.val)]), attr=list(name=as.character(genes[which(clonality %in% clonal.val)]), abe.type=aberration[which(clonality %in% clonal.val)]))
-            g.subclonal <- add.vertices(g.subclonal, length(genes[which(clonality %in% subclonal.val)]), attr=list(name=as.character(genes[which(clonality %in% subclonal.val)]), abe.type=aberration[which(clonality %in% subclonal.val)]))
           }
 
           # Remove vertices that are neither clonal nor subclonal
@@ -253,6 +185,68 @@ GraphManager <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
           # Prepare edges list
           g <- g + edges(c(t(expand.grid(c(V(g)[clonality.status %in% clonal.val]), c(V(g)[clonality.status %in% subclonal.val])))))
           E(g)$weight <- 1
+
+          # If needed, create output directory
+          data.dir <- paste0('./sample-graphs/')
+          if (!file.exists(data.dir)) {
+            dir.create(file.path(data.dir))
+          }
+
+          # Output graph
+          write.graph(g, file.path(data.dir, paste0('gra_', sample.id, '.graphml')), format='graphml')
+        }
+      }
+      stopCluster(par)
+    },
+
+    buildClonalSSMA = function(abe.list, genes.label=gm$genes.label, clonality.label="clonality.status", clonal.val=gm$clonal.val, subclonal.val=gm$subclonal.val, sample.list=gm$sample.list, v.list=list()) {
+      # Build SSMAs for clonal MSMAs
+      #
+      # Args:
+      #   abe.list: list of aberration types
+      #   genes.label: label of the gene's id column.
+      #   clonality.label: label of the clonality status column.
+      #   clonal.val: value of clonality for clonal genes.
+      #   subclonal.val: value of clonality for subclonal genes.
+      #   sample.list: list of samples to analyze
+      #
+      # Returns:
+      #   None
+
+      print(v.list)
+      # Declare parallelism
+      par <- makeCluster(clusters)
+      registerDoParallel(par)
+      # Execute buildSSMA for each sample
+      foreach(sample.id=sample.list) %dopar% {
+        library('igraph')
+        
+        # Read data
+        data <- list()
+        for(abe in abe.list) {
+          f.name <- eval(parse(text=paste0('"sample-data-', abe, '/', sample.id, '"')))
+          if(file.exists(f.name)) eval(parse(text=paste0('data$', abe, ' <- read.table(f.name , header=TRUE, sep=" ")')))
+        }
+
+        if(length(data) != 0) {
+          # Make empty graph
+          g.clonal <- graph.empty(directed=TRUE)
+          g.subclonal <- graph.empty(directed=TRUE)
+
+          # Get clonals
+          for(abe in abe.list) {
+
+            genes <- eval(parse(text=paste0('data$', abe, '$', genes.label)))
+            clonality <- eval(parse(text=paste0('data$', abe, '$', clonality.label)))
+            aberration <- seq(length(genes))
+            aberration[] <- tolower(abe)
+
+            # Add to graph
+            g.clonal <- add.vertices(g.clonal, length(genes[which(clonality %in% clonal.val)]), attr=list(name=as.character(genes[which(clonality %in% clonal.val)]), abe.type=aberration[which(clonality %in% clonal.val)]))
+            g.subclonal <- add.vertices(g.subclonal, length(genes[which(clonality %in% subclonal.val)]), attr=list(name=as.character(genes[which(clonality %in% subclonal.val)]), abe.type=aberration[which(clonality %in% subclonal.val)]))
+          }
+
+          # Prepare edges list
           g.clonal <- g.clonal + edges(c(t(expand.grid(c(V(g.clonal)), c(V(g.clonal))))))
           E(g.clonal)$weight <- 1
           g.subclonal <- g.subclonal + edges(c(t(expand.grid(c(V(g.subclonal)), c(V(g.subclonal))))))
@@ -265,16 +259,113 @@ GraphManager <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
           }
 
           # Output graph
-          write.graph(g, file.path(data.dir, paste0('gra_', sample.id, '.graphml')), format='graphml')
           write.graph(g.clonal, file.path(data.dir, paste0('gra_clonal_', sample.id, '.graphml')), format='graphml')
           write.graph(g.subclonal, file.path(data.dir, paste0('gra_subclonal_', sample.id, '.graphml')), format='graphml')
         }
       }
       stopCluster(par)
+    },
+
+    # Build MSMA
+    buildMSMA = function(graph.list, directed=TRUE) {
+      # Merges SSMAs into a single MSMA summing the edge's weight
+      #
+      # Args:
+      #   graph.list:
+      #
+      # Return:
+      #
+
+      # Declare parallelism
+      cores <- makeCluster(gm$clusters)
+      registerDoParallel(cores)
+      # Get edges
+      edges <- foreach(i=1:length(graph.list), .combine=rbind) %dopar% {
+        library('igraph')
+
+        file.name <- graph.list[i]
+        if(file.exists(file.path('./sample-graphs/', file.name))) {
+          g <- read.graph(file.path('./sample-graphs/', file.name), format='graphml')
+          edgelist <- get.edgelist(g)
+          if(length(edgelist) != 0) {
+            edgelist.n <- get.edgelist(g, name=FALSE)
+            cbind(edgelist, E(g)$weight, V(g)[edgelist.n[,1]]$abe.type, V(g)[edgelist.n[,2]]$abe.type)
+          }
+        }
+      }
+      stopCluster(cores)
+
+      if(length(edges) != 0) {
+
+        # Build new graph
+        if(gm$verbose) cat("Building empty graph\n")
+        g <- graph.empty(directed=directed)
+
+        # Vertices
+        #(2) Then scroll the table (tricky) to get each node and its attributes and add them to the MSMA.
+        if(gm$verbose) cat("Preparing sources\n")
+        source.table <- paste(edges[,1], edges[,4], sep='~')
+        if(gm$verbose) cat("Preparing targets\n")
+        target.table <- paste(edges[,2], edges[,5], sep='~')
+        if(gm$verbose) cat("Preparing vertices\n")
+        vertices.table <- unique(c(source.table, target.table))
+        if(gm$verbose) cat("Adding vertices with attributes\n")
+        g <- add.vertices(g, nv=length(vertices.table), attr=list(name=vertices.table, aberration=matrix(unlist(strsplit(vertices.table, '~')), nrow=2)[2,], HUGO=matrix(unlist(strsplit(vertices.table, '~')), nrow=2)[1,]))
+
+        # Edges
+        if(gm$verbose) cat("Adding edges\n")
+        #(3) Then add all the edges identifying the nodes based on their attributes.
+        g <- g + edges(c(t(cbind(source.table, target.table))))
+        if(gm$verbose) cat("Adding edges' weight\n")
+        E(g)$weight <- as.numeric(edges[,3])
+
+        #(4) Finally apply 'simplify' to remove multiple edges and sum their weights.
+        if(gm$verbose) cat("Simplifying\n")
+        g <- simplify(g, remove.multiple=TRUE, remove.loops=FALSE, edge.attr.comb=list(weight="sum", "ignore"))
+
+
+        if(gm$verbose) cat('\nMaximum edge weight: ', max(E(g)$weight), '\n')
+        if(gm$verbose) cat('Maximum vertex degree: ', max(degree(g, V(g))), '\n')
+
+        # Terminate
+        if(gm$verbose) cat('Graphs merged\n')
+
+        return(g)
+
+      } else {
+
+        return(graph.empty())
+
+      }
+    },
+
+    # Manage building
+    build = function(abe.list, genes.label=gm$genes.label, clonality.label="clonality.status", clonal.val=gm$clonal.val, subclonal.val=gm$subclonal.val, sample.list=gm$sample.list) {
+      # Builds graphs after data read/split
+      #
+      # Args:
+      #   abe.list: list of aberration types
+      #   genes.label: label of the gene's id column.
+      #   clonality.label: label of the clonality status column.
+      #   clonal.val: value of clonality for clonal genes.
+      #   subclonal.val: value of clonality for subclonal genes.
+      #   sample.list: list of samples to analyze
+      #
+      # Returns:
+      #   None
+
+      if(gm$verbose) cat('# Preparing SSMAs.\n')
+      gm$buildFinalSSMA(abe.list, genes.label=genes.label, clonality.label=clonality.label, clonal.val=clonal.val, subclonal.val=subclonal.val, sample.list=sample.list)
       if(gm$verbose) cat('SSMAs prepared.\n')
 
       if(gm$verbose) cat("\n# Merging SSMAs into MSMA\n")
       g.total <- gm$buildMSMA(paste0('gra_', sample.list, '.graphml'))
+
+      if(gm$verbose) cat('# Preparing Clonality SSMAs.\n')
+      print(V(g.total)$name)
+      gm$buildClonalSSMA(abe.list, genes.label=genes.label, clonality.label=clonality.label, clonal.val=clonal.val, subclonal.val=subclonal.val, sample.list=sample.list, v.list=V(g.total)$name)
+      if(gm$verbose) cat('SSMAs prepared.\n')
+
       if(gm$verbose) cat("\n# Merging SSMAs into MSMA · Clonal co-occurrency\n")
       g.clonal <- gm$buildMSMA(paste0('gra_clonal_', sample.list, '.graphml'))
       if(gm$verbose) cat("\n# Merging SSMAs into MSMA · Subclonal co-occurrency\n")
@@ -286,19 +377,23 @@ GraphManager <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
       e.in.clo <- (el.tot[,1] %in% V(g.clonal)$name & el.tot[,2] %in% V(g.clonal)$name)
       e.in.sub <- (el.tot[,1] %in% V(g.subclonal)$name & el.tot[,2] %in% V(g.subclonal)$name)
       # Retrieve correct clonal co-occurrency data
-      if(gm$verbose) cat(" · Retrieving clonal co-occurrency data\n")
-      clonal.cooc <- seq(length(E(g.total)))
-      clonal.cooc[] <- 0
-      clonal.cooc.ids <- get.edge.ids(g.clonal, t(get.edgelist(g.total)[which(e.in.clo),]), error=FALSE)
-      clonal.cooc[which(e.in.clo)[which(clonal.cooc.ids != 0)]] <- E(g.clonal)[clonal.cooc.ids]$weight
-      E(g.total)$clonal.cooc <- clonal.cooc
+      if(length(V(g.clonal)) != 0) {
+        if(gm$verbose) cat(" · Retrieving clonal co-occurrency data\n")
+        clonal.cooc <- seq(length(E(g.total)))
+        clonal.cooc[] <- 0
+        clonal.cooc.ids <- get.edge.ids(g.clonal, t(get.edgelist(g.total)[which(e.in.clo),]), error=FALSE)
+        clonal.cooc[which(e.in.clo)[which(clonal.cooc.ids != 0)]] <- E(g.clonal)[clonal.cooc.ids]$weight
+        E(g.total)$clonal.cooc <- clonal.cooc
+      }
       # Retrieve correct subclonal co-occurrency data
-      if(gm$verbose) cat(" · Retrieving subclonal co-occurrency data\n")
-      subclonal.cooc <- seq(length(E(g.total)))
-      subclonal.cooc[] <- 0
-      subclonal.cooc.ids <- get.edge.ids(g.subclonal, t(get.edgelist(g.total)[which(e.in.sub),]), error=FALSE)
-      subclonal.cooc[which(e.in.sub)[which(subclonal.cooc.ids != 0)]] <- E(g.subclonal)[subclonal.cooc.ids]$weight
-      E(g.total)$subclonal.cooc <- subclonal.cooc
+      if(length(V(g.subclonal)) != 0) {
+        if(gm$verbose) cat(" · Retrieving subclonal co-occurrency data\n")
+        subclonal.cooc <- seq(length(E(g.total)))
+        subclonal.cooc[] <- 0
+        subclonal.cooc.ids <- get.edge.ids(g.subclonal, t(get.edgelist(g.total)[which(e.in.sub),]), error=FALSE)
+        subclonal.cooc[which(e.in.sub)[which(subclonal.cooc.ids != 0)]] <- E(g.subclonal)[subclonal.cooc.ids]$weight
+        E(g.total)$subclonal.cooc <- subclonal.cooc
+      }
 
       if(gm$verbose) cat("\nWriting graph\n")
       write.graph(g.total, file.path('.', 'total_graph.graphml'), format='graphml')

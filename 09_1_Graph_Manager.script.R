@@ -1,5 +1,5 @@
 #!/usr/bin/env Rscript
-source('./08_Graph_Manager.class.R')
+source('./09_Graph_Manager.class.R')
 
 #-----------------#
 # Read parameters #
@@ -57,7 +57,7 @@ for(arg in args) if(grepl('^-p=[a-zA-Z0-9()./_~-]*$', arg)) {
   }
 }
 
-cat('\nExecuting script (v08) with', clusters, 'clusters.\n')
+cat('\nExecuting script (v09) with', clusters, 'clusters.\n')
 if(verbose) {
   cat('Verbosity at maximum.\n')
 } else {
