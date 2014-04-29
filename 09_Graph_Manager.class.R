@@ -108,7 +108,6 @@ GraphManager <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
       # Split original data table for each sample in data.frames
       # and save them in temporary directory
       foreach(i=1:length(sample.list)) %dopar% {
-
         # On which sample are we working?
         sample.id <- sample.list[i]
         # Get row_ids from original data table for the working_sample
@@ -225,7 +224,11 @@ GraphManager <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
         data <- list()
         for(abe in abe.list) {
           f.name <- eval(parse(text=paste0('"sample-data-', abe, '/', sample.id, '"')))
-          if(file.exists(f.name)) eval(parse(text=paste0('data$', abe, ' <- read.table(f.name , header=TRUE, sep=" ")')))
+          if(file.exists(f.name)) {
+            temp.data <- read.table(f.name)
+            temp.data <- temp.data[which(paste(as.character(eval(parse(text=paste0('temp.data$', genes.label)))), tolower(abe), sep='~') %in% v.list),]
+            eval(parse(text=paste0('data$', abe, ' <- temp.data')))
+          }
         }
 
         if(length(data) != 0) {
@@ -259,8 +262,8 @@ GraphManager <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
           }
 
           # Output graph
-          write.graph(g.clonal, file.path(data.dir, paste0('gra_clonal_', sample.id, '.graphml')), format='graphml')
-          write.graph(g.subclonal, file.path(data.dir, paste0('gra_subclonal_', sample.id, '.graphml')), format='graphml')
+          if(length(V(g.clonal)) != 0) write.graph(g.clonal, file.path(data.dir, paste0('gra_clonal_', sample.id, '.graphml')), format='graphml')
+          if(length(V(g.subclonal)) != 0) write.graph(g.subclonal, file.path(data.dir, paste0('gra_subclonal_', sample.id, '.graphml')), format='graphml')
         }
       }
       stopCluster(par)
@@ -361,8 +364,7 @@ GraphManager <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
       if(gm$verbose) cat("\n# Merging SSMAs into MSMA\n")
       g.total <- gm$buildMSMA(paste0('gra_', sample.list, '.graphml'))
 
-      if(gm$verbose) cat('# Preparing Clonality SSMAs.\n')
-      print(V(g.total)$name)
+      if(gm$verbose) cat('\n# Preparing Clonality SSMAs.\n')
       gm$buildClonalSSMA(abe.list, genes.label=genes.label, clonality.label=clonality.label, clonal.val=clonal.val, subclonal.val=subclonal.val, sample.list=sample.list, v.list=V(g.total)$name)
       if(gm$verbose) cat('SSMAs prepared.\n')
 
