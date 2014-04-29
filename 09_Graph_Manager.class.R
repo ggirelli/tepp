@@ -212,7 +212,6 @@ GraphManager <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
       # Returns:
       #   None
 
-      print(v.list)
       # Declare parallelism
       par <- makeCluster(clusters)
       registerDoParallel(par)
