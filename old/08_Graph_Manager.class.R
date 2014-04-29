@@ -275,9 +275,9 @@ GraphManager <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
 
       if(gm$verbose) cat("\n# Merging SSMAs into MSMA\n")
       g.total <- gm$buildMSMA(paste0('gra_', sample.list, '.graphml'))
-      if(gm$verbose) cat("\n# Merging SSMAs into MSMA · Clonal co-occurrency\n")
+      if(gm$verbose) cat("\n# Merging SSMAs into MSMA Â· Clonal co-occurrency\n")
       g.clonal <- gm$buildMSMA(paste0('gra_clonal_', sample.list, '.graphml'))
-      if(gm$verbose) cat("\n# Merging SSMAs into MSMA · Subclonal co-occurrency\n")
+      if(gm$verbose) cat("\n# Merging SSMAs into MSMA Â· Subclonal co-occurrency\n")
       g.subclonal <- gm$buildMSMA(paste0('gra_subclonal_', sample.list, '.graphml'))
 
       if(gm$verbose) cat("\n# Retrieving co-occurrency data\n")
@@ -286,14 +286,14 @@ GraphManager <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
       e.in.clo <- (el.tot[,1] %in% V(g.clonal)$name & el.tot[,2] %in% V(g.clonal)$name)
       e.in.sub <- (el.tot[,1] %in% V(g.subclonal)$name & el.tot[,2] %in% V(g.subclonal)$name)
       # Retrieve correct clonal co-occurrency data
-      if(gm$verbose) cat(" · Retrieving clonal co-occurrency data\n")
+      if(gm$verbose) cat(" Â· Retrieving clonal co-occurrency data\n")
       clonal.cooc <- seq(length(E(g.total)))
       clonal.cooc[] <- 0
       clonal.cooc.ids <- get.edge.ids(g.clonal, t(get.edgelist(g.total)[which(e.in.clo),]), error=FALSE)
       clonal.cooc[which(e.in.clo)[which(clonal.cooc.ids != 0)]] <- E(g.clonal)[clonal.cooc.ids]$weight
       E(g.total)$clonal.cooc <- clonal.cooc
       # Retrieve correct subclonal co-occurrency data
-      if(gm$verbose) cat(" · Retrieving subclonal co-occurrency data\n")
+      if(gm$verbose) cat(" Â· Retrieving subclonal co-occurrency data\n")
       subclonal.cooc <- seq(length(E(g.total)))
       subclonal.cooc[] <- 0
       subclonal.cooc.ids <- get.edge.ids(g.subclonal, t(get.edgelist(g.total)[which(e.in.sub),]), error=FALSE)
