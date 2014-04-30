@@ -1,10 +1,15 @@
 # Class to build and manage graphs
-GraphManager <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white.list=list(), black.list=list(), clonal.val=c('clonal'), subclonal.val=c('subclonal'), clean=FALSE) {
+GraphManager <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white.list=list(), black.list=list(), clonal.val=c('clonal'), subclonal.val=c('subclonal'), attr.table='', clean=FALSE) {
   library('igraph')
   library('doParallel')
   
   # Define GraphBuilder attributes
   gm <- list(
+    
+    #------------------#
+    # INPUT PARAMETERS #
+    #------------------#
+
     # Number of cluster for parallel computing
     clusters = clusters,
     
@@ -27,7 +32,14 @@ GraphManager <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
 
     # Sample list
     sammple.list = list(),
+
+    # Vertex attribute table
+    attr.table = attr.table,
     
+    #-----------#
+    # FUNCTIONS #
+    #-----------#
+
     # Reads data
     readData = function(file.path, header=TRUE, sep='\t', row.names=NULL, sample.column=NULL, genes.label=gm$genes.label, white.list=gm$white.list, black.list=gm$black.list, abe.type='dummy', temp.sample.list=list(), clean=gm$clean) {
       #
@@ -198,8 +210,8 @@ GraphManager <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
       stopCluster(par)
     },
 
-    buildClonalSSMA = function(abe.list, genes.label=gm$genes.label, clonality.label="clonality.status", clonal.val=gm$clonal.val, subclonal.val=gm$subclonal.val, sample.list=gm$sample.list, v.list=list()) {
-      # Build SSMAs for clonal MSMAs
+    buildClonalSSMA = function(abe.list, genes.label=gm$genes.label, clonality.label="clonality.status", clonal.val=gm$clonal.val, subclonal.val=gm$subclonal.val, sample.list=gm$sample.list, e.list=list()) {
+      # Build SSMAs for clonality co-occurrency MSMAs
       #
       # Args:
       #   abe.list: list of aberration types
@@ -224,9 +236,7 @@ GraphManager <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
         for(abe in abe.list) {
           f.name <- eval(parse(text=paste0('"sample-data-', abe, '/', sample.id, '"')))
           if(file.exists(f.name)) {
-            temp.data <- read.table(f.name)
-            temp.data <- temp.data[which(paste(as.character(eval(parse(text=paste0('temp.data$', genes.label)))), tolower(abe), sep='~') %in% v.list),]
-            eval(parse(text=paste0('data$', abe, ' <- temp.data')))
+            eval(parse(text=paste0('data$', abe, ' <- read.table(f.name)')))
           }
         }
 
@@ -234,25 +244,47 @@ GraphManager <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
           # Make empty graph
           g.clonal <- graph.empty(directed=TRUE)
           g.subclonal <- graph.empty(directed=TRUE)
+          g.nonclonal <- graph.empty(directed=TRUE)
 
           # Get clonals
           for(abe in abe.list) {
 
             genes <- eval(parse(text=paste0('data$', abe, '$', genes.label)))
-            clonality <- eval(parse(text=paste0('data$', abe, '$', clonality.label)))
+            clonality <- as.character(eval(parse(text=paste0('data$', abe, '$', clonality.label))))
             aberration <- seq(length(genes))
             aberration[] <- tolower(abe)
 
             # Add to graph
             g.clonal <- add.vertices(g.clonal, length(genes[which(clonality %in% clonal.val)]), attr=list(name=as.character(genes[which(clonality %in% clonal.val)]), abe.type=aberration[which(clonality %in% clonal.val)]))
             g.subclonal <- add.vertices(g.subclonal, length(genes[which(clonality %in% subclonal.val)]), attr=list(name=as.character(genes[which(clonality %in% subclonal.val)]), abe.type=aberration[which(clonality %in% subclonal.val)]))
+            g.nonclonal <- add.vertices(g.nonclonal, length(genes), attr=list(name=as.character(genes), abe.type=aberration, clonality=clonality))
           }
 
-          # Prepare edges list
-          g.clonal <- g.clonal + edges(c(t(expand.grid(c(V(g.clonal)), c(V(g.clonal))))))
+          # Prepare edges list for clonals
+          clonal.edges <- expand.grid(V(g.clonal)$name, V(g.clonal)$name)
+          clonal.edges.mixed <- expand.grid(paste0(V(g.clonal)$name, '~', V(g.clonal)$abe.type), paste0(V(g.clonal)$name, '~', V(g.clonal)$abe.type))
+          g.clonal <- g.clonal + edges(c(t(clonal.edges[which(paste(clonal.edges.mixed[,1], clonal.edges.mixed[,2], sep='___') %in% e.list),])))
           E(g.clonal)$weight <- 1
-          g.subclonal <- g.subclonal + edges(c(t(expand.grid(c(V(g.subclonal)), c(V(g.subclonal))))))
+
+          # Prepare edges list for subclonals
+          subclonal.edges <- expand.grid( V(g.subclonal)$name, V(g.subclonal)$name)
+          subclonal.edges.mixed <- expand.grid(paste0(V(g.subclonal)$name, '~', V(g.subclonal)$abe.type), paste0(V(g.subclonal)$name, '~', V(g.subclonal)$abe.type))
+          g.subclonal <- g.subclonal + edges(c(t(subclonal.edges[which(paste(subclonal.edges.mixed[,1], subclonal.edges.mixed[,2], sep='___') %in% e.list),])))
           E(g.subclonal)$weight <- 1
+
+          # Prepare edges list for nonclonals
+          nonclonal.edges <- expand.grid(V(g.nonclonal)[!(clonality %in% append(clonal.val, subclonal.val))]$name, V(g.nonclonal)$name)
+          nonclonal.edges.mixed <- expand.grid(paste0(V(g.nonclonal)[!(clonality %in% append(clonal.val, subclonal.val))]$name, '~', V(g.nonclonal)[!(clonality %in% append(clonal.val, subclonal.val))]$abe.type), paste0(V(g.nonclonal)$name, '~', V(g.nonclonal)$abe.type))
+          g.nonclonal <- g.nonclonal + edges(c(t(nonclonal.edges[which(paste(nonclonal.edges.mixed[,1], nonclonal.edges.mixed[,2], sep='___') %in% e.list),])))
+          nonclonal.edges <- expand.grid(V(g.nonclonal)$name, V(g.nonclonal)[!(clonality %in% append(clonal.val, subclonal.val))]$name)
+          nonclonal.edges.mixed <- expand.grid(paste0(V(g.nonclonal)$name, '~', V(g.nonclonal)$abe.type), paste0(V(g.nonclonal)[!(clonality %in% append(clonal.val, subclonal.val))]$name, '~', V(g.nonclonal)[!(clonality %in% append(clonal.val, subclonal.val))]$abe.type))
+          g.nonclonal <- g.nonclonal + edges(c(t(nonclonal.edges[which(paste(nonclonal.edges.mixed[,1], nonclonal.edges.mixed[,2], sep='___') %in% e.list),])))
+          E(g.nonclonal)$weight <- 1
+
+          # Clean vertices
+          g.clonal <- delete.vertices(g.clonal, which(degree(g.clonal, V(g.clonal)) == 0))
+          g.subclonal <- delete.vertices(g.subclonal, which(degree(g.subclonal, V(g.subclonal)) == 0))
+          g.nonclonal <- delete.vertices(g.nonclonal, which(degree(g.nonclonal, V(g.nonclonal)) == 0))
 
           # If needed, create output directory
           data.dir <- paste0('./sample-graphs/')
@@ -263,6 +295,7 @@ GraphManager <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
           # Output graph
           if(length(V(g.clonal)) != 0) write.graph(g.clonal, file.path(data.dir, paste0('gra_clonal_', sample.id, '.graphml')), format='graphml')
           if(length(V(g.subclonal)) != 0) write.graph(g.subclonal, file.path(data.dir, paste0('gra_subclonal_', sample.id, '.graphml')), format='graphml')
+          if(length(V(g.nonclonal)) != 0) write.graph(g.nonclonal, file.path(data.dir, paste0('gra_nonclonal_', sample.id, '.graphml')), format='graphml')
         }
       }
       stopCluster(par)
@@ -341,8 +374,38 @@ GraphManager <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
       }
     },
 
+    setVAttributes = function(graph, attr.table, key.label="HUGO") {
+      # Adds vertex attributes to a graph object
+      #
+      # Args:
+      #   graph: the graph
+      #   attr.file: the path to the file
+      #   key.label: the column/vertex label used to assign the attributes
+      #
+      # Returns:
+      #   The graph with vertex attributes
+
+      # Get key.attribute values
+      sources <- eval(parse(text=paste0('attr.table$', key.label)))
+      targets <- unique(eval(parse(text=paste0('V(graph)$', key.label))))
+
+      # Iterate through target key.values (HUGO)
+      for(key in targets) {
+        if(key %in% sources) {
+          # Iterate through new attributes to assign
+          for(attr in colnames(attr.table)) {
+            if(attr != key.label) {
+              eval(parse(text=paste0('V(graph)[', key.label, ' == key]$', attr, ' <- attr.table$', attr, '[which(sources == key)]')))
+            }
+          }
+        }
+      }
+
+      return(graph)
+    },
+
     # Manage building
-    build = function(abe.list, genes.label=gm$genes.label, clonality.label="clonality.status", clonal.val=gm$clonal.val, subclonal.val=gm$subclonal.val, sample.list=gm$sample.list) {
+    build = function(abe.list, genes.label=gm$genes.label, clonality.label="clonality.status", clonal.val=gm$clonal.val, subclonal.val=gm$subclonal.val, sample.list=gm$sample.list, attr.table=gm$attr.table) {
       # Builds graphs after data read/split
       #
       # Args:
@@ -364,19 +427,22 @@ GraphManager <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
       g.total <- gm$buildMSMA(paste0('gra_', sample.list, '.graphml'))
 
       if(gm$verbose) cat('\n# Preparing Clonality SSMAs.\n')
-      gm$buildClonalSSMA(abe.list, genes.label=genes.label, clonality.label=clonality.label, clonal.val=clonal.val, subclonal.val=subclonal.val, sample.list=sample.list, v.list=V(g.total)$name)
+      gm$buildClonalSSMA(abe.list, genes.label=genes.label, clonality.label=clonality.label, clonal.val=clonal.val, subclonal.val=subclonal.val, sample.list=sample.list, e.list=paste(get.edgelist(g.total)[,1], get.edgelist(g.total)[,2], sep='___'))
       if(gm$verbose) cat('SSMAs prepared.\n')
 
       if(gm$verbose) cat("\n# Merging SSMAs into MSMA · Clonal co-occurrency\n")
       g.clonal <- gm$buildMSMA(paste0('gra_clonal_', sample.list, '.graphml'))
       if(gm$verbose) cat("\n# Merging SSMAs into MSMA · Subclonal co-occurrency\n")
       g.subclonal <- gm$buildMSMA(paste0('gra_subclonal_', sample.list, '.graphml'))
+      if(gm$verbose) cat("\n# Merging SSMAs into MSMA · Uncertain_clonality co-occurrency\n")
+      g.nonclonal <- gm$buildMSMA(paste0('gra_nonclonal_', sample.list, '.graphml'))
 
       if(gm$verbose) cat("\n# Retrieving co-occurrency data\n")
       # Get which edges can be present in the co-occurrency graphs
       el.tot <- get.edgelist(g.total)
       e.in.clo <- (el.tot[,1] %in% V(g.clonal)$name & el.tot[,2] %in% V(g.clonal)$name)
       e.in.sub <- (el.tot[,1] %in% V(g.subclonal)$name & el.tot[,2] %in% V(g.subclonal)$name)
+      e.in.non <- (el.tot[,1] %in% V(g.nonclonal)$name & el.tot[,2] %in% V(g.nonclonal)$name)
       # Retrieve correct clonal co-occurrency data
       if(length(V(g.clonal)) != 0) {
         if(gm$verbose) cat(" · Retrieving clonal co-occurrency data\n")
@@ -395,11 +461,27 @@ GraphManager <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
         subclonal.cooc[which(e.in.sub)[which(subclonal.cooc.ids != 0)]] <- E(g.subclonal)[subclonal.cooc.ids]$weight
         E(g.total)$subclonal.cooc <- subclonal.cooc
       }
+      # Retrieve correct nonclonal co-occurrency data
+      if(length(V(g.nonclonal)) != 0) {
+        if(gm$verbose) cat(" · Retrieving uncertain_clonality co-occurrency data\n")
+        nonclonal.cooc <- seq(length(E(g.total)))
+        nonclonal.cooc[] <- 0
+        nonclonal.cooc.ids <- get.edge.ids(g.nonclonal, t(get.edgelist(g.total)[which(e.in.non),]), error=FALSE)
+        nonclonal.cooc[which(e.in.non)[which(nonclonal.cooc.ids != 0)]] <- E(g.nonclonal)[nonclonal.cooc.ids]$weight
+        E(g.total)$nonclonal.cooc <- nonclonal.cooc
+      }
+
+      # Retrieve and assign new vertex attributes
+      if(length(attr.table) != 0 && attr.table != '') {
+        if(gm$verbose) cat("\nAssigning new vertex attributes based on HUGO\n")
+        g.total <- gm$setVAttributes(g.total, attr.table)
+      }
 
       if(gm$verbose) cat("\nWriting graph\n")
       write.graph(g.total, file.path('.', 'total_graph.graphml'), format='graphml')
-      write.graph(g.clonal, file.path('.', 'clonal_graph.graphml'), format='graphml')
-      write.graph(g.subclonal, file.path('.', 'subclonal_graph.graphml'), format='graphml')
+      #write.graph(g.clonal, file.path('.', 'clonal_graph.graphml'), format='graphml')
+      #write.graph(g.subclonal, file.path('.', 'subclonal_graph.graphml'), format='graphml')
+      write.graph(g.nonclonal, file.path('.', 'nonclonal_graph.graphml'), format='graphml')
 
       if(gm$verbose) cat("\nFIN\n\n")
     }

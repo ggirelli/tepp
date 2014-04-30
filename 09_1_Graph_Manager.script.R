@@ -54,6 +54,9 @@ for(arg in args) if(grepl('^-p=[a-zA-Z0-9()./_~-]*$', arg)) {
     if(length(clonal.val) == 0) clonal.val <- c('clonal')
     subclonal.val <- strsplit(toString(ff[which(ff[, 1] == 'subclonal.val'), 2]), ',')[[1]]
     if(length(subclonal.val) == 0) subclonal.val <- c('subclonal')
+
+    attr.table <- toString(ff[which(ff[, 1] == 'attr.table'), 2])
+    if(attr.table != '') attr.table <- read.table(attr.table, header=TRUE, sep='\t')
   }
 }
 
@@ -78,13 +81,13 @@ cat('\n')
 
 if(length(white.list) != 0 && white.list != '') {
   cat('White list from: ', toString(ff[which(ff[, 1] == 'white.list'), 2]), '\n')
-  print(white.list)
+  print(as.character(white.list))
 } else {
   cat('No white list specified\n')
 }
 if(length(black.list) != 0 && black.list != '') {
   cat('\nBlack list from: ', toString(ff[which(ff[, 1] == 'black.list'), 2]), '\n')
-  print(black.list)
+  print(as.character(black.list))
 } else {
   cat('\nNo black list specified\n')
 }
@@ -96,6 +99,12 @@ cat('Subclonal ids:\n')
 print(subclonal.val)
 cat('\n')
 
+if(length(attr.table) != 0 && attr.table != '') {
+  cat('Vertex attributes added to the final graph:\n')
+  print(colnames(attr.table))
+  cat('\n')
+}
+
 #---------#
 # Execute #
 #---------#
@@ -103,7 +112,7 @@ cat('\n')
 system.time({
 
   # Declare GraphManager instance
-  gm <- GraphManager(clusters=clusters, verbose=verbose, genes.label=genes.label, white.list=white.list, black.list=black.list, clonal.val=clonal.val, subclonal.val=subclonal.val, clean=clean)
+  gm <- GraphManager(clusters=clusters, verbose=verbose, genes.label=genes.label, white.list=white.list, black.list=black.list, clonal.val=clonal.val, subclonal.val=subclonal.val, attr.table=attr.table, clean=clean)
   cat('\n')
 
   #-------------------#
