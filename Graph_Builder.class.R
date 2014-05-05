@@ -1,10 +1,10 @@
 # Class to build and manage graphs
-GraphManager <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white.list=list(), black.list=list(), clonal.val=c('clonal'), subclonal.val=c('subclonal'), attr.table='', clean=FALSE) {
+GraphBuilder <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white.list=list(), black.list=list(), clonal.val=c('clonal'), subclonal.val=c('subclonal'), attr.table='', clean=FALSE) {
   library('igraph')
   library('doParallel')
   
   # Define GraphBuilder attributes
-  gm <- list(
+  gb <- list(
     
     #------------------#
     # INPUT PARAMETERS #
@@ -41,27 +41,27 @@ GraphManager <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
     #-----------#
 
     # Reads data
-    readData = function(file.path, header=TRUE, sep='\t', row.names=NULL, sample.column=NULL, genes.label=gm$genes.label, white.list=gm$white.list, black.list=gm$black.list, abe.type='dummy', temp.sample.list=list(), clean=gm$clean) {
+    readData = function(file.path, header=TRUE, sep='\t', row.names=NULL, sample.column=NULL, genes.label=gb$genes.label, white.list=gb$white.list, black.list=gb$black.list, abe.type='dummy', temp.sample.list=list(), clean=gb$clean) {
       #
       # Args:
       #   file.path: the name of the file which the data are to be
-      #		read from or a a readable text-mode connection.
-      #	header: a logical value indicating whether the file contains
-      #		the names of the variables as its first line.
-      #	sep: the field separator character.
-      #	row.names: a vector of row names.
-      #	sample.column: if file is multi-sample, specify sample
-      #		column header.
+      #   read from or a a readable text-mode connection.
+      # header: a logical value indicating whether the file contains
+      #   the names of the variables as its first line.
+      # sep: the field separator character.
+      # row.names: a vector of row names.
+      # sample.column: if file is multi-sample, specify sample
+      #   column header.
       #
       # Returns:
       #   Modified GraphBuilder instance
       
       # Read data
-      if(gm$verbose) cat('Reading', abe.type, 'data\n')
+      if(gb$verbose) cat('Reading', abe.type, 'data\n')
       data <- read.table(file.path, header=header, sep=sep, row.names=row.names)
 
       # Save raw data into GraphBuilder instance
-      gm$data <- data
+      gb$data <- data
       
       # Check for multi-sampling
       if( is.null(sample.column)) {
@@ -82,30 +82,30 @@ GraphManager <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
         }
 
         # If single-sample file
-        return(gm)
+        return(gb)
 
       } else {
 
         # If multi-sample file
-        gmnew <- gm$splitData(data, sample.column, genes.label=genes.label, white.list=white.list, black.list=black.list, abe.type=abe.type, temp.sample.list=temp.sample.list, clean=clean)
-        return(gmnew)
+        gbnew <- gb$splitData(data, sample.column, genes.label=genes.label, white.list=white.list, black.list=black.list, abe.type=abe.type, temp.sample.list=temp.sample.list, clean=clean)
+        return(gbnew)
 
       }
     },
     
     # Splits data
-    splitData = function(data, sample.column, clusters=gm$clusters, genes.label=gm$genes.label, white.list=gm$white.list, black.list=gm$black.list, abe.type='dummy', temp.sample.list=list(), clean=gm$clean) {
+    splitData = function(data, sample.column, clusters=gb$clusters, genes.label=gb$genes.label, white.list=gb$white.list, black.list=gb$black.list, abe.type='dummy', temp.sample.list=list(), clean=gb$clean) {
       # Splits multi-sample data
       #
       # Args:
       #   data: the multi-sample data to split.
-      #	sample-column: the name of the sample-id column.
-      #	clusters: the number .
+      # sample-column: the name of the sample-id column.
+      # clusters: the number .
       #
       # Returns:
-      #	Modified GraphBuilder instance
+      # Modified GraphBuilder instance
       
-      if(gm$verbose) cat('Splitting', abe.type, 'data\n')
+      if(gb$verbose) cat('Splitting', abe.type, 'data\n')
       # Prepare sample list without duplicates
       sample.list <- unique(data[,sample.column])
       # If needed, create output directory
@@ -135,16 +135,16 @@ GraphManager <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
       stopCluster(par)
 
       # Terminate
-      if(gm$verbose) cat('Splitted', abe.type, 'data\n')
-      gm$split <- TRUE
-      gm$isMultiSample <- TRUE
-      gm$sample.column <- sample.column
-      gm$data <- data
-      gm$sample.list <- unique(c(as.character(temp.sample.list), as.character(sample.list)))
-      return(gm)
+      if(gb$verbose) cat('Splitted', abe.type, 'data\n')
+      gb$split <- TRUE
+      gb$isMultiSample <- TRUE
+      gb$sample.column <- sample.column
+      gb$data <- data
+      gb$sample.list <- unique(c(as.character(temp.sample.list), as.character(sample.list)))
+      return(gb)
     },
 
-    buildFinalSSMA = function(abe.list, genes.label=gm$genes.label, clonality.label="clonality.status", clonal.val=gm$clonal.val, subclonal.val=gm$subclonal.val, sample.list=gm$sample.list) {
+    buildFinalSSMA = function(abe.list, genes.label=gb$genes.label, clonality.label="clonality.status", clonal.val=gb$clonal.val, subclonal.val=gb$subclonal.val, sample.list=gb$sample.list) {
       # Build SSMAs for final MSMA
       #
       # Args:
@@ -210,7 +210,7 @@ GraphManager <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
       stopCluster(par)
     },
 
-    buildClonalSSMA = function(abe.list, genes.label=gm$genes.label, clonality.label="clonality.status", clonal.val=gm$clonal.val, subclonal.val=gm$subclonal.val, sample.list=gm$sample.list, v.list=list()) {
+    buildClonalSSMA = function(abe.list, genes.label=gb$genes.label, clonality.label="clonality.status", clonal.val=gb$clonal.val, subclonal.val=gb$subclonal.val, sample.list=gb$sample.list, v.list=list()) {
       # Build SSMAs for clonality co-occurrency MSMAs
       #
       # Args:
@@ -301,7 +301,7 @@ GraphManager <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
       #
 
       # Declare parallelism
-      cores <- makeCluster(gm$clusters)
+      cores <- makeCluster(gb$clusters)
       registerDoParallel(cores)
       # Get edges
       edges <- foreach(i=1:length(graph.list), .combine=rbind) %dopar% {
@@ -322,37 +322,37 @@ GraphManager <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
       if(length(edges) != 0) {
 
         # Build new graph
-        if(gm$verbose) cat("Building empty graph\n")
+        if(gb$verbose) cat("Building empty graph\n")
         g <- graph.empty(directed=directed)
 
         # Vertices
         #(2) Then scroll the table (tricky) to get each node and its attributes and add them to the MSMA.
-        if(gm$verbose) cat("Preparing sources\n")
+        if(gb$verbose) cat("Preparing sources\n")
         source.table <- paste(edges[,1], edges[,4], sep='~')
-        if(gm$verbose) cat("Preparing targets\n")
+        if(gb$verbose) cat("Preparing targets\n")
         target.table <- paste(edges[,2], edges[,5], sep='~')
-        if(gm$verbose) cat("Preparing vertices\n")
+        if(gb$verbose) cat("Preparing vertices\n")
         vertices.table <- unique(c(source.table, target.table))
-        if(gm$verbose) cat("Adding vertices with attributes\n")
+        if(gb$verbose) cat("Adding vertices with attributes\n")
         g <- add.vertices(g, nv=length(vertices.table), attr=list(name=vertices.table, aberration=matrix(unlist(strsplit(vertices.table, '~')), nrow=2)[2,], HUGO=matrix(unlist(strsplit(vertices.table, '~')), nrow=2)[1,]))
 
         # Edges
-        if(gm$verbose) cat("Adding edges\n")
+        if(gb$verbose) cat("Adding edges\n")
         #(3) Then add all the edges identifying the nodes based on their attributes.
         g <- g + edges(c(t(cbind(source.table, target.table))))
-        if(gm$verbose) cat("Adding edges' weight\n")
+        if(gb$verbose) cat("Adding edges' weight\n")
         E(g)$weight <- as.numeric(edges[,3])
 
         #(4) Finally apply 'simplify' to remove multiple edges and sum their weights.
-        if(gm$verbose) cat("Simplifying\n")
+        if(gb$verbose) cat("Simplifying\n")
         g <- simplify(g, remove.multiple=TRUE, remove.loops=FALSE, edge.attr.comb=list(weight="sum", "ignore"))
 
 
-        if(gm$verbose) cat('\nMaximum edge weight: ', max(E(g)$weight), '\n')
-        if(gm$verbose) cat('Maximum vertex degree: ', max(degree(g, V(g))), '\n')
+        if(gb$verbose) cat('\nMaximum edge weight: ', max(E(g)$weight), '\n')
+        if(gb$verbose) cat('Maximum vertex degree: ', max(degree(g, V(g))), '\n')
 
         # Terminate
-        if(gm$verbose) cat('Graphs merged\n')
+        if(gb$verbose) cat('Graphs merged\n')
 
         return(g)
 
@@ -394,7 +394,7 @@ GraphManager <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
     },
 
     # Manage building
-    build = function(abe.list, genes.label=gm$genes.label, clonality.label="clonality.status", clonal.val=gm$clonal.val, subclonal.val=gm$subclonal.val, sample.list=gm$sample.list, attr.table=gm$attr.table) {
+    build = function(abe.list, genes.label=gb$genes.label, clonality.label="clonality.status", clonal.val=gb$clonal.val, subclonal.val=gb$subclonal.val, sample.list=gb$sample.list, attr.table=gb$attr.table) {
       # Builds graphs after data read/split
       #
       # Args:
@@ -408,25 +408,25 @@ GraphManager <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
       # Returns:
       #   None
 
-      if(gm$verbose) cat('# Preparing SSMAs.\n')
-      gm$buildFinalSSMA(abe.list, genes.label=genes.label, clonality.label=clonality.label, clonal.val=clonal.val, subclonal.val=subclonal.val, sample.list=sample.list)
-      if(gm$verbose) cat('SSMAs prepared.\n')
+      if(gb$verbose) cat('# Preparing SSMAs.\n')
+      gb$buildFinalSSMA(abe.list, genes.label=genes.label, clonality.label=clonality.label, clonal.val=clonal.val, subclonal.val=subclonal.val, sample.list=sample.list)
+      if(gb$verbose) cat('SSMAs prepared.\n')
 
-      if(gm$verbose) cat("\n# Merging SSMAs into MSMA\n")
-      g.total <- gm$buildMSMA(paste0('gra_', sample.list, '.graphml'))
+      if(gb$verbose) cat("\n# Merging SSMAs into MSMA\n")
+      g.total <- gb$buildMSMA(paste0('gra_', sample.list, '.graphml'))
 
-      if(gm$verbose) cat('\n# Preparing Clonality SSMAs.\n')
-      gm$buildClonalSSMA(abe.list, genes.label=genes.label, clonality.label=clonality.label, clonal.val=clonal.val, subclonal.val=subclonal.val, sample.list=sample.list, v.list=V(g.total)$name)
-      if(gm$verbose) cat('SSMAs prepared.\n')
+      if(gb$verbose) cat('\n# Preparing Clonality SSMAs.\n')
+      gb$buildClonalSSMA(abe.list, genes.label=genes.label, clonality.label=clonality.label, clonal.val=clonal.val, subclonal.val=subclonal.val, sample.list=sample.list, v.list=V(g.total)$name)
+      if(gb$verbose) cat('SSMAs prepared.\n')
 
-      if(gm$verbose) cat("\n# Merging SSMAs into MSMA · Clonal co-occurrency\n")
-      g.clonal <- gm$buildMSMA(paste0('gra_clonal_', sample.list, '.graphml'))
-      if(gm$verbose) cat("\n# Merging SSMAs into MSMA · Subclonal co-occurrency\n")
-      g.subclonal <- gm$buildMSMA(paste0('gra_subclonal_', sample.list, '.graphml'))
-      if(gm$verbose) cat("\n# Merging SSMAs into MSMA · Uncertain_clonality co-occurrency\n")
-      g.nonclonal <- gm$buildMSMA(paste0('gra_nonclonal_', sample.list, '.graphml'))
+      if(gb$verbose) cat("\n# Merging SSMAs into MSMA · Clonal co-occurrency\n")
+      g.clonal <- gb$buildMSMA(paste0('gra_clonal_', sample.list, '.graphml'))
+      if(gb$verbose) cat("\n# Merging SSMAs into MSMA · Subclonal co-occurrency\n")
+      g.subclonal <- gb$buildMSMA(paste0('gra_subclonal_', sample.list, '.graphml'))
+      if(gb$verbose) cat("\n# Merging SSMAs into MSMA · Uncertain_clonality co-occurrency\n")
+      g.nonclonal <- gb$buildMSMA(paste0('gra_nonclonal_', sample.list, '.graphml'))
 
-      if(gm$verbose) cat("\n# Retrieving co-occurrency data\n")
+      if(gb$verbose) cat("\n# Retrieving co-occurrency data\n")
       # Get which edges can be present in the co-occurrency graphs
       el.tot <- get.edgelist(g.total)
       e.in.clo <- (el.tot[,1] %in% V(g.clonal)$name & el.tot[,2] %in% V(g.clonal)$name)
@@ -434,7 +434,7 @@ GraphManager <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
       e.in.non <- (el.tot[,1] %in% V(g.nonclonal)$name & el.tot[,2] %in% V(g.nonclonal)$name)
       # Retrieve correct clonal co-occurrency data
       if(length(V(g.clonal)) != 0) {
-        if(gm$verbose) cat(" · Retrieving clonal co-occurrency data\n")
+        if(gb$verbose) cat(" · Retrieving clonal co-occurrency data\n")
         clonal.cooc <- seq(length(E(g.total)))
         clonal.cooc[] <- 0
         clonal.cooc.ids <- get.edge.ids(g.clonal, t(get.edgelist(g.total)[which(e.in.clo),]), error=FALSE)
@@ -443,7 +443,7 @@ GraphManager <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
       }
       # Retrieve correct subclonal co-occurrency data
       if(length(V(g.subclonal)) != 0) {
-        if(gm$verbose) cat(" · Retrieving subclonal co-occurrency data\n")
+        if(gb$verbose) cat(" · Retrieving subclonal co-occurrency data\n")
         subclonal.cooc <- seq(length(E(g.total)))
         subclonal.cooc[] <- 0
         subclonal.cooc.ids <- get.edge.ids(g.subclonal, t(get.edgelist(g.total)[which(e.in.sub),]), error=FALSE)
@@ -452,7 +452,7 @@ GraphManager <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
       }
       # Retrieve correct nonclonal co-occurrency data
       if(length(V(g.nonclonal)) != 0) {
-        if(gm$verbose) cat(" · Retrieving uncertain_clonality co-occurrency data\n")
+        if(gb$verbose) cat(" · Retrieving uncertain_clonality co-occurrency data\n")
         nonclonal.cooc <- seq(length(E(g.total)))
         nonclonal.cooc[] <- 0
         nonclonal.cooc.ids <- get.edge.ids(g.nonclonal, t(get.edgelist(g.total)[which(e.in.non),]), error=FALSE)
@@ -462,23 +462,23 @@ GraphManager <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
 
       # Retrieve and assign new vertex attributes
       if(length(attr.table) != 0 && attr.table != '') {
-        if(gm$verbose) cat("\nAssigning new vertex attributes based on HUGO\n")
-        g.total <- gm$setVAttributes(g.total, attr.table)
+        if(gb$verbose) cat("\nAssigning new vertex attributes based on HUGO\n")
+        g.total <- gb$setVAttributes(g.total, attr.table)
       }
 
-      if(gm$verbose) cat("\nWriting graph\n")
+      if(gb$verbose) cat("\nWriting graph\n")
       write.graph(g.total, file.path('.', 'total_graph.graphml'), format='graphml')
       #write.graph(g.clonal, file.path('.', 'clonal_graph.graphml'), format='graphml')
       #write.graph(g.subclonal, file.path('.', 'subclonal_graph.graphml'), format='graphml')
       #write.graph(g.nonclonal, file.path('.', 'nonclonal_graph.graphml'), format='graphml')
 
-      if(gm$verbose) cat("\nFIN\n\n")
+      if(gb$verbose) cat("\nFIN\n\n")
     }
   )
   
   # Explicitely define GraphBuilder class
-  class(gm) <- 'GraphManager'
+  class(gb) <- 'GraphManager'
   
   # Return the new GraphBuilder instance
-  return(gm)
+  return(gb)
 }
