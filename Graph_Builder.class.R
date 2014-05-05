@@ -477,7 +477,7 @@ GraphBuilder <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
   )
   
   # Explicitely define GraphBuilder class
-  class(gb) <- 'GraphManager'
+  class(gb) <- 'GraphBuilder'
   
   # Return the new GraphBuilder instance
   return(gb)
