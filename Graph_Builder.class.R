@@ -379,14 +379,10 @@ GraphBuilder <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
       targets <- unique(eval(parse(text=paste0('V(graph)$', key.label))))
 
       # Iterate through target key.values (HUGO)
-      for(key in targets) {
-        if(key %in% sources) {
-          # Iterate through new attributes to assign
-          for(attr in colnames(attr.table)) {
-            if(attr != key.label) {
-              eval(parse(text=paste0('V(graph)[', key.label, ' == key]$', attr, ' <- attr.table$', attr, '[which(sources == key)]')))
-            }
-          }
+      for(key in targets[which(targets %in% sources)]) {
+        # Iterate through new attributes to assign
+        for(attr in colnames(attr.table)[which(colnames(attr.table) != key.label)]) {
+          eval(parse(text=paste0('V(graph)[', key.label, ' == key]$', attr, ' <- attr.table$', attr, '[which(sources == key)]')))
         }
       }
 
