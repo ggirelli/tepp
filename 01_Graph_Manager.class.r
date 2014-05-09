@@ -14,7 +14,7 @@ GraphManager <- function() {
 		# FUNCTIONS #
 		#-----------#
 
-		toDirected = function(g) {
+		toUndirected = function(g) {
 			# Transforms an DIRECTED graph into a UNDIRECTED one
 			# Disregards edges/vertices attributes
 			# 
