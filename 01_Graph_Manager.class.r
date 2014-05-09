@@ -14,6 +14,34 @@ GraphManager <- function() {
 		# FUNCTIONS #
 		#-----------#
 
+		toDirected = function(g) {
+			# Transforms an DIRECTED graph into a UNDIRECTED one
+			# Disregards edges/vertices attributes
+			# 
+			# Args:
+			# 	g: undirected graph
+			# 
+			# Returns:
+			# 	The UNDIRECTED graph
+			
+			# Create undirected empty graph
+			gf <- graph.empty(directed=T)
+
+			# Add vertices
+			gf <- gf + vertices(paste0(V(g)$name, '~IN'))
+			gf <- gf + vertices(paste0(V(g)$name, '~OUT'))
+
+			# Add edges
+			el <- get.edgelist(g)
+			gf <- gf + edges(c(t(cbind(paste0(el[,1], '~OUT'), paste0(el[,2], '~IN')))))
+
+			# Remove 0-degree vertices
+			gf <- delete.vertices(gf, V(gf)[which(degree(gf, V(gf)) == 0)])
+
+			# Return undirected graph
+			return(gf)
+		},
+
 		calcHammingDist = function(g.one, g.two) {
 			# Calculates the Hamming (edit) distance between two UNDIRECTED graphs
 			#
