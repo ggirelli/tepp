@@ -2,8 +2,8 @@ library('igraph')
 
 # Make graph
 g <- graph.empty(directed=F)
-g <- g + vertices(seq(8))
-g <- g + edges(c(1, 2, 1, 5, 1, 8, 2, 7, 2, 8, 3, 6, 3, 7, 4, 5, 4, 6, 7, 8))
+g <- g + vertices(seq(10))
+g <- g + edges(c(1,2,1,3,1,4,1,5,1,6,1,7,2,3,3,4,4,5,5,6,6,7,3,8,7,8,8,9,9,10))
 #tkplot(g)
 
 # Get adjacency matrix and build lap matrix
@@ -16,8 +16,8 @@ freq <- sqrt(abs(eigva))
 
 # Make graph
 g2 <- graph.empty(directed=F)
-g2 <- g2 + vertices(seq(8))
-g2 <- g2 + edges(c(1,2,1,6,1,7,2,5,2,6,4,7,4,8,7,8))
+g2 <- g2 + vertices(seq(10))
+g2 <- g2 + edges(c(1,2,1,3,1,4,1,5,1,6,1,7,2,3,3,4,4,5,5,6,6,7,4,8,5,8,8,9,9,10))
 #tkplot(g2)
 
 # Get adjacency matrix and build lap matrix
@@ -87,5 +87,6 @@ calcHammingDist = function(g.one, g.two) {
 }
 dH <- calcHammingDist(g, g2)
 
-ksi <- 1
-dHIM <- (1/sqrt(1+ksi)) * sqrt(dH**2 + ksi * dIM**2)
+eta <- 1
+
+dHIM <- (1/sqrt(1+eta)) * sqrt(dH**2 + eta * dIM**2)

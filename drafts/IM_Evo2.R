@@ -7,7 +7,7 @@ library('igraph')
 # Make graph
 g <- graph.empty(directed=F)
 g <- g + vertices(seq(10))
-g <- g + edges(c(1,2,1,3,1,4,1,5,1,6,1,7,2,3,3,4,4,5,5,6,6,7,3,8,7,8,8,9,9,10))
+g <- g + edges(c(1,2,1,3,1,4,2,3,2,6,3,4,3,5,5,8,6,7,6,8,7,9,8,10))
 #tkplot(g)
 
 # Get adjacency matrix and build lap matrix
