@@ -14,7 +14,7 @@ GraphManager <- function() {
 		# FUNCTIONS #
 		#-----------#
 
-		toUndirected = function(g) {
+		undirected.noAttr = function(g) {
 			# Transforms an DIRECTED graph into a UNDIRECTED one
 			# Disregards edges/vertices attributes
 			# 
@@ -23,6 +23,8 @@ GraphManager <- function() {
 			# 
 			# Returns:
 			# 	The UNDIRECTED graph
+			
+			if(!is.directed(g)) return(F)
 			
 			# Create undirected empty graph
 			gf <- graph.empty(directed=T)
@@ -34,6 +36,47 @@ GraphManager <- function() {
 			# Add edges
 			el <- get.edgelist(g)
 			gf <- gf + edges(c(t(cbind(paste0(el[,1], '~OUT'), paste0(el[,2], '~IN')))))
+
+			# Remove 0-degree vertices
+			gf <- delete.vertices(gf, V(gf)[which(degree(gf, V(gf)) == 0)])
+
+			# Return undirected graph
+			return(gf)
+		},
+
+		undirected = function(g) {
+			# Transforms an DIRECTED graph into a UNDIRECTED one
+			# Keeps edges/vertices attributes
+			# 
+			# Args:
+			# 	g: undirected graph
+			# 
+			# Returns:
+			# 	The UNDIRECTED graph
+			
+			if(!is.directed(g)) return(F)
+			
+			# Create undirected empty graph
+			gf <- graph.empty(directed=T)
+
+			# Add vertices
+			gf <- gf + vertices(paste0(V(g)$name, '~IN'))
+			gf <- gf + vertices(paste0(V(g)$name, '~OUT'))
+
+			# Add vertices attributes
+			attr.list <- list.vertex.attributes(g)
+			for(attr.name in attr.list[which(attr.list != 'name')]) {
+				eval(parse(text=paste0('V(gf)[1:length(V(g))]$', attr.name, ' <- V(g)$', attr.name)))
+				eval(parse(text=paste0('V(gf)[length(V(g))+1:length(V(gf))]$', attr.name, ' <- V(g)$', attr.name)))
+			}
+
+			# Add edges
+			el <- get.edgelist(g)
+			gf <- gf + edges(c(t(cbind(paste0(el[,1], '~OUT'), paste0(el[,2], '~IN')))))
+
+			# Add edges attributes
+			attr.list <- list.edge.attributes(g)
+			for(attr.name in attr.list[which(attr.list != 'name')]) eval(parse(text=paste0('E(gf)$', attr.name, ' <- E(g)$', attr.name)))
 
 			# Remove 0-degree vertices
 			gf <- delete.vertices(gf, V(gf)[which(degree(gf, V(gf)) == 0)])
