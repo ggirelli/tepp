@@ -74,7 +74,7 @@ GraphBuilder <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
           }
         }
         # Blacklisting
-        if(length(blac.list) != 0) {
+        if(length(black.list) != 0) {
           for(i in seq(length(data[,1]))) {
             id <- eval(parse(text=paste0('data$', genes.label, '[i]')))
             if(id %in% white.list) data <- data[-i]
