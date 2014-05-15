@@ -1,7 +1,9 @@
 # Class to build and manage graphs
-GraphBuilder <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white.list=list(), black.list=list(), clonal.val=c('clonal'), subclonal.val=c('subclonal'), attr.table='', clean=FALSE) {
+GraphBuilder <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white.list=list(), black.list=list(), clonal.val=c('clonal'), subclonal.val=c('subclonal'), attr.table='', clean=FALSE, output.dir='.') {
   library('igraph')
   library('doParallel')
+
+  if(output.dir != '.') if(!file.exists(output.dir)) dir.create(file.path(output.dir))
   
   # Define GraphBuilder attributes
   gb <- list(
@@ -9,6 +11,9 @@ GraphBuilder <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
     #------------------#
     # INPUT PARAMETERS #
     #------------------#
+
+    # output directory
+    output.dir = output.dir,
 
     # Number of cluster for parallel computing
     clusters = clusters,
@@ -94,7 +99,7 @@ GraphBuilder <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
     },
     
     # Splits data
-    splitData = function(data, sample.column, clusters=gb$clusters, genes.label=gb$genes.label, white.list=gb$white.list, black.list=gb$black.list, abe.type='dummy', temp.sample.list=list(), clean=gb$clean) {
+    splitData = function(data, sample.column, clusters=gb$clusters, genes.label=gb$genes.label, white.list=gb$white.list, black.list=gb$black.list, abe.type='dummy', temp.sample.list=list(), clean=gb$clean, output.dir=gb$output.dir) {
       # Splits multi-sample data
       #
       # Args:
@@ -108,8 +113,8 @@ GraphBuilder <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
       if(gb$verbose) cat('Splitting', abe.type, 'data\n')
       # Prepare sample list without duplicates
       sample.list <- unique(data[,sample.column])
-      # If needed, create output directory
-      data.dir <- paste0('./sample-data-', abe.type, '/')
+      # If needed, create $output directory
+      data.dir <- paste0(output.dir, '/sample-data-', abe.type, '/')
       if (!file.exists(data.dir)) {
         dir.create(file.path(data.dir))
       }
@@ -144,7 +149,7 @@ GraphBuilder <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
       return(gb)
     },
 
-    buildFinalSSMA = function(abe.list, genes.label=gb$genes.label, clonality.label="clonality.status", clonal.val=gb$clonal.val, subclonal.val=gb$subclonal.val, sample.list=gb$sample.list) {
+    buildFinalSSMA = function(abe.list, genes.label=gb$genes.label, clonality.label="clonality.status", clonal.val=gb$clonal.val, subclonal.val=gb$subclonal.val, sample.list=gb$sample.list, output.dir=gb$output.dir) {
       # Build SSMAs for final MSMA
       #
       # Args:
@@ -168,7 +173,7 @@ GraphBuilder <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
         # Read data
         data <- list()
         for(abe in abe.list) {
-          f.name <- eval(parse(text=paste0('"sample-data-', abe, '/', sample.id, '"')))
+          f.name <- eval(parse(text=paste0('"', output.dir, '/sample-data-', abe, '/', sample.id, '"')))
           if(file.exists(f.name)) eval(parse(text=paste0('data$', abe, ' <- read.table(f.name , header=TRUE, sep=" ")')))
         }
 
@@ -198,7 +203,7 @@ GraphBuilder <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
           E(g)$weight <- 1
 
           # If needed, create output directory
-          data.dir <- paste0('./sample-graphs/')
+          data.dir <- paste0(output.dir, '/sample-graphs/')
           if (!file.exists(data.dir)) {
             dir.create(file.path(data.dir))
           }
@@ -210,7 +215,7 @@ GraphBuilder <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
       stopCluster(par)
     },
 
-    buildClonalSSMA = function(abe.list, genes.label=gb$genes.label, clonality.label="clonality.status", clonal.val=gb$clonal.val, subclonal.val=gb$subclonal.val, sample.list=gb$sample.list, v.list=list()) {
+    buildClonalSSMA = function(abe.list, genes.label=gb$genes.label, clonality.label="clonality.status", clonal.val=gb$clonal.val, subclonal.val=gb$subclonal.val, sample.list=gb$sample.list, v.list=list(), output.dir=gb$output.dir) {
       # Build SSMAs for clonality co-occurrency MSMAs
       #
       # Args:
@@ -234,7 +239,7 @@ GraphBuilder <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
         # Read data
         data <- list()
         for(abe in abe.list) {
-          f.name <- eval(parse(text=paste0('"sample-data-', abe, '/', sample.id, '"')))
+          f.name <- eval(parse(text=paste0('"', output.dir, '/sample-data-', abe, '/', sample.id, '"')))
           if(file.exists(f.name)) {
             temp.data <- read.table(f.name)
             temp.data <- temp.data[which(paste(as.character(eval(parse(text=paste0('temp.data$', genes.label)))), tolower(abe), sep='~') %in% v.list),]
@@ -275,8 +280,8 @@ GraphBuilder <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
           g.nonclonal <- g.nonclonal + edges(c(t(expand.grid(V(g.nonclonal)$name, V(g.nonclonal)[!(clonality %in% append(clonal.val, subclonal.val))]$name))))
           E(g.nonclonal)$weight <- 1
 
-          # If needed, create output directory
-          data.dir <- paste0('./sample-graphs/')
+          # If needed, create $output directory
+          data.dir <- paste0(output.dir, '/sample-graphs/')
           if (!file.exists(data.dir)) {
             dir.create(file.path(data.dir))
           }
@@ -291,7 +296,7 @@ GraphBuilder <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
     },
 
     # Build MSMA
-    buildMSMA = function(graph.list, directed=TRUE) {
+    buildMSMA = function(graph.list, directed=TRUE, output.dir=gb$output.dir) {
       # Merges SSMAs into a single MSMA summing the edge's weight
       #
       # Args:
@@ -308,8 +313,8 @@ GraphBuilder <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
         library('igraph')
 
         file.name <- graph.list[i]
-        if(file.exists(file.path('./sample-graphs/', file.name))) {
-          g <- read.graph(file.path('./sample-graphs/', file.name), format='graphml')
+        if(file.exists(file.path(output.dir, '/sample-graphs/', file.name))) {
+          g <- read.graph(file.path(output.dir, '/sample-graphs/', file.name), format='graphml')
           edgelist <- get.edgelist(g)
           if(length(edgelist) != 0) {
             edgelist.n <- get.edgelist(g, name=FALSE)
@@ -390,7 +395,7 @@ GraphBuilder <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
     },
 
     # Manage building
-    build = function(abe.list, genes.label=gb$genes.label, clonality.label="clonality.status", clonal.val=gb$clonal.val, subclonal.val=gb$subclonal.val, sample.list=gb$sample.list, attr.table=gb$attr.table) {
+    build = function(abe.list, genes.label=gb$genes.label, clonality.label="clonality.status", clonal.val=gb$clonal.val, subclonal.val=gb$subclonal.val, sample.list=gb$sample.list, attr.table=gb$attr.table, output.dir=gb$output.dir) {
       # Builds graphs after data read/split
       #
       # Args:
@@ -463,10 +468,10 @@ GraphBuilder <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
       }
 
       if(gb$verbose) cat("\nWriting graph\n")
-      write.graph(g.total, file.path('.', 'total_graph.graphml'), format='graphml')
-      #write.graph(g.clonal, file.path('.', 'clonal_graph.graphml'), format='graphml')
-      #write.graph(g.subclonal, file.path('.', 'subclonal_graph.graphml'), format='graphml')
-      #write.graph(g.nonclonal, file.path('.', 'nonclonal_graph.graphml'), format='graphml')
+      write.graph(g.total, file.path(output.dir, 'total_graph.graphml'), format='graphml')
+      #write.graph(g.clonal, file.path(output.dir, 'clonal_graph.graphml'), format='graphml')
+      #write.graph(g.subclonal, file.path(output.dir, 'subclonal_graph.graphml'), format='graphml')
+      #write.graph(g.nonclonal, file.path(output.dir, 'nonclonal_graph.graphml'), format='graphml')
 
       if(gb$verbose) cat("\nFIN\n\n")
     }

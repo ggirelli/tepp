@@ -37,6 +37,8 @@ for(arg in args) if(grepl('^-p=[a-zA-Z0-9()./_~-]*$', arg)) {
     clusters <- as.numeric(as.matrix(ff[which(ff[, 1] == 'clusters'), 2]))
     verbose <- as.logical(ff[which(ff[, 1] == 'verbose'), 2])
 
+    output.dir <- toString(ff[which(ff[, 1] == 'output.dir'), 2])
+
     file.list$PM <- toString(ff[which(ff[, 1] == 'file-PM'), 2])
     file.list$Gain <- toString(ff[which(ff[, 1] == 'file-Gain'), 2])
     file.list$Loss <- toString(ff[which(ff[, 1] == 'file-Loss'), 2])
@@ -66,6 +68,7 @@ if(verbose) {
 } else {
   cat('Verbosity at minimum.\n')
 }
+if(output.dir != '') cat('Output directory: ', output.dir, '\n')
 cat('\n')
 
 cat('PM-data: ', file.list$PM, '\n')
@@ -112,7 +115,7 @@ if(length(attr.table) != 0 && attr.table != '') {
 system.time({
 
   # Declare GraphManager instance
-  gb <- GraphBuilder(clusters=clusters, verbose=verbose, genes.label=genes.label, white.list=white.list, black.list=black.list, clonal.val=clonal.val, subclonal.val=subclonal.val, attr.table=attr.table, clean=clean)
+  gb <- GraphBuilder(clusters=clusters, verbose=verbose, genes.label=genes.label, white.list=white.list, black.list=black.list, clonal.val=clonal.val, subclonal.val=subclonal.val, attr.table=attr.table, clean=clean, output.dir=output.dir)
   cat('\n')
 
   #-------------------#
