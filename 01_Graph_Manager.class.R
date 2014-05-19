@@ -269,6 +269,18 @@ GraphManager <- function() {
 			if(length(common.edges) != 0) g.one <- delete.edges(g.one, E(g.one)[common.edges])
 
 			return(g.one)
+		},
+
+		intersect = function(g.one, g.two) {
+			# Intersects edges and nodes
+			
+			uncommon.vertices <- which(!(V(g.one) %in% V(g.two)))
+			if(length(uncommon.vertices) != 0 ) g.one <- g.one - vertices(V(g.one)[uncommon.vertices])
+
+			uncommon.edges <- which(!(E(g.one) %in% E(g.two)))
+			if(length(uncommon.edges) != 0) g.one <- delete.edges(g.one, E(g.one)[uncommon.edges])
+
+			return(g.one)
 		}
 
 	)
