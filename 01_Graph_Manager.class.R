@@ -1,4 +1,4 @@
-source('./extendigraph.R')
+source('./extendIgraph.R')
 
 # Class to manage graphml graphs and perform graph operations
 GraphManager <- function() {
