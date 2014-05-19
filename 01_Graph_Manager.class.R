@@ -1,3 +1,5 @@
+library('igraph')
+
 source('./extendIgraph.R')
 
 # Class to manage graphml graphs and perform graph operations
@@ -209,20 +211,52 @@ GraphManager <- function() {
 		# Operations
 		
 		merge = function(g.one, g.two) {
+			# Identify the 'bigger' graph
 			if(vcount(g.one) > vcount(g.two)) {
-				attrs <- get.vertex.attributes(V(g.two)[which(!(V(g.two) %in% V(g.one)))])
-				s <- ''
-				for(attr in colnames(attrs)) s <- paste0(s, ', ', attr, '=attrs[,\'', attr, '\']')
-				print(s)
-				eval(parse(text=paste0('g.one <- g.one + vertices((length(V(g.one))+1):(length(V(g.one))+length(attrs[,1]))', s, ')')))
+
+				#-------#
+				# NODES #
+				#-------#
+
+				# Identify uncommon vertex between the two graphs
+				uncommon.vertex <- which(!(V(g.two) %in% V(g.one)))
+				if(length(uncommon.vertex) != 0) {
+					# Retrieve uncommon vertex attributes list
+					attrs <- get.vertex.attributes(V(g.two)[uncommon.vertex])
+
+					# Prepare string for attributes assignment
+					s <- ''; for(attr in colnames(attrs)) s <- paste0(s, ', ', attr, '=attrs[,\'', attr, '\']')
+					
+					# Assign attributes
+					eval(parse(text=paste0('g.one <- g.one + vertices((length(V(g.one))+1):(length(V(g.one))+length(attrs[,1]))', s, ')')))
+				}
+
+				#-------#
+				# EDGES #
+				#-------#
+				
+				# Identify uncommon edges between the two graphs
+				uncommon.edge <- which(!(E(g.two) %in% E(g.one)))
+				if(length(uncommon.edge) == 0) return(g.one)
+
+				if(length(list.edge.attributes(g.two)) != 0) {
+					# Retrieve uncommon edge attributes list
+					attrs <- get.edge.attributes(E(g.two)[uncommon.edge])
+
+					# Prepare string for attributes assignment
+					s <- ''; for(attr in colnames(attrs)) s <- paste0(s, ', ', attr, '=attrs[,\'', attr, '\']')
+				} else {
+					s <- ''
+				}
+				
+				# Assign attributes
+				edge.list <- c(t(get.edgelist(g.two)[uncommon.edge,]))
+				eval(parse(text=paste0('g.one <- g.one + edges(edge.list', s, ')')))
+
+				# Terminate
 				return(g.one)
 			} else {
-				attrs <- get.vertex.attributes(V(g.one)[which(!(V(g.one) %in% V(g.two)))])
-				s <- ''
-				for(attr in colnames(attrs)) s <- paste0(s, ', ', attr, '=attrs[,\'', attr, '\']')
-				print(s)
-				eval(parse(text=paste0('g.two <- g.two + vertices((length(V(g.two))+1):(length(V(g.two))+length(attrs[,1]))', s, ')')))
-				return(g.two)
+				return(gm$merge(g.two, g.one))
 			}
 		}
 
