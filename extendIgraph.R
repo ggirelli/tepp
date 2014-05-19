@@ -13,8 +13,8 @@
 		if(length(which(attr.list.x %in% attr.list.y)) != length(attr.list.x)) return(FALSE);
 
 		# Retrieve attribute values
-		attr.value.x <- lapply(attr.list.x, x, FUN=function(attr, x) { return( eval(parse(text=paste0('x$', attr))) ); })
-		attr.value.y <- lapply(attr.list.y, y, FUN=function(attr, y) { return( eval(parse(text=paste0('y$', attr))) ); })
+		attr.value.x <- lapply(attr.list.x, x, FUN=function(attr, x) { return(eval(parse(text=paste0('x$', attr)))); })
+		attr.value.y <- lapply(attr.list.y, y, FUN=function(attr, y) { return(eval(parse(text=paste0('y$', attr)))); })
 
 		# Verify identity
 		if(length(which(vapply(attr.value.x, FUN=function(x,y) { return(x %in% unlist(y)) }, FUN.VALUE=c(logical(1), logical(0)), y=attr.value.y))) == 0) return(FALSE)
@@ -23,7 +23,10 @@
 	} else { # Other cases:
 
 		if(length(x) == 1) { # x is singular while y is not
-			return(vapply(y, FUN=function(x, y, env) { if(y == V(get('graph', env))[x]) return(TRUE); return(FALSE) }, FUN.VALUE=c(logical(1),logical(0)), y=x, env=attr(y, 'env')))
+			return(vapply(y, FUN=function(x, y, env) {
+				if(y == V(get('graph', env))[x]) return(TRUE)
+				return(FALSE)
+			}, FUN.VALUE=c(logical(1),logical(0)), y=x, env=attr(y, 'env')))
 		} else if(length(y) == 1) { # y is singular while x is not
 			cat('Error: cannot compare node vector to single node.\n')
 			return(NULL)
@@ -36,7 +39,10 @@
 			}
 			# They have the same length
 			cat('Compared node vectors ina pair-wise fashion.\n')
-			return(vapply(x, FUN=function(x, y, env) { if(V(get('graph', env))[x] == y[x]) return(TRUE); return(FALSE) }, FUN.VALUE=c(logical(1),logical(0)), y=y, env=attr(x, 'env')))
+			return(vapply(x, FUN=function(x, y, env) {
+				if(V(get('graph', env))[x] == y[x]) return(TRUE)
+				return(FALSE)
+			}, FUN.VALUE=c(logical(1),logical(0)), y=y, env=attr(x, 'env')))
 		}
 	}
 }
@@ -52,9 +58,41 @@
 		if(length(x) == 1 && length(y) == 1) return(x == y)
 		if(length(x) == 1 && length(y) > 1) return(length(which(x == y)) != 0)
 		if(length(y) == 1 && length(x) > 1) return(length(which(y == x)) != 0)
+		if(length(y) > 1 && length(x) > 1) return(vapply(x, FUN=function(x, y, env) {
+			class(x) <- 'igraph.vs'
+			attr(x, 'env') <- env
+			class(y) <- 'igraph.vs'
+			return(x %in% y)
+		}, FUN.VALUE=c(logical(0), logical(1)), y=y, env=attr(x, 'env')))
 		cat("Error: wrong lengths\n")
 		return(NULL)
-	} else { # Old %in%
-		match(x, y, nomatch = 0L) > 0L
 	}
+
+	# Old %in%
+	match(x, y, nomatch = 0L) > 0L
+}
+
+get.vertex.attr = function(name, v) {
+	# Returns a certain attribute of a given vertex
+	# 
+	# Args:
+	# 	name: attribute name
+	# 	v: vertex
+	# 	
+	# Returns:
+	# 	Attribute value
+	
+	return(eval(parse(text=paste0("V(get('graph', attr(v, 'env')))[v]$", name))))
+}
+
+get.vertex.attributes = function(v) {
+	# Returns all the attributes of a given vertex
+	# 
+	# Args:
+	# 	v: vertex
+	# 	
+	# Returns:
+	# 	List of attributes values
+
+	return(sapply(list.vertex.attributes(get('graph', attr(v, 'env'))), FUN=function(name, v) { return(get.vertex.attr(name, v)) }, v=v))
 }

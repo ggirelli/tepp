@@ -1,3 +1,5 @@
+source('./extendigraph.R')
+
 # Class to manage graphml graphs and perform graph operations
 GraphManager <- function() {
 
@@ -13,6 +15,8 @@ GraphManager <- function() {
 		#-----------#
 		# FUNCTIONS #
 		#-----------#
+		
+		# Transform
 
 		undirected.noAttr = function(g) {
 			# Transforms an DIRECTED graph into a UNDIRECTED one
@@ -84,6 +88,8 @@ GraphManager <- function() {
 			# Return undirected graph
 			return(gf)
 		},
+
+		# Compare
 
 		calcHammingDist = function(g.one, g.two) {
 			# Calculates the Hamming (edit) distance between two UNDIRECTED graphs
@@ -198,7 +204,28 @@ GraphManager <- function() {
 			dIM <- gm$calcIpsenDist(g.one, g.two, gamma)
 			dHIM <- (1/sqrt(1+xi)) * sqrt(dH**2 + xi * dIM**2)
 			return(dHIM)
+		},
+
+		# Operations
+		
+		merge = function(g.one, g.two) {
+			if(vcount(g.one) > vcount(g.two)) {
+				attrs <- get.vertex.attributes(V(g.two)[which(!(V(g.two) %in% V(g.one)))])
+				s <- ''
+				for(attr in colnames(attrs)) s <- paste0(s, ', ', attr, '=attrs[,\'', attr, '\']')
+				print(s)
+				eval(parse(text=paste0('g.one <- g.one + vertices((length(V(g.one))+1):(length(V(g.one))+length(attrs[,1]))', s, ')')))
+				return(g.one)
+			} else {
+				attrs <- get.vertex.attributes(V(g.one)[which(!(V(g.one) %in% V(g.two)))])
+				s <- ''
+				for(attr in colnames(attrs)) s <- paste0(s, ', ', attr, '=attrs[,\'', attr, '\']')
+				print(s)
+				eval(parse(text=paste0('g.two <- g.two + vertices((length(V(g.two))+1):(length(V(g.two))+length(attrs[,1]))', s, ')')))
+				return(g.two)
+			}
 		}
+
 	)
 
 	# Assign class attribute
