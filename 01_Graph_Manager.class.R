@@ -1,4 +1,3 @@
-library('igraph')
 
 source('./extendIgraph.R')
 
@@ -258,6 +257,18 @@ GraphManager <- function() {
 			} else {
 				return(gm$merge(g.two, g.one))
 			}
+		},
+
+		subtract = function(g.one, g.two) {
+			# Removes edges and nodes that are common to both graphs from the first graph
+			
+			common.vertices <- which(V(g.one) %in% V(g.two))
+			if(length(common.vertices) != 0 ) g.one <- g.one - vertices(V(g.one)[common.vertices])
+
+			common.edges <- which(E(g.one) %in% E(g.two))
+			if(length(common.edges) != 0) g.one <- delete.edges(g.one, E(g.one)[common.edges])
+
+			return(g.one)
 		}
 
 	)
