@@ -150,6 +150,22 @@ GraphManager <- function() {
 			return(g)
 		},
 
+		rename.attributes = function(g, vertex.map=list(), edge.map=list()) {
+			# Changes the name of a given set of edge and/or vertex attributes
+			# 
+			# Args:
+			# 	g: graph
+			# 	vertex.map: list with old.name => new.name of vertex attributes
+			# 	edge.map: list with old.name => new.name of edge attributes
+			# 	
+			# Returns:
+			# 	Updated graph
+
+			if(vertex.map != list()) g <- gm$rename.vertex.attributes(g, vertex.map)
+			if(edge.map != list()) g <- gm$rename.edge.attributes(g, edge.map)
+			return(g)
+		}
+
 		# Measures
 		
 		clusteringCoefficient = function(v, env, graph) {
