@@ -192,8 +192,13 @@ get.vertex.attributes = function(v) {
 
 	# Retrieve vertex attributes list
 	vl <- list.vertex.attributes(get('graph', attr(v, 'env')))
+
 	# Check for attributes
-	if(length(vl) == 0) cat('No attributes to be retrieved.', '\n'); return(NULL)
+	if(length(vl) == 0) {
+		cat('No attributes to be retrieved.', '\n')
+		return(NULL)
+	}
+
 	# Terminate
 	return(sapply(vl, FUN=function(name, v) { return(get.vertex.attr(name, v)) }, v=v))
 }
@@ -223,7 +228,10 @@ get.edge.attributes = function(e) {
 	# Retrieve edge attributes list
 	el <- list.edge.attributes(get('graph', attr(e, 'env')))
 	# Check for attributes
-	if(length(el) == 0) cat('No attributes to be retrieved.', '\n'); return(NULL)
+	if(length(el) == 0) {
+		cat('No attributes to be retrieved.', '\n')
+		return(NULL)
+	}
 	# Terminate
 	return(sapply(el, FUN=function(name, e) { return(get.edge.attr(name, e)) }, e=e))
 }
