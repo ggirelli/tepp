@@ -90,6 +90,66 @@ GraphManager <- function() {
 			return(gf)
 		},
 
+		rename.vertex.attr = function(g, old.name, new.name) {
+			# Changes the name of a certain vertex attribute
+			# 
+			# Args:
+			# 	g: graph
+			# 	old.name
+			# 	new.name
+			# 
+			# Returns:
+			# 	Updated graph
+			
+			eval(parse(text=paste0('V(g)$', new.name, ' <- V(g)$', old.name)))
+			g <- remove.vertex.attribute(g, old.name)
+			return(g)
+		},
+
+		rename.vertex.attributes = function(g, map) {
+			# Changes the name of a given set of vertex attribute
+			# 
+			# Args:
+			# 	g: graph
+			# 	old.name
+			# 	new.name
+			# 
+			# Returns:
+			# 	Updated graph
+			
+			for(old in names(map)) g <- gm$rename.vertex.attr(g, old, eval(parse(text=paste0('map$', old))))
+			return(g)
+		},
+
+		rename.edge.attr = function(g, old.name, new.name) {
+			# Changes the name of a certain edge attribute
+			# 
+			# Args:
+			# 	g: graph
+			# 	map: list with old.name => new.name
+			# 
+			# Returns:
+			# 	Updated graph
+			
+			eval(parse(text=paste0('E(g)$', new.name, ' <- E(g)$', old.name)))
+			g <- remove.edge.attribute(g, old.name)
+			return(g)
+		},
+
+		rename.edge.attributes = function(g, map) {
+			# Changes the name of a given set edge attribute
+			# 
+			# Args:
+			# 	g: graph
+			# 	map: list with old.name => new.name
+			# 
+			# Returns:
+			# 	Updated graph
+			
+			for(old in names(map)) g <- gm$rename.edge.attr(g, old, eval(parse(text=paste0('map$', old))))
+			return(g)
+		},
+
 		# Measures
 		
 		clusteringCoefficient = function(v, env, graph) {
