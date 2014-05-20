@@ -18,6 +18,7 @@ GraphManager <- function() {
 		#-----------#
 		
 		# Transform
+		#-----------------------------------
 
 		undirected.noAttr = function(g) {
 			# Transforms an DIRECTED graph into a UNDIRECTED one
@@ -167,6 +168,7 @@ GraphManager <- function() {
 		}
 
 		# Measures
+		#-----------------------------------
 		
 		clusteringCoefficient = function(v, env, graph) {
 			# Calculates clustering coefficient of a certain vertex in a given graph
@@ -217,6 +219,7 @@ GraphManager <- function() {
 		},
 
 		# Compare
+		#-----------------------------------
 
 		calcHammingDist = function(g.one, g.two) {
 			# Calculates the Hamming (edit) distance between two UNDIRECTED graphs
@@ -334,6 +337,7 @@ GraphManager <- function() {
 		},
 
 		# Operations
+		#-----------------------------------
 
 		merge = function(g.one, g.two, vertex.key.label='name', vertex.attr.comb = getIgraphOpt("vertex.attr.comb"), edge.attr.comb = getIgraphOpt("edge.attr.comb")) {
 			# Identify the 'bigger' graph
