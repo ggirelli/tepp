@@ -90,6 +90,56 @@ GraphManager <- function() {
 			return(gf)
 		},
 
+		# Measures
+		
+		clusteringCoefficient = function(v, env, graph) {
+			# Calculates clustering coefficient of a certain vertex in a given graph
+			# 
+			# Args:
+			# 	v: vertex
+			# 	env: vertex environment
+			# 	graph: vertex-containing graph
+			# 
+			# Return:
+			# 	Clustering coefficient
+
+			# Prepare vertex
+			class(v) <- 'igraph.vs'; attr(v, 'env') <- env
+
+			# Retrieve neighbors
+			neigh <- neighbors(graph, v, mode='all')
+
+			# Return 0 if less than 2 neighbors
+			if(length(neigh) < 2) return(0)
+
+			# Retrieve subgraph
+			sg <- as.undirected(induced.subgraph(graph, neigh))
+
+			# Calculate clustering coefficient
+			cc <- 2 * ecount(sg) / (vcount(sg) * (vcount(sg) - 1))
+
+			# Terminate
+			return(cc)
+		},
+
+		clusteringCoefficients = function(g) {
+			# Calculates the clustering coefficient of the given graph
+			# 
+			# Args:
+			# 	g: graph
+			# 
+			# Returns
+			# 	The clustering coefficient
+
+			# Calculates clustering coefficient for each node
+			c.list <- sapply(V(g), FUN=function(v, env, graph) {
+				return(gm$clusteringCoefficient(v, env, graph))
+			}, env=attr(V(g), 'env'), graph=g)
+
+			# Terminate
+			return(mean(c.list))
+		},
+
 		# Compare
 
 		calcHammingDist = function(g.one, g.two) {
