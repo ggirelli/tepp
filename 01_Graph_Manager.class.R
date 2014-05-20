@@ -331,6 +331,20 @@ GraphManager <- function() {
 			if(length(uncommon.edges) != 0) g.one <- delete.edges(g.one, E(g.one)[uncommon.edges])
 
 			return(g.one)
+		},
+
+		contains = function(g.one, g.two) {
+			# Verifies if g.one contains g.two
+			
+			if(length(which(!(V(g.two) %in% V(g.one)))) != 0) return(FALSE)
+			if(length(which(!(E(g.two) %in% E(g.one)))) != 0) return(FALSE)
+
+			return(TRUE)
+		},
+
+		contained = function(g.one, g.two) {
+			# Verifies if g.two contains g.one
+			return(gm$contains(g.two, g.one))
 		}
 
 	)
