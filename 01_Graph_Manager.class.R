@@ -258,8 +258,8 @@ GraphManager <- function() {
 		},
 
 		# Operations
-		
-		merge = function(g.one, g.two) {
+
+		merge = function(g.one, g.two, vertex.key.label='name', vertex.attr.comb = getIgraphOpt("vertex.attr.comb"), edge.attr.comb = getIgraphOpt("edge.attr.comb")) {
 			# Identify the 'bigger' graph
 			if(vcount(g.one) > vcount(g.two)) {
 
@@ -267,40 +267,61 @@ GraphManager <- function() {
 				# NODES #
 				#-------#
 
-				# Identify uncommon vertex between the two graphs
-				uncommon.vertex <- which(!(V(g.two) %in% V(g.one)))
-				if(length(uncommon.vertex) != 0) {
-					# Retrieve uncommon vertex attributes list
-					attrs <- get.vertex.attributes(V(g.two)[uncommon.vertex])
+				if(length(list.vertex.attributes(g.two)) != 0) {
+					# Retrieve vertex attributes list
+					attrs <- get.vertex.attributes(V(g.two))
 
 					# Prepare string for attributes assignment
-					s <- ''; for(attr in colnames(attrs)) s <- paste0(s, ', ', attr, '=attrs[,\'', attr, '\']')
-					
-					# Assign attributes
-					eval(parse(text=paste0('g.one <- g.one + vertices((length(V(g.one))+1):(length(V(g.one))+length(attrs[,1]))', s, ')')))
+					attr.names <- colnames(attrs)
+					attr.names <- attr.names[which(attr.names != vertex.key.label)]
+					attr.list <- list()
+					s <- ''
+					for(attr in attr.names) {
+						attr.list[[attr]] <- get.vertex.attr(attr, V(g.two))
+						s <- paste0(s, ', ', attr, '=attr.list$', attr)
+					}
+				} else {
+					s <- ''
 				}
+
+				# Assign attributes
+				eval(parse(text=paste0('g.one <- g.one + vertices(V(g.two)$', vertex.key.label, s, ')')))
 
 				#-------#
 				# EDGES #
 				#-------#
-				
-				# Identify uncommon edges between the two graphs
-				uncommon.edge <- which(!(E(g.two) %in% E(g.one)))
-				if(length(uncommon.edge) == 0) return(g.one)
 
 				if(length(list.edge.attributes(g.two)) != 0) {
-					# Retrieve uncommon edge attributes list
-					attrs <- get.edge.attributes(E(g.two)[uncommon.edge])
+					# Retrieve edge attributes list
+					attrs <- get.edge.attributes(E(g.two))
 
 					# Prepare string for attributes assignment
-					s <- ''; for(attr in colnames(attrs)) s <- paste0(s, ', ', attr, '=attrs[,\'', attr, '\']')
+					attr.list <- list()
+					s <- ''
+					for(attr in colnames(attrs)) {
+						attr.list[[attr]] <- get.vertex.attr(attr, V(g.two))
+						s <- paste0(s, ', ', attr, '=attr.list$', attr)
+					}
 				} else {
 					s <- ''
 				}
 				
 				# Assign attributes
-				edge.list <- c(t(get.edgelist(g.two)[uncommon.edge,]))
+				edge.list <- c(t(get.edgelist(g.two)))
 				eval(parse(text=paste0('g.one <- g.one + edges(edge.list', s, ')')))
+
+				#----------#
+				# SIMPLIFY #
+				#----------#
+				
+				vkeys <- eval(parse(text=paste0('V(g.one)$', vertex.key.label)))
+				vkeys.uniq <- unique(eval(parse(text=paste0('V(g.one)$', vertex.key.label))))
+				vids <- matrix(1:length(vkeys.uniq), nrow=1)
+				colnames(vids) <- vkeys.uniq
+				
+				g.one <- contract.vertices(g.one, vids[,vkeys], vertex.attr.comb=vertex.attr.comb)
+				g.one <- simplify(g.one, remove.loops=F, edge.attr.comb=edge.attr.comb)
+
 
 				# Terminate
 				return(g.one)
