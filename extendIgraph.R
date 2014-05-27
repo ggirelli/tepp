@@ -254,7 +254,8 @@ get.edge.attributes = function(e, id=FALSE, path=FALSE) {
 
 	# Add source/target
 	if(path) {
-		t <- cbind(t, get.edgelist(get('graph', attr(e, 'env')), names=FALSE))
+		el <- get.edgelist(get('graph', attr(e, 'env')), names=FALSE)
+		t <- cbind(t, paste0('n', el[,1]), paste0('n', el[,2]))
 		colnames(t)[(length(t[1,])-1):length(t[1,])] <- c('source', 'target')
 	}
 	
@@ -295,7 +296,7 @@ write.graph.json = function(graph, file) {
 
 	# NODES
 	l$nodes <- apply(get.vertex.attributes(V(g), id=TRUE), MARGIN=1, FUN=function(x, index) {
-		data <- list(id=as.vector(x['id']))
+		data <- list(id=paste0('n', as.vector(x['id'])))
 		for(attr in names(x)[which(names(x) != 'id')]) {
 			data <- append(data, eval(parse(text=paste0('x[\'', attr, '\']'))))
 		}
@@ -304,7 +305,7 @@ write.graph.json = function(graph, file) {
 
 	# EDGES
 	l$edges <- apply(get.edge.attributes(E(g), id=TRUE, path=TRUE), MARGIN=1, FUN=function(x, index) {
-		data <- list(id=as.vector(x['id']))
+		data <- list(id=paste0('e', as.vector(x['id'])))
 		for(attr in names(x)[which(names(x) != 'id')]) {
 			data <- append(data, eval(parse(text=paste0('x[\'', attr, '\']'))))
 		}
