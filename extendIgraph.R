@@ -181,7 +181,7 @@ get.vertex.attr = function(name, v) {
 	return(eval(parse(text=paste0("V(get('graph', attr(v, 'env')))[v]$", name))))
 }
 
-get.vertex.attributes = function(v) {
+get.vertex.attributes = function(v, id=FALSE) {
 	# Returns all the attributes of a given vertex
 	# 
 	# Args:
@@ -199,8 +199,17 @@ get.vertex.attributes = function(v) {
 		return(NULL)
 	}
 
+	# Prepare table
+	t <- sapply(vl, FUN=function(name, v) { return(get.vertex.attr(name, v)) }, v=v)
+
+	# Add id column name
+	if(id) {
+		t <- cbind(1:length(t[,1]), t)
+		colnames(t)[1] <- 'id'
+	}
+
 	# Terminate
-	return(sapply(vl, FUN=function(name, v) { return(get.vertex.attr(name, v)) }, v=v))
+	return(t)
 }
 
 get.edge.attr = function(name, e) {
@@ -216,7 +225,7 @@ get.edge.attr = function(name, e) {
 	return(eval(parse(text=paste0("E(get('graph', attr(e, 'env')))[e]$", name))))
 }
 
-get.edge.attributes = function(e) {
+get.edge.attributes = function(e, id=FALSE, path=FALSE) {
 	# Returns all the attributes of a given edge
 	# 
 	# Args:
@@ -227,11 +236,80 @@ get.edge.attributes = function(e) {
 
 	# Retrieve edge attributes list
 	el <- list.edge.attributes(get('graph', attr(e, 'env')))
+
 	# Check for attributes
 	if(length(el) == 0) {
 		cat('No attributes to be retrieved.', '\n')
 		return(NULL)
 	}
+
+	# Prepare table
+	t <- sapply(el, FUN=function(name, e) { return(get.edge.attr(name, e)) }, e=e)
+
+	# Add id column name
+	if(id) {
+		t <- cbind(1:length(t[,1]), t)
+		colnames(t)[1] <- 'id'
+	}
+
+	# Add source/target
+	if(path) {
+		t <- cbind(t, get.edgelist(get('graph', attr(e, 'env')), names=FALSE))
+		colnames(t)[(length(t[1,])-1):length(t[1,])] <- c('source', 'target')
+	}
+	
 	# Terminate
-	return(sapply(el, FUN=function(name, e) { return(get.edge.attr(name, e)) }, e=e))
+	return(t)
+}
+
+write.graph = function(graph, file, format) {
+    if (!is.igraph(graph)) {
+        stop("Not a graph object")
+    }
+    if (!is.character(file) || length(grep("://", file, fixed = TRUE)) > 
+        0 || length(grep("~", file, fixed = TRUE)) > 0) {
+        tmpfile <- TRUE
+        origfile <- file
+        file <- tempfile()
+    }
+    else {
+        tmpfile <- FALSE
+    }
+    res <- switch(format, pajek = write.graph.pajek(graph, file), edgelist = write.graph.edgelist(graph, file), 
+        	ncol = write.graph.ncol(graph, file), lgl = write.graph.lgl(graph, 
+            file), graphml = write.graph.graphml(graph, 
+            file), dimacs = write.graph.dimacs(graph, file), gml = write.graph.gml(graph, file), dot = write.graph.dot(graph, 
+            file), leda = write.graph.leda(graph, file), json = write.graph.json(graph, file),
+             stop(paste("Unknown file format:", format)))
+    if (tmpfile) {
+        buffer <- read.graph.toraw(file)
+        write.graph.fromraw(buffer, origfile)
+    }
+    invisible(res)
+}
+
+write.graph.json = function(graph, file) {
+	library('rjson')
+
+	l <- list(nodes=list(), edges=list())
+
+	# NODES
+	l$nodes <- apply(get.vertex.attributes(V(g), id=TRUE), MARGIN=1, FUN=function(x, index) {
+		data <- list(id=as.vector(x['id']))
+		for(attr in names(x)[which(names(x) != 'id')]) {
+			data <- append(data, eval(parse(text=paste0('x[\'', attr, '\']'))))
+		}
+		return(list(data=data))
+	})
+
+	# EDGES
+	l$edges <- apply(get.edge.attributes(E(g), id=TRUE, path=TRUE), MARGIN=1, FUN=function(x, index) {
+		data <- list(id=as.vector(x['id']))
+		for(attr in names(x)[which(names(x) != 'id')]) {
+			data <- append(data, eval(parse(text=paste0('x[\'', attr, '\']'))))
+		}
+		return(list(data=data))
+	})
+
+	write(toJSON(l), file)
 }
