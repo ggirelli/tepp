@@ -20,8 +20,6 @@ genes.label <- "Gene.id"
 white.list <- list()
 black.list <- list()
 clean <- FALSE
-clonal.val <- c('clonal')
-subclonal.val <- c('subclonal')
 
 # Read number of clusters
 for(arg in args) if(grepl('^-c=[0-9]*$', arg))  clusters <- as.numeric(strsplit(arg, '-c=')[[1]][2])

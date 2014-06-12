@@ -109,10 +109,11 @@ GraphBuilder <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
       #
       # Returns:
       # Modified GraphBuilder instance
-      
       if(gb$verbose) cat('Splitting', abe.type, 'data\n')
+
       # Prepare sample list without duplicates
       sample.list <- unique(data[,sample.column])
+
       # If needed, create $output directory
       data.dir <- paste0(output.dir, '/sample-data-', abe.type, '/')
       if (!file.exists(data.dir)) {
