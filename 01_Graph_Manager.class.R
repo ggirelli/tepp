@@ -165,7 +165,37 @@ GraphManager <- function() {
 			if(vertex.map != list()) g <- gm$rename.vertex.attributes(g, vertex.map)
 			if(edge.map != list()) g <- gm$rename.edge.attributes(g, edge.map)
 			return(g)
-		}
+		},
+
+		remove.bidirection = function(g, keepLoops=F) {
+			# Removes bidirected edges from the graph and cleans it from any zero-degree vertex
+			# 
+			# Args:
+			# 	g: graph
+			# 	keepLoops: boolean, whether to keep loops
+			# 
+			# Returns:
+			# 	Updated graph
+
+			# identify bidirectionalities
+			bidir.index <- which(duplicated(rbind(el, cbind(el[,2],el[,1]))))-ecount(g)
+
+			# Remove bidirectionalities
+			if(keepLoops) {
+				g <- delete.edges(g, bidir.index(which(!is.loop(g, bidir.index))))
+			} else {
+				g <- delete.edges(g, bidir.index)
+			}
+
+			# Remove 0-degree nodes
+			zero.index <- which(degree(g, V(g)) == 0)
+			if(length(zero.index) != 0) {
+				g <- delete.vertices(g, zero.index)
+			}
+
+			# Terminate
+			return(g)
+		},
 
 		# Measures
 		#-----------------------------------
