@@ -1,4 +1,4 @@
-
+library('igraph')
 source('./extendIgraph.R')
 
 # Class to manage graphml graphs and perform graph operations
@@ -21,7 +21,7 @@ GraphManager <- function() {
 		#-----------------------------------
 
 		undirected.noAttr = function(g) {
-			# Transforms an DIRECTED graph into a UNDIRECTED one
+			# Transforms a DIRECTED graph into an UNDIRECTED one
 			# Disregards edges/vertices attributes
 			# 
 			# Args:
@@ -51,7 +51,7 @@ GraphManager <- function() {
 		},
 
 		undirected = function(g) {
-			# Transforms an DIRECTED graph into a UNDIRECTED one
+			# Transforms a DIRECTED graph into an UNDIRECTED one
 			# Keeps edges/vertices attributes
 			# 
 			# Args:
@@ -261,13 +261,22 @@ GraphManager <- function() {
 			# Returns:
 			#	The Hamming distance H(g.one,g.two)
 
+			# Check if size is the same
+			if (length(V(g.one)) != length(V(g.two))) {
+				add.one <- V(g.two)[which(!(V(g.two)$name %in% V(g.one)$name))]
+				add.two <- V(g.one)[which(!(V(g.one)$name %in% V(g.two)$name))]
+				g.one <- add.vertices(g.one, add.one)
+				g.two <- add.vertices(g.two, add.two)
+			}
+			n <- length(V(g.one))
+
 			# Get edges
 			el.one <- get.edgelist(g.one)
 			el.two <- get.edgelist(g.two)
 
 			# Get number of common edges
 			common <- length(intersect(paste0(el.one[,1], '~', el.one[,2]), paste0(el.two[,1], '~', el.two[,2])))
-			common <-  common + length(intersect(paste0(el.one[,2], '~', el.one[,1]), paste0(el.two[,1], '~', el.two[,2])))
+			common <- common + length(intersect(paste0(el.one[,2], '~', el.one[,1]), paste0(el.two[,1], '~', el.two[,2])))
 
 			# Not normalized distance
 			dH.raw <- (length(el.one[,1]) + length(el.two[,1])) - (2 * common)
@@ -275,14 +284,14 @@ GraphManager <- function() {
 			# Normalize distance
 			max.v <- max(length(V(g.one)), length(V(g.two)))
 			K <- (max.v * (max.v - 1))
-			K <- K / 2
+			if(common != 0) K <- K / 2
 			dH <- dH.raw / K
 
 			# Return distance
 			return(dH)
 		},
 
-		calcIpsenDist = function(g.one, g.two, gamma) {
+		calcIpsenDist = function(g.one, g.two) {
 			# Calculates the Ipsen-Mikhailov (spectral) distance between two UNDIRECTED graphs
 			#
 			# Args:
@@ -296,15 +305,29 @@ GraphManager <- function() {
 			# Read graphs
 			gs <- list(g.one, g.two)
 
+			# Check if size is the same
+			if (length(V(g.one)) != length(V(g.two))) {
+				add.one <- V(g.two)[which(!(V(g.two)$name %in% V(g.one)$name))]
+				add.two <- V(g.one)[which(!(V(g.one)$name %in% V(g.two)$name))]
+				g.one <- add.vertices(g.one, add.one)
+				g.two <- add.vertices(g.two, add.two)
+			}
+			n <- length(V(g.one))
+
+			gammaBar = function(gamma, n) {
+				return( sqrt(1/(gamma*pi)+(1/(2*gamma*(pi/2+atan(sqrt(n)/gamma))^2))*(pi/2+((gamma*sqrt(n))/((gamma^2)+n))+atan(sqrt(n)/gamma))+((-4*gamma)/((pi/2+atan(sqrt(n)/gamma))*pi*(4*(gamma^2)+n)))*(pi-(gamma/sqrt(n))*log((gamma^2)/((gamma^2)+n))+atan(sqrt(n)/gamma))) - 1)
+			}
+			gamma <- uniroot(gammaBar, c(1e-16,200), n=n, tol=1e-16)$root
+
 			# SpectralDensity function
 			specDens = function(omega, omegadef, gamma) {
 				k <- 0
-				for(i in 2:length(omegadef)) k = k + (gamma / ((omega - omegadef[i])^2 + gamma^2))
+				for(i in 2:length(omegadef)) k <- k + (gamma / ((omega - omegadef[i])^2 + gamma^2))
 				return(k)
 			}
 			# Normalization constant
 			sdK = function(omegadef, gamma) {
-				return(integrate(specDens, lower=0, upper=Inf, omegadef=omegadef, gamma=gamma, stop.on.error = FALSE)$value)
+				return(integrate(specDens, lower=0, upper=Inf, omegadef=omegadef, gamma=gamma, stop.on.error = FALSE, subdivisions=2000)$value)
 			}
 			# Normalized spectral density (rho[omega])
 			rhoO = function(omega, omegadef, gamma, k) {
@@ -342,28 +365,44 @@ GraphManager <- function() {
 			sdDiffSq = function(omega, one.omegadef, one.k, two.omegadef, two.k, gamma) {
 				return((rhoO(omega, one.omegadef, gamma, one.k) - rhoO(omega, two.omegadef, gamma, two.k))**2)
 			}
-			dIM <- sqrt(integrate(sdDiffSq, lower=0, upper=Inf, one.omegadef=gs.data[[1]]$freqs, one.k=gs.data[[1]]$k, two.omegadef=gs.data[[2]]$freqs, two.k=gs.data[[2]]$k, gamma=gamma)$value)
+			dIM <- sqrt(integrate(sdDiffSq, lower=0, upper=Inf, one.omegadef=gs.data[[1]]$freqs, one.k=gs.data[[1]]$k, two.omegadef=gs.data[[2]]$freqs, two.k=gs.data[[2]]$k, gamma=gamma, subdivisions=2000)$value)
 
 			# Return Ipsen-Mikhailov distance
 			return(dIM)
 		},
 
-		calcHIMDist = function(g.one, g.two, gamma, xi) {
-			# Calculates the Ipsen-Mikhailov (spectral) distance between two UNDIRECTED graphs
+		calcHIMDist = function(g.one, g.two, xi) {
+			# Calculates the HIM between two UNDIRECTED graphs
 			#
 			# Args:
 			#	g.one: first graph
 			#	g.two: second graph
-			#	gamma: parameter corresponding to the HWHM of the calculated Lorentz distributions in IM distance calculation
 			#	xi: parameter corresponding to the weight of dIM over dH in the final distance
 			#
 			# Returns:
-			#	The Ipsen-Mikhailov distance IM(g.one,g.two)
+			#	The HIM distance (g.one,g.two)
 			
 			dH <- gm$calcHammingDist(g.one, g.two)
-			dIM <- gm$calcIpsenDist(g.one, g.two, gamma)
+			dIM <- gm$calcIpsenDist(g.one, g.two)
 			dHIM <- (1/sqrt(1+xi)) * sqrt(dH**2 + xi * dIM**2)
 			return(dHIM)
+		},
+
+		calcDistances = function(g.one, g.two, xi) {
+			# Calculates Hamming, Ipsen-Mikhailov and HIM distances between two undirected graphs
+			# 
+			# Args:
+			# 	g.one: first graph
+			# 	g.two: second graph
+			# 	xi: parameter corresponding to the weight of dIM over dH in the final distance
+			# 	
+			# Returns:
+			# 	A tuble containing respectiveli H, IM and HIM distances
+			
+			dH <- gm$calcHammingDist(g.one, g.two)
+			dIM <- gm$calcIpsenDist(g.one, g.two)
+			dHIM <- (1/sqrt(1+xi)) * sqrt(dH**2 + xi * dIM**2)
+			return(c(dH, dIM, dHIM))
 		},
 
 		# Operations
