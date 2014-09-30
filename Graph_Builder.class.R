@@ -297,7 +297,7 @@ GraphBuilder <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
     },
 
     # Build MSMA
-    buildMSMA = function(graph.list, directed=TRUE, output.dir=gb$output.dir) {
+    buildMSMA = function(graph.list, directed=TRUE, output.dir=gb$output.dir, doOcc=FALSE) {
       # Merges SSMAs into a single MSMA summing the edge's weight
       #
       # Args:
@@ -319,11 +319,12 @@ GraphBuilder <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
           edgelist <- get.edgelist(g)
           if(length(edgelist) != 0) {
             edgelist.n <- get.edgelist(g, name=FALSE)
-            cbind(edgelist, E(g)$weight, V(g)[edgelist.n[,1]]$abe.type, V(g)[edgelist.n[,2]]$abe.type)
+            cbind(edgelist, E(g)$weight, V(g)[edgelist.n[,1]]$abe.type, V(g)[edgelist.n[,2]]$abe.type, file.name)
           }
         }
       }
       stopCluster(cores)
+      colnames(edges) <- c('source', 'target', 'weight', 'source.abe.type', 'target.abe.type', 'sample')
 
       if(length(edges) != 0) {
 
@@ -341,6 +342,23 @@ GraphBuilder <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
         vertices.table <- unique(c(source.table, target.table))
         if(gb$verbose) cat("Adding vertices with attributes\n")
         g <- add.vertices(g, nv=length(vertices.table), attr=list(name=vertices.table, aberration=matrix(unlist(strsplit(vertices.table, '~')), nrow=2)[2,], HUGO=matrix(unlist(strsplit(vertices.table, '~')), nrow=2)[1,]))
+        if(doOcc) {
+          if(gb$verbose) cat("Adding vertices occurrencies\n")
+          # Declare parallelism
+          cores <- makeCluster(gb$clusters)
+          registerDoParallel(cores)
+          # Get vertices occurrencies
+          v.occs <- foreach(i=1:length(V(g)), .combine=rbind) %dopar% {
+            library('igraph')
+            return(c(V(g)[i]$name, length(unique(edges[which(edges[,1] == V(g)$HUGO[i]),6])), length(unique(edges[which(edges[,2] == V(g)$HUGO[i]),6]))))
+          }
+          stopCluster(cores)
+          for(i in 1:length(V(g))) {
+            j <- which(v.occs[,1] == V(g)$name[i])
+            V(g)$clon.occ[i] <- v.occs[j,1]
+            V(g)$subclon.occ[i] <- v.occs[j,2]
+          }
+        }
 
         # Edges
         if(gb$verbose) cat("Adding edges\n")
@@ -415,7 +433,7 @@ GraphBuilder <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
       if(gb$verbose) cat('SSMAs prepared.\n')
 
       if(gb$verbose) cat("\n# Merging SSMAs into MSMA\n")
-      g.total <- gb$buildMSMA(paste0('gra_', sample.list, '.graphml'))
+      g.total <- gb$buildMSMA(paste0('gra_', sample.list, '.graphml'), doOcc=TRUE)
 
       if(gb$verbose) cat('\n# Preparing Clonality SSMAs.\n')
       gb$buildClonalSSMA(abe.list, genes.label=genes.label, clonality.label=clonality.label, clonal.val=clonal.val, subclonal.val=subclonal.val, sample.list=sample.list, v.list=V(g.total)$name)
