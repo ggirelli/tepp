@@ -17,6 +17,7 @@ clusters <- 4
 verbose <- TRUE
 file.list <- list()
 genes.label <- "Gene.id"
+output.dir <- ''
 white.list <- list()
 black.list <- list()
 clean <- FALSE
@@ -58,6 +59,8 @@ for(arg in args) if(grepl('^-p=[a-zA-Z0-9()./_~-]*$', arg)) {
     attr.table <- toString(ff[which(ff[, 1] == 'attr.table'), 2])
     if(attr.table != '') attr.table <- read.table(attr.table, header=TRUE, sep='\t')
   }
+} else {
+  cat('\nNo param file detected.')
 }
 
 cat('\nExecuting script (v09) with', clusters, 'clusters.\n')
