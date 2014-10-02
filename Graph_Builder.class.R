@@ -355,8 +355,8 @@ GraphBuilder <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
           stopCluster(cores)
           for(i in 1:length(V(g))) {
             j <- which(v.occs[,1] == V(g)$name[i])
-            V(g)$clon.occ[i] <- v.occs[j,2]
-            V(g)$subclon.occ[i] <- v.occs[j,3]
+            V(g)$clonal.occ[i] <- v.occs[j,2]
+            V(g)$subclonal.occ[i] <- v.occs[j,3]
           }
         }
 
