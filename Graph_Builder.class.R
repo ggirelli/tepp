@@ -36,7 +36,7 @@ GraphBuilder <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
     clean = clean,
 
     # Sample list
-    sammple.list = list(),
+    sample.list = list(),
 
     # Vertex attribute table
     attr.table = attr.table,
@@ -162,39 +162,38 @@ GraphBuilder <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
       #
       # Returns:
       #   None
-
+      
       # Declare parallelism
       par <- makeCluster(clusters)
       registerDoParallel(par)
       # Execute buildSSMA for each sample
       foreach(sample.id=sample.list) %dopar% {
+        library('doParallel')
         library('igraph')
-        
         # Read data
         data <- list()
         for(abe in abe.list) {
           f.name <- eval(parse(text=paste0('"', output.dir, '/sample-data-', abe, '/', sample.id, '"')))
           if(file.exists(f.name)) eval(parse(text=paste0('data$', abe, ' <- read.table(f.name , header=TRUE, sep=" ")')))
         }
-
+        
         # Clean data from duplicates
-        dup.pasted <- paste0(data[,genes.label], '~', data[,sample.column])
-        foreach(i=which(duplicated(dup.pasted))) %do% {
-          dup.ids <- data[which(data[,genes.label] == data[,genes.label][i]),]
-          sub.ids <- which(data[dupRows, clonality.label] %in% subclonal.val)
-          clo.ids <- which(data[dupRows, clonality.label] %in% clonal.val)
-          data[dup.ids, clonality.label] <- 'not.analysed'
+        foreach(i=which(duplicated(eval(parse(text=paste0('data$', genes.label)))))) %do% {
+          dup.ids <- which(eval(parse(text=paste0('data$', genes.label))) == eval(parse(text=paste0('data$', genes.label)))[i])
+          sub.ids <- which(eval(parse(text=paste0('data$', clonality.label)))[dup.ids] %in% subclonal.val)
+          clo.ids <- which(eval(parse(text=paste0('data$', clonality.label)))[dup.ids] %in% clonal.val)
+          eval(parse(text=paste0('data$', clonality.label,'[dup.ids] <- "not.analysed"')))
           if (length(sub.ids) != 0 & length(clo.ids) == 0) {
             # Keep one of the duplicates
-            data[which.max(data[dup.ids, 'perc.overlap']), clonality.label] <- 'clonal'
+            eval(parse(text=paste0('data$', clonality.label, '[which.max(data$perc.overlap[dup.ids])] <- "clonal"')))
           }
           if (length(sub.ids) == 0 & length(clo.ids) != 0) {
             # Keep one of the duplicates
-            data[which.max(data[dup.ids, 'perc.overlap']), clonality.label] <- 'subclonal'
+            eval(parse(text=paste0('data$', clonality.label, '[which.max(data$perc.overlap[dup.ids])] <- "subclonal"')))
           }
           if (length(sub.ids) != 0 & length(clow.ids != 0)) {
             # Keep one of the subclonals
-            data[which.max(data[sub.ids, 'perc.overlap']), clonality.label] <- 'subclonal'
+            eval(parse(text=paste0('data$', clonality.label, '[which.max(data$perc.overlap[dup.ids])] <- "subclonal"')))
           }
         }
 
@@ -255,6 +254,7 @@ GraphBuilder <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
       registerDoParallel(par)
       # Execute buildSSMA for each sample
       foreach(sample.id=sample.list) %dopar% {
+        library('doParallel')
         library('igraph')
         
         # Read data
@@ -269,23 +269,22 @@ GraphBuilder <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
         }
 
         # Clean data from duplicates
-        dup.pasted <- paste0(data[,genes.label], '~', data[,sample.column])
-        foreach(i=which(duplicated(dup.pasted))) %do% {
-          dup.ids <- data[which(data[,genes.label] == data[,genes.label][i]),]
-          sub.ids <- which(data[dupRows, clonality.label] %in% subclonal.val)
-          clo.ids <- which(data[dupRows, clonality.label] %in% clonal.val)
-          data[dup.ids, clonality.label] <- 'not.analysed'
+        foreach(i=which(duplicated(eval(parse(text=paste0('data$', genes.label)))))) %do% {
+          dup.ids <- which(eval(parse(text=paste0('data$', genes.label))) == eval(parse(text=paste0('data$', genes.label)))[i])
+          sub.ids <- which(eval(parse(text=paste0('data$', clonality.label)))[dup.ids] %in% subclonal.val)
+          clo.ids <- which(eval(parse(text=paste0('data$', clonality.label)))[dup.ids] %in% clonal.val)
+          eval(parse(text=paste0('data$', clonality.label,'[dup.ids] <- "not.analysed"')))
           if (length(sub.ids) != 0 & length(clo.ids) == 0) {
             # Keep one of the duplicates
-            data[which.max(data[dup.ids, 'perc.overlap']), clonality.label] <- 'clonal'
+            eval(parse(text=paste0('data$', clonality.label, '[which.max(data$perc.overlap[dup.ids])] <- "clonal"')))
           }
           if (length(sub.ids) == 0 & length(clo.ids) != 0) {
             # Keep one of the duplicates
-            data[which.max(data[dup.ids, 'perc.overlap']), clonality.label] <- 'subclonal'
+            eval(parse(text=paste0('data$', clonality.label, '[which.max(data$perc.overlap[dup.ids])] <- "subclonal"')))
           }
           if (length(sub.ids) != 0 & length(clow.ids != 0)) {
             # Keep one of the subclonals
-            data[which.max(data[sub.ids, 'perc.overlap']), clonality.label] <- 'subclonal'
+            eval(parse(text=paste0('data$', clonality.label, '[which.max(data$perc.overlap[dup.ids])] <- "subclonal"')))
           }
         }
 
@@ -468,7 +467,7 @@ GraphBuilder <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
       #
       # Returns:
       #   None
-
+      
       if(gb$verbose) cat('# Preparing SSMAs.\n')
       gb$buildFinalSSMA(abe.list, genes.label=genes.label, clonality.label=clonality.label, clonal.val=clonal.val, subclonal.val=subclonal.val, sample.list=sample.list)
       if(gb$verbose) cat('SSMAs prepared.\n')
