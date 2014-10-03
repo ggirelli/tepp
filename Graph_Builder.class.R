@@ -136,7 +136,6 @@ GraphBuilder <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
         if(length(black.list) != 0) row.ids <- intersect(row.ids, which(!(data[,genes.label] %in% black.list)))
         # Write selected rows
         if(length(row.ids) != 0) write.table(data[row.ids,], file=file.path(data.dir, sample.list[i]))
-
       }
       stopCluster(par)
 
@@ -176,6 +175,27 @@ GraphBuilder <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
         for(abe in abe.list) {
           f.name <- eval(parse(text=paste0('"', output.dir, '/sample-data-', abe, '/', sample.id, '"')))
           if(file.exists(f.name)) eval(parse(text=paste0('data$', abe, ' <- read.table(f.name , header=TRUE, sep=" ")')))
+        }
+
+        # Clean data from duplicates
+        dup.pasted <- paste0(data[,genes.label], '~', data[,sample.column])
+        foreach(i=which(duplicated(dup.pasted))) %do% {
+          dup.ids <- data[which(data[,genes.label] == data[,genes.label][i]),]
+          sub.ids <- which(data[dupRows, clonality.label] %in% subclonal.val)
+          clo.ids <- which(data[dupRows, clonality.label] %in% clonal.val)
+          data[dup.ids, clonality.label] <- 'not.analysed'
+          if (length(sub.ids) != 0 & length(clo.ids) == 0) {
+            # Keep one of the duplicates
+            data[which.max(data[dup.ids, 'perc.overlap']), clonality.label] <- 'clonal'
+          }
+          if (length(sub.ids) == 0 & length(clo.ids) != 0) {
+            # Keep one of the duplicates
+            data[which.max(data[dup.ids, 'perc.overlap']), clonality.label] <- 'subclonal'
+          }
+          if (length(sub.ids) != 0 & length(clow.ids != 0)) {
+            # Keep one of the subclonals
+            data[which.max(data[sub.ids, 'perc.overlap']), clonality.label] <- 'subclonal'
+          }
         }
 
         if(length(data) != 0) {
@@ -245,6 +265,27 @@ GraphBuilder <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
             temp.data <- read.table(f.name)
             temp.data <- temp.data[which(paste(as.character(eval(parse(text=paste0('temp.data$', genes.label)))), tolower(abe), sep='~') %in% v.list),]
             eval(parse(text=paste0('data$', abe, ' <- temp.data')))
+          }
+        }
+
+        # Clean data from duplicates
+        dup.pasted <- paste0(data[,genes.label], '~', data[,sample.column])
+        foreach(i=which(duplicated(dup.pasted))) %do% {
+          dup.ids <- data[which(data[,genes.label] == data[,genes.label][i]),]
+          sub.ids <- which(data[dupRows, clonality.label] %in% subclonal.val)
+          clo.ids <- which(data[dupRows, clonality.label] %in% clonal.val)
+          data[dup.ids, clonality.label] <- 'not.analysed'
+          if (length(sub.ids) != 0 & length(clo.ids) == 0) {
+            # Keep one of the duplicates
+            data[which.max(data[dup.ids, 'perc.overlap']), clonality.label] <- 'clonal'
+          }
+          if (length(sub.ids) == 0 & length(clo.ids) != 0) {
+            # Keep one of the duplicates
+            data[which.max(data[dup.ids, 'perc.overlap']), clonality.label] <- 'subclonal'
+          }
+          if (length(sub.ids) != 0 & length(clow.ids != 0)) {
+            # Keep one of the subclonals
+            data[which.max(data[sub.ids, 'perc.overlap']), clonality.label] <- 'subclonal'
           }
         }
 
@@ -455,8 +496,7 @@ GraphBuilder <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
       # Retrieve correct clonal co-occurrency data
       if(length(V(g.clonal)) != 0) {
         if(gb$verbose) cat(" · Retrieving clonal co-occurrency data\n")
-        clonal.cooc <- seq(length(E(g.total)))
-        clonal.cooc[] <- 0
+        clonal.cooc <- rep(0, length(E(g.total)))
         clonal.cooc.ids <- get.edge.ids(g.clonal, t(get.edgelist(g.total)[which(e.in.clo),]), error=FALSE)
         clonal.cooc[which(e.in.clo)[which(clonal.cooc.ids != 0)]] <- E(g.clonal)[clonal.cooc.ids]$weight
         E(g.total)$clonal.cooc <- clonal.cooc
@@ -464,8 +504,7 @@ GraphBuilder <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
       # Retrieve correct subclonal co-occurrency data
       if(length(V(g.subclonal)) != 0) {
         if(gb$verbose) cat(" · Retrieving subclonal co-occurrency data\n")
-        subclonal.cooc <- seq(length(E(g.total)))
-        subclonal.cooc[] <- 0
+        subclonal.cooc <- rep(0, length(E(g.total)))
         subclonal.cooc.ids <- get.edge.ids(g.subclonal, t(get.edgelist(g.total)[which(e.in.sub),]), error=FALSE)
         subclonal.cooc[which(e.in.sub)[which(subclonal.cooc.ids != 0)]] <- E(g.subclonal)[subclonal.cooc.ids]$weight
         E(g.total)$subclonal.cooc <- subclonal.cooc
@@ -473,8 +512,7 @@ GraphBuilder <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
       # Retrieve correct nonclonal co-occurrency data
       if(length(V(g.nonclonal)) != 0) {
         if(gb$verbose) cat(" · Retrieving uncertain_clonality co-occurrency data\n")
-        nonclonal.cooc <- seq(length(E(g.total)))
-        nonclonal.cooc[] <- 0
+        nonclonal.cooc <- rep(0, length(E(g.total)))
         nonclonal.cooc.ids <- get.edge.ids(g.nonclonal, t(get.edgelist(g.total)[which(e.in.non),]), error=FALSE)
         nonclonal.cooc[which(e.in.non)[which(nonclonal.cooc.ids != 0)]] <- E(g.nonclonal)[nonclonal.cooc.ids]$weight
         E(g.total)$nonclonal.cooc <- nonclonal.cooc
