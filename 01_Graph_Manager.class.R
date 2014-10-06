@@ -265,8 +265,8 @@ GraphManager <- function() {
 			if (length(V(g.one)) != length(V(g.two))) {
 				add.one <- V(g.two)[which(!(V(g.two)$name %in% V(g.one)$name))]
 				add.two <- V(g.one)[which(!(V(g.one)$name %in% V(g.two)$name))]
-				g.one <- add.vertices(g.one, add.one)
-				g.two <- add.vertices(g.two, add.two)
+				g.one <- add.vertices(g.one, length(add.one), attr=list(name=add.one$name))
+				g.two <- add.vertices(g.two, length(add.two), attr=list(name=add.two$name))
 			}
 			n <- length(V(g.one))
 
@@ -304,8 +304,8 @@ GraphManager <- function() {
 			if (length(V(g.one)) != length(V(g.two))) {
 				add.one <- V(g.two)[which(!(V(g.two)$name %in% V(g.one)$name))]
 				add.two <- V(g.one)[which(!(V(g.one)$name %in% V(g.two)$name))]
-				g.one <- add.vertices(g.one, add.one)
-				g.two <- add.vertices(g.two, add.two)
+				g.one <- add.vertices(g.one, length(add.one), attr=list(name=add.one$name))
+				g.two <- add.vertices(g.two, length(add.two), attr=list(name=add.two$name))
 			}
 			n <- length(V(g.one))
 
@@ -316,6 +316,7 @@ GraphManager <- function() {
 			# Get number of common edges
 			common <- length(intersect(paste0(el.one[,1], '~', el.one[,2]), paste0(el.two[,1], '~', el.two[,2])))
 			common <- common + length(intersect(paste0(el.one[,2], '~', el.one[,1]), paste0(el.two[,1], '~', el.two[,2])))
+
 			dJ <- ((length(el.one[,1]) + length(el.two[,1])) - 2 * common) / ((length(el.one[,1]) + length(el.two[,1])) - common)
 
 			# Return distance
@@ -340,8 +341,8 @@ GraphManager <- function() {
 			if (length(V(g.one)) != length(V(g.two))) {
 				add.one <- V(g.two)[which(!(V(g.two)$name %in% V(g.one)$name))]
 				add.two <- V(g.one)[which(!(V(g.one)$name %in% V(g.two)$name))]
-				g.one <- add.vertices(g.one, add.one)
-				g.two <- add.vertices(g.two, add.two)
+				g.one <- add.vertices(g.one, length(add.one), attr=list(name=add.one$name))
+				g.two <- add.vertices(g.two, length(add.two), attr=list(name=add.two$name))
 			}
 			n <- length(V(g.one))
 
