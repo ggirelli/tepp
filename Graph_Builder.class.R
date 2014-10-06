@@ -172,28 +172,42 @@ GraphBuilder <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
         library('igraph')
         # Read data
         data <- list()
-        for(abe in abe.list) {
+        foreach(abe=abe.list) %do% {
           f.name <- eval(parse(text=paste0('"', output.dir, '/sample-data-', abe, '/', sample.id, '"')))
           if(file.exists(f.name)) eval(parse(text=paste0('data$', abe, ' <- read.table(f.name , header=TRUE, sep=" ")')))
-        }
-        
-        # Clean data from duplicates
-        foreach(i=which(duplicated(eval(parse(text=paste0('data$', genes.label)))))) %do% {
-          dup.ids <- which(eval(parse(text=paste0('data$', genes.label))) == eval(parse(text=paste0('data$', genes.label)))[i])
-          sub.ids <- which(eval(parse(text=paste0('data$', clonality.label)))[dup.ids] %in% subclonal.val)
-          clo.ids <- which(eval(parse(text=paste0('data$', clonality.label)))[dup.ids] %in% clonal.val)
-          eval(parse(text=paste0('data$', clonality.label,'[dup.ids] <- "not.analysed"')))
-          if (length(sub.ids) != 0 & length(clo.ids) == 0) {
-            # Keep one of the duplicates
-            eval(parse(text=paste0('data$', clonality.label, '[which.max(data$perc.overlap[dup.ids])] <- "clonal"')))
-          }
-          if (length(sub.ids) == 0 & length(clo.ids) != 0) {
-            # Keep one of the duplicates
-            eval(parse(text=paste0('data$', clonality.label, '[which.max(data$perc.overlap[dup.ids])] <- "subclonal"')))
-          }
-          if (length(sub.ids) != 0 & length(clow.ids != 0)) {
-            # Keep one of the subclonals
-            eval(parse(text=paste0('data$', clonality.label, '[which.max(data$perc.overlap[dup.ids])] <- "subclonal"')))
+          
+          # Clean data from duplicates
+          dups <- which(duplicated(eval(parse(text=paste0('data$', abe, '$', genes.label)))))
+          while(length(dups) != 0) {
+            i <- dups[1]
+            dup.ids <- which(eval(parse(text=paste0('data$', abe, '$', genes.label, ' == data$', abe, '$', genes.label, '[i]'))))
+            sub.ids <- dup.ids[which(eval(parse(text=paste0('data$', abe, '$', clonality.label)))[dup.ids] %in% subclonal.val)]
+            clo.ids <- dup.ids[which(eval(parse(text=paste0('data$', abe, '$', clonality.label)))[dup.ids] %in% clonal.val)]
+            non.ids <- dup.ids[which(!eval(parse(text=paste0('data$', abe, '$', clonality.label)))[dup.ids] %in% union(clonal.val, subclonal.val))]
+            if (length(sub.ids) != 0 & length(clo.ids) == 0) {
+              # Keep one of the duplicates
+              rm.ids <- dup.ids 
+              rm.ids <- rm.ids[-which.max(eval(parse(text=paste0('data$', abe, '$perc.overlap[rm.ids]'))))]
+              eval(parse(text=paste0('data$', abe, ' <- data$', abe, '[-rm.ids,]')))
+            }
+            if (length(sub.ids) == 0 & length(clo.ids) != 0) {
+              # Keep one of the duplicates
+              rm.ids <- dup.ids
+              rm.ids <- rm.ids[-which.max(eval(parse(text=paste0('data$', abe, '$perc.overlap[rm.ids]'))))]
+              eval(parse(text=paste0('data$', abe, ' <- data$', abe, '[-rm.ids,]')))
+            }
+            if (length(sub.ids) != 0 & length(clo.ids) != 0) {
+              # Keep one of the subclonals
+              sub.ids <- sub.ids[-which.max(eval(parse(text=paste0('data$', abe, '$perc.overlap[sub.ids]'))))]
+              eval(parse(text=paste0('data$', abe, ' <- data$', abe, '[-clo.ids,]')))
+              eval(parse(text=paste0('data$', abe, ' <- data$', abe, '[-sub.ids,]')))
+            }
+            if(length(sub.ids) == 0 & length(clo.ids) == 0) {
+              # Remove non-clonals
+              eval(parse(text=paste0('data$', abe, ' <- data$', abe, '[-non.ids,]')))
+            }
+            # Change counter
+            dups <- which(duplicated(eval(parse(text=paste0('data$', abe, '$', genes.label)))))
           }
         }
 
@@ -266,25 +280,38 @@ GraphBuilder <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
             temp.data <- temp.data[which(paste(as.character(eval(parse(text=paste0('temp.data$', genes.label)))), tolower(abe), sep='~') %in% v.list),]
             eval(parse(text=paste0('data$', abe, ' <- temp.data')))
           }
-        }
 
-        # Clean data from duplicates
-        foreach(i=which(duplicated(eval(parse(text=paste0('data$', genes.label)))))) %do% {
-          dup.ids <- which(eval(parse(text=paste0('data$', genes.label))) == eval(parse(text=paste0('data$', genes.label)))[i])
-          sub.ids <- which(eval(parse(text=paste0('data$', clonality.label)))[dup.ids] %in% subclonal.val)
-          clo.ids <- which(eval(parse(text=paste0('data$', clonality.label)))[dup.ids] %in% clonal.val)
-          eval(parse(text=paste0('data$', clonality.label,'[dup.ids] <- "not.analysed"')))
-          if (length(sub.ids) != 0 & length(clo.ids) == 0) {
-            # Keep one of the duplicates
-            eval(parse(text=paste0('data$', clonality.label, '[which.max(data$perc.overlap[dup.ids])] <- "clonal"')))
-          }
-          if (length(sub.ids) == 0 & length(clo.ids) != 0) {
-            # Keep one of the duplicates
-            eval(parse(text=paste0('data$', clonality.label, '[which.max(data$perc.overlap[dup.ids])] <- "subclonal"')))
-          }
-          if (length(sub.ids) != 0 & length(clow.ids != 0)) {
-            # Keep one of the subclonals
-            eval(parse(text=paste0('data$', clonality.label, '[which.max(data$perc.overlap[dup.ids])] <- "subclonal"')))
+          dups <- which(duplicated(eval(parse(text=paste0('data$', abe, '$', genes.label)))))
+          while(length(dups) != 0) {
+            i <- dups[1]
+            dup.ids <- which(eval(parse(text=paste0('data$', abe, '$', genes.label, ' == data$', abe, '$', genes.label, '[i]'))))
+            sub.ids <- dup.ids[which(eval(parse(text=paste0('data$', abe, '$', clonality.label)))[dup.ids] %in% subclonal.val)]
+            clo.ids <- dup.ids[which(eval(parse(text=paste0('data$', abe, '$', clonality.label)))[dup.ids] %in% clonal.val)]
+            non.ids <- dup.ids[which(!eval(parse(text=paste0('data$', abe, '$', clonality.label)))[dup.ids] %in% union(clonal.val, subclonal.val))]
+            if (length(sub.ids) != 0 & length(clo.ids) == 0) {
+              # Keep one of the duplicates
+              rm.ids <- dup.ids 
+              rm.ids <- rm.ids[-which.max(eval(parse(text=paste0('data$', abe, '$perc.overlap[rm.ids]'))))]
+              eval(parse(text=paste0('data$', abe, ' <- data$', abe, '[-rm.ids,]')))
+            }
+            if (length(sub.ids) == 0 & length(clo.ids) != 0) {
+              # Keep one of the duplicates
+              rm.ids <- dup.ids
+              rm.ids <- rm.ids[-which.max(eval(parse(text=paste0('data$', abe, '$perc.overlap[rm.ids]'))))]
+              eval(parse(text=paste0('data$', abe, ' <- data$', abe, '[-rm.ids,]')))
+            }
+            if (length(sub.ids) != 0 & length(clo.ids) != 0) {
+              # Keep one of the subclonals
+              sub.ids <- sub.ids[-which.max(eval(parse(text=paste0('data$', abe, '$perc.overlap[sub.ids]'))))]
+              eval(parse(text=paste0('data$', abe, ' <- data$', abe, '[-clo.ids,]')))
+              eval(parse(text=paste0('data$', abe, ' <- data$', abe, '[-sub.ids,]')))
+            }
+            if(length(sub.ids) == 0 & length(clo.ids) == 0) {
+              # Remove non-clonals
+              eval(parse(text=paste0('data$', abe, ' <- data$', abe, '[-non.ids,]')))
+            }
+            # Change counter
+            dups <- which(duplicated(eval(parse(text=paste0('data$', abe, '$', genes.label)))))
           }
         }
 
