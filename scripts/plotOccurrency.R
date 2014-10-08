@@ -35,8 +35,8 @@ dev.off()
 
 t <- cbind(co, so)
 n.start <- length(co)
-t <- t[-which(co == 0),]
-t <- t[-which(so == 0),]
+if(length(which(co == 0)) != 0) t <- t[-which(co == 0),]
+if(length(which(so == 0)) != 0) t <- t[-which(so == 0),]
 n.stop <- length(t[,1])
 print(paste0('Removed ', n.start-n.stop, ' aberrations from ratio plot.'))
 
