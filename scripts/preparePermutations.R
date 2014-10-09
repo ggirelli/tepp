@@ -141,6 +141,22 @@ if(is.na(p.outdir)) {
 gene.label <- getp(ps, 'gene.label')
 if(is.na(p.outdir)) stop('Error: gene.label required.')
 
+skip.base <- getp(ps, 'skip.base')
+if(!is.na(skip.base)) {
+	if(skip.base == 'TRUE') cat("    * Skipping base networks.\n")
+	skip.base <- TRUE
+} else {
+	skip.base <- FALSE
+}
+
+skip.perm <- getp(ps, 'skip.perm')
+if(!is.na(skip.perm)) {
+	if(skip.perm == 'TRUE') cat("    * Skipping permuting.\n")
+	skip.perm <- TRUE
+} else {
+	skip.perm <- FALSE
+}
+
 # ----------- #
 # PREPARATION #
 # ----------- #
@@ -177,128 +193,46 @@ cat(paste0('> Found ', length(erg.m), ' ERG- samples.', "\n"))
 erg.p <- eval(parse(text=paste0('pfcl$', sample.col)))[which(pfcl$ERG.clean > 0)]
 cat(paste0('> Found ', length(erg.p), ' ERG+ samples.', "\n"))
 
-dir.create(file.path(p.outdir), showWarnings = FALSE)
-dir.create(file.path(m.outdir), showWarnings = FALSE)
-
-gainTab.out <- NA
-lossTab.out <- NA
-pmTab.out <- NA
-
-if(!is.na(gainTab)) {
-	gainTab.out <- 'erg_clonTab.Gain.txt'
-	lossTab.out <- 'erg_clonTab.Loss.txt'
-
-	# Retrieve gain/loss data
-	gain <- read.table(file.path('.', gainTab), header=T, sep='\t')
-	loss <- read.table(file.path('.', lossTab), header=T, sep='\t')
-
-	# Dividing classes in gain/loss
-	cat('> Dividing gain/loss in classes\n')
-	erg.p.gain <- gain[which(gain$sample %in% pfcl$sample[which(pfcl$ERG.clean > 0)]),]
-	erg.p.loss <- loss[which(loss$sample %in% pfcl$sample[which(pfcl$ERG.clean > 0)]),]
-	write.table(erg.p.gain, paste0(p.outdir, '/erg_clonTab.Gain.txt'), quote=F, sep='\t')
-	write.table(erg.p.loss, paste0(p.outdir, '/erg_clonTab.Loss.txt'), quote=F, sep='\t')
-
-	erg.m.gain <- gain[which(gain$sample %in% pfcl$sample[which(pfcl$ERG.clean == 0)]),]
-	erg.m.loss <- loss[which(loss$sample %in% pfcl$sample[which(pfcl$ERG.clean == 0)]),]
-	write.table(erg.m.gain, paste0(m.outdir, '/erg_clonTab.Gain.txt'), quote=F, sep='\t')
-	write.table(erg.m.loss, paste0(m.outdir, '/erg_clonTab.Loss.txt'), quote=F, sep='\t')
-}
-if(!is.na(pmTab)) {
-	pmTab.out <- 'erg_clonTab.pm.txt'
-
-	# Retrieve gain/loss data
-	pm <- read.table(file.path('.', pmTab), header=T, sep='\t')
-
-	# Dividing classes in gain/loss
-	cat('> Dividing pm in classes\n')
-	erg.p.pm <- pm[which(pm$sample %in% pfcl$sample[which(pfcl$ERG.clean > 0)]),]
-	erg.m.pm <- pm[which(pm$sample %in% pfcl$sample[which(pfcl$ERG.clean > 0)]),]
-	write.table(erg.p.pm, paste0(p.outdir, '/erg_clonTab.pm.txt'), quote=F, sep='\t')
-	write.table(erg.m.pm, paste0(m.outdir, '/erg_clonTab.pm.txt'), quote=F, sep='\t')
-}
-
-if(!is.na(gainTab.out)) {
-	gainTab.out.m <- paste0(m.outdir, '/', gainTab.out)
-} else {
-	gainTab.out.m <- ''
-}
-if(!is.na(lossTab.out)) {
-	lossTab.out.m <- paste0(m.outdir, '/', lossTab.out)
-} else {
-	lossTab.out.m <- ''
-}
-if(!is.na(gainTab.out)) {
-	gainTab.out.p <- paste0(p.outdir, '/', gainTab.out)
-} else {
-	gainTab.out.p <- ''
-}
-if(!is.na(lossTab.out)) {
-	lossTab.out.p <- paste0(p.outdir, '/', lossTab.out)
-} else {
-	lossTab.out.p <- ''
-}
-if(!is.na(pmTab.out)) {
-	pmTab.out.m <- paste0(m.outdir, '/', pmTab.out)
-} else {
-	pmTab.out.m <- ''
-}
-if(!is.na(pmTab.out)) {
-	pmTab.out.p <- paste0(p.outdir, '/', pmTab.out)
-} else {
-	pmTab.out.p <- ''
-}
-param.names <- c('clusters', 'verbose', 'genes.label', 'output.dir', 'file-Gain', 'file-Loss', 'file-PM')
-m.param.val <- c(nCores, 'TRUE', gene.label, m.outdir, lossTab.out.m, gainTab.out.m, pmTab.out.m)
-p.param.val <- c(nCores, 'TRUE', gene.label, p.outdir, lossTab.out.p, gainTab.out.p, pmTab.out.p)
-
-write.table(cbind(param.names, m.param.val), paste0('param.ergm.txt'), quote=F, col.names=F, row.names=F, sep=' ')
-write.table(cbind(param.names, p.param.val), paste0('param.ergp.txt'), quote=F, col.names=F, row.names=F, sep=' ')
-
-# MAKE PERMUTATIONS
-cat('> Permuting.\n')
-
-set.seed(seed)
-
-cores <- makeCluster(nCores)
-registerDoParallel(cores)
-
-perms <- c()
-res <- foreach (i=1:200) %dopar% {
-    library(igraph)
-    samples <- sample(1:sum(c(length(erg.m),length(erg.p))))
-    sample.p <- samples[1:length(erg.p)]
-    sample.m <- samples[(length(erg.p)+1):sum(c(length(erg.m),length(erg.p)))]
-    perms <- append(perms, paste(samples, collapse='_'))
-
-    dir.create(file.path('.', paste0('s', i)), showWarnings = FALSE)
-    dir.create(file.path(paste0('s', i), p.outdir), showWarnings = FALSE)
-    dir.create(file.path(paste0('s', i), m.outdir), showWarnings = FALSE)
+if(!skip.base) {
+	dir.create(file.path(p.outdir), showWarnings = FALSE)
+	dir.create(file.path(m.outdir), showWarnings = FALSE)
 
 	gainTab.out <- NA
 	lossTab.out <- NA
 	pmTab.out <- NA
 
-    if(!is.na(gainTab)) {
-    	gainTab.out <- 'erg_clonTab.Gain.txt'
+	if(!is.na(gainTab)) {
+		gainTab.out <- 'erg_clonTab.Gain.txt'
 		lossTab.out <- 'erg_clonTab.Loss.txt'
 
-	    erg.p.gain <- gain[which(gain$sample %in% pfcl$sample[sample.p]),]
-	    erg.p.loss <- loss[which(loss$sample %in% pfcl$sample[sample.p]),]
-	    write.table(erg.p.gain, paste0('s', i, '/', p.outdir , '/', gainTab.out), quote=F, sep='\t')
-	    write.table(erg.p.loss, paste0('s', i, '/', p.outdir , '/', lossTab.out), quote=F, sep='\t')
-	    erg.m.gain <- gain[which(gain$sample %in% pfcl$sample[sample.m]),]
-	    erg.m.loss <- loss[which(loss$sample %in% pfcl$sample[sample.m]),]
-	    write.table(erg.m.gain, paste0('s', i,'/', m.outdir, '/', gainTab.out), quote=F, sep='\t')
-	    write.table(erg.m.loss, paste0('s', i,'/', m.outdir, '/', lossTab.out), quote=F, sep='\t')
-	}
-    if(!is.na(pmTab)) {
-    	pmTab.out <- 'erg_clonTab.pm.txt'
+		# Retrieve gain/loss data
+		gain <- read.table(file.path('.', gainTab), header=T, sep='\t')
+		loss <- read.table(file.path('.', lossTab), header=T, sep='\t')
 
-	    erg.p.pm <- pm[which(pm$sample %in% pfcl$sample[sample.p]),]
-	    erg.m.pm <- pm[which(pm$sample %in% pfcl$sample[sample.m]),]
-	    write.table(erg.p.pm, paste0('s', i, '/', p.outdir , '/', pmTab.out), quote=F, sep='\t')
-	    write.table(erg.m.pm, paste0('s', i, '/', m.outdir , '/', pmTab.out), quote=F, sep='\t')
+		# Dividing classes in gain/loss
+		cat('> Dividing gain/loss in classes\n')
+		erg.p.gain <- gain[which(gain$sample %in% pfcl$sample[which(pfcl$ERG.clean > 0)]),]
+		erg.p.loss <- loss[which(loss$sample %in% pfcl$sample[which(pfcl$ERG.clean > 0)]),]
+		write.table(erg.p.gain, paste0(p.outdir, '/erg_clonTab.Gain.txt'), quote=F, sep='\t')
+		write.table(erg.p.loss, paste0(p.outdir, '/erg_clonTab.Loss.txt'), quote=F, sep='\t')
+
+		erg.m.gain <- gain[which(gain$sample %in% pfcl$sample[which(pfcl$ERG.clean == 0)]),]
+		erg.m.loss <- loss[which(loss$sample %in% pfcl$sample[which(pfcl$ERG.clean == 0)]),]
+		write.table(erg.m.gain, paste0(m.outdir, '/erg_clonTab.Gain.txt'), quote=F, sep='\t')
+		write.table(erg.m.loss, paste0(m.outdir, '/erg_clonTab.Loss.txt'), quote=F, sep='\t')
+	}
+	if(!is.na(pmTab)) {
+		pmTab.out <- 'erg_clonTab.pm.txt'
+
+		# Retrieve gain/loss data
+		pm <- read.table(file.path('.', pmTab), header=T, sep='\t')
+
+		# Dividing classes in gain/loss
+		cat('> Dividing pm in classes\n')
+		erg.p.pm <- pm[which(pm$sample %in% pfcl$sample[which(pfcl$ERG.clean > 0)]),]
+		erg.m.pm <- pm[which(pm$sample %in% pfcl$sample[which(pfcl$ERG.clean > 0)]),]
+		write.table(erg.p.pm, paste0(p.outdir, '/erg_clonTab.pm.txt'), quote=F, sep='\t')
+		write.table(erg.m.pm, paste0(m.outdir, '/erg_clonTab.pm.txt'), quote=F, sep='\t')
 	}
 
 	if(!is.na(gainTab.out)) {
@@ -331,31 +265,119 @@ res <- foreach (i=1:200) %dopar% {
 	} else {
 		pmTab.out.p <- ''
 	}
-    param.names <- c('clusters', 'verbose', 'genes.label', 'output.dir', 'file-Gain', 'file-Loss', 'file-PM')
-    m.param.val <- c(nCores, 'TRUE', gene.label, m.outdir, lossTab.out.m, gainTab.out.m, pmTab.out.m)
-    p.param.val <- c(nCores, 'TRUE', gene.label, p.outdir, lossTab.out.p, gainTab.out.p, pmTab.out.p)
+	param.names <- c('clusters', 'verbose', 'genes.label', 'output.dir', 'file-Gain', 'file-Loss', 'file-PM')
+	m.param.val <- c(nCores, 'TRUE', gene.label, m.outdir, lossTab.out.m, gainTab.out.m, pmTab.out.m)
+	p.param.val <- c(nCores, 'TRUE', gene.label, p.outdir, lossTab.out.p, gainTab.out.p, pmTab.out.p)
 
-    write.table(cbind(param.names, m.param.val), paste0('s', i, '/paramS', i , 'ergm.txt'), quote=F, col.names=F, row.names=F, sep=' ')
-    write.table(cbind(param.names, p.param.val), paste0('s', i, '/paramS', i , 'ergp.txt'), quote=F, col.names=F, row.names=F, sep=' ')
+	write.table(cbind(param.names, m.param.val), paste0('param.ergm.txt'), quote=F, col.names=F, row.names=F, sep=' ')
+	write.table(cbind(param.names, p.param.val), paste0('param.ergp.txt'), quote=F, col.names=F, row.names=F, sep=' ')
 }
-cat('> Saving permutations log.\n')
-write(perms, 'perms.dat')
 
-stopCluster(cores)
+if(!skip.perm) {
+	# MAKE PERMUTATIONS
+	cat('> Permuting.\n')
+
+	set.seed(seed)
+
+	cores <- makeCluster(nCores)
+	registerDoParallel(cores)
+
+	perms <- c()
+	res <- foreach (i=1:nperm) %dopar% {
+	    library(igraph)
+	    samples <- sample(1:sum(c(length(erg.m),length(erg.p))))
+	    sample.p <- samples[1:length(erg.p)]
+	    sample.m <- samples[(length(erg.p)+1):sum(c(length(erg.m),length(erg.p)))]
+	    perms <- append(perms, paste(samples, collapse='_'))
+
+	    dir.create(file.path('.', paste0('s', i)), showWarnings = FALSE)
+	    dir.create(file.path(paste0('s', i), p.outdir), showWarnings = FALSE)
+	    dir.create(file.path(paste0('s', i), m.outdir), showWarnings = FALSE)
+
+		gainTab.out <- NA
+		lossTab.out <- NA
+		pmTab.out <- NA
+
+	    if(!is.na(gainTab)) {
+	    	gainTab.out <- 'erg_clonTab.Gain.txt'
+			lossTab.out <- 'erg_clonTab.Loss.txt'
+
+		    erg.p.gain <- gain[which(gain$sample %in% pfcl$sample[sample.p]),]
+		    erg.p.loss <- loss[which(loss$sample %in% pfcl$sample[sample.p]),]
+		    write.table(erg.p.gain, paste0('s', i, '/', p.outdir , '/', gainTab.out), quote=F, sep='\t')
+		    write.table(erg.p.loss, paste0('s', i, '/', p.outdir , '/', lossTab.out), quote=F, sep='\t')
+		    erg.m.gain <- gain[which(gain$sample %in% pfcl$sample[sample.m]),]
+		    erg.m.loss <- loss[which(loss$sample %in% pfcl$sample[sample.m]),]
+		    write.table(erg.m.gain, paste0('s', i,'/', m.outdir, '/', gainTab.out), quote=F, sep='\t')
+		    write.table(erg.m.loss, paste0('s', i,'/', m.outdir, '/', lossTab.out), quote=F, sep='\t')
+		}
+	    if(!is.na(pmTab)) {
+	    	pmTab.out <- 'erg_clonTab.pm.txt'
+
+		    erg.p.pm <- pm[which(pm$sample %in% pfcl$sample[sample.p]),]
+		    erg.m.pm <- pm[which(pm$sample %in% pfcl$sample[sample.m]),]
+		    write.table(erg.p.pm, paste0('s', i, '/', p.outdir , '/', pmTab.out), quote=F, sep='\t')
+		    write.table(erg.m.pm, paste0('s', i, '/', m.outdir , '/', pmTab.out), quote=F, sep='\t')
+		}
+
+		if(!is.na(gainTab.out)) {
+			gainTab.out.m <- paste0(m.outdir, '/', gainTab.out)
+		} else {
+			gainTab.out.m <- ''
+		}
+		if(!is.na(lossTab.out)) {
+			lossTab.out.m <- paste0(m.outdir, '/', lossTab.out)
+		} else {
+			lossTab.out.m <- ''
+		}
+		if(!is.na(gainTab.out)) {
+			gainTab.out.p <- paste0(p.outdir, '/', gainTab.out)
+		} else {
+			gainTab.out.p <- ''
+		}
+		if(!is.na(lossTab.out)) {
+			lossTab.out.p <- paste0(p.outdir, '/', lossTab.out)
+		} else {
+			lossTab.out.p <- ''
+		}
+		if(!is.na(pmTab.out)) {
+			pmTab.out.m <- paste0(m.outdir, '/', pmTab.out)
+		} else {
+			pmTab.out.m <- ''
+		}
+		if(!is.na(pmTab.out)) {
+			pmTab.out.p <- paste0(p.outdir, '/', pmTab.out)
+		} else {
+			pmTab.out.p <- ''
+		}
+	    param.names <- c('clusters', 'verbose', 'genes.label', 'output.dir', 'file-Gain', 'file-Loss', 'file-PM')
+	    m.param.val <- c(nCores, 'TRUE', gene.label, m.outdir, lossTab.out.m, gainTab.out.m, pmTab.out.m)
+	    p.param.val <- c(nCores, 'TRUE', gene.label, p.outdir, lossTab.out.p, gainTab.out.p, pmTab.out.p)
+
+	    write.table(cbind(param.names, m.param.val), paste0('s', i, '/paramS', i , 'ergm.txt'), quote=F, col.names=F, row.names=F, sep=' ')
+	    write.table(cbind(param.names, p.param.val), paste0('s', i, '/paramS', i , 'ergp.txt'), quote=F, col.names=F, row.names=F, sep=' ')
+	}
+	cat('> Saving permutations log.\n')
+	write(perms, 'perms.dat')
+
+	stopCluster(cores)
+}
 
 # -------- #
 # BUILDING #
 # -------- #
 cat('> Building dependency networks and calculating distances.\n')
 
-system(paste0('./Graph_Builder.script.R -p=param.ergm.txt > log.ergm.dat'))
-system(paste0('./Graph_Builder.script.R -p=param.ergp.txt > log.ergp.dat'))
+if(!skip.base) {
+	system(paste0('./Graph_Builder.script.R -p=param.ergm.txt > log.ergm.dat'))
+	system(paste0('./Graph_Builder.script.R -p=param.ergp.txt > log.ergp.dat'))
 
-source('./01_Graph_Manager.class.R')
-gm <- read.graph(paste0(p.outdir, '/total_graph.graphml'), format='graphml')
-gp <- read.graph(paste0(m.outdir, '/total_graph.graphml'), format='graphml')
-ds <- GraphManager()$calcDistances(gm, gp, 1)
-write(ds, 'distances.dat')
+	source('./01_Graph_Manager.class.R')
+	gm <- read.graph(paste0(p.outdir, '/total_graph.graphml'), format='graphml')
+	gp <- read.graph(paste0(m.outdir, '/total_graph.graphml'), format='graphml')
+	ds <- GraphManager()$calcDistances(gm, gp, 1)
+	write(ds, 'distances.dat')
+}
 
 for (i in 1:nperm) {
 	system.time({

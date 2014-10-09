@@ -1,6 +1,8 @@
-nperm	20
+nperm	200
 seed	49033224
 nCores	20
+skip.base	TRUE
+skip.perm	TRUE
 graph.dir	sample-graphs
 annotations	BacaBarbTCGA_Annotations.20140716.csv
 sample.col	Bam.name
