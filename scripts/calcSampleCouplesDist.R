@@ -1,8 +1,7 @@
 #!/usr/bin/env Rscript
 #
-# ./calcSampleCouplesDistances.R numberOfCores suffix annotationFile
+# ./calcSampleCouplesDistances.R numberOfCores graphDirectory suffix annotationFile
 # 
-# SSDNs must be in the folder 'sample-graphs'
 # 01_Graph_Manager.class.R and extendigraph.R are required.
 
 library('doParallel')
@@ -10,10 +9,10 @@ library('igraph')
 source('01_Graph_Manager.class.R')
 
 args <- commandArgs(trailingOnly=TRUE)
-if(length(args) != 3) stop('./calcSampleCouplesDistances.R numberOfCores suffix annotationFile')
+if(length(args) != 3) stop('./calcSampleCouplesDistances.R numberOfCores graphDirectory suffix annotationFile')
 
 print('> Prepare.')
-flist <- list.files('sample-graphs/')
+flist <- list.files(args[2])
 remove.id <- c()
 for (i in 1:length(flist)) {
 	g <- read.graph(paste0('sample-graphs/', flist[i]), format='graphml')
@@ -67,7 +66,7 @@ print('> End parallel.')
 
 distances <- data.frame(distances)
 colnames(distances) <- c('g.one', 'g.two', 'dh', 'dj', 'dim', 'dhim', 'djim')
-write.table(distances, paste0('dist.', args[2], '.dat'), quote=F, row.names=F)
+write.table(distances, paste0('dist.', args[3], '.dat'), quote=F, row.names=F)
 
 print('> Prepare plots.')
 hm <- matrix(as.numeric(distances$dh), n, n)
@@ -78,88 +77,88 @@ jim <- matrix(as.numeric(distances$djim), n, n)
 
 if(!file.exists('plots/')) dir.create('plots')
 
-svg(paste0('plots/hamming_hist.', args[2], '.svg'))
+svg(paste0('plots/hamming_hist.', args[3], '.svg'))
 hist(hm, xlim=c(0,1), main='Distance distribution', xlab='H', prob=T, ylim=c(0,80))
 lines(density(hm), col=4, lty=2)
 dev.off()
-svg(paste0('plots/hamming_hist_sr.', args[2], '.svg'))
+svg(paste0('plots/hamming_hist_sr.', args[3], '.svg'))
 hist(hm, xlim=c(0,1), breaks=sqrt(length(hm)), main='Distance distribution [SQRT]', xlab='H', prob=T, ylim=c(0,80))
 lines(density(hm), col=4, lty=2)
 dev.off()
 if(IQR(hm) != 0) {
-	svg(paste0('plots/hamming_hist_fd.', args[2], '.svg'))
+	svg(paste0('plots/hamming_hist_fd.', args[3], '.svg'))
 	hist(hm, xlim=c(0,1), breaks=1/(2*IQR(hm)/length(hm)**(1/3)), main='Distance distribution [FD]', xlab='H', prob=T, ylim=c(0,80))
 	lines(density(hm), col=4, lty=2)
 	dev.off()
 }
 
-svg(paste0('plots/jaccard_hist.', args[2], '.svg'))
+svg(paste0('plots/jaccard_hist.', args[3], '.svg'))
 hist(jm, xlim=c(0,1), main='Distance distribution', xlab='J', prob=T, ylim=c(0,80))
 lines(density(jm), col=4, lty=2)
 dev.off()
-svg(paste0('plots/jaccard_hist_sr.', args[2], '.svg'))
+svg(paste0('plots/jaccard_hist_sr.', args[3], '.svg'))
 hist(jm, xlim=c(0,1), breaks=sqrt(length(jm)), main='Distance distribution [SQRT]', xlab='J', prob=T, ylim=c(0,80))
 lines(density(jm), col=4, lty=2)
 dev.off()
 if(IQR(jm) != 0) {
-	svg(paste0('plots/jaccard_hist_fd.', args[2], '.svg'))
+	svg(paste0('plots/jaccard_hist_fd.', args[3], '.svg'))
 	hist(jm, xlim=c(0,1), breaks=1/(2*IQR(jm)/length(jm)**(1/3)), main='Distance distribution [FD]', xlab='J', prob=T, ylim=c(0,80))
 	lines(density(jm), col=4, lty=2)
 	dev.off()
 }
 
-svg(paste0('plots/ipsen_hist.', args[2], '.svg'))
+svg(paste0('plots/ipsen_hist.', args[3], '.svg'))
 hist(im, xlim=c(0,1), main='Distance distribution', xlab='IM', prob=T, ylim=c(0,80))
 lines(density(im), col=4, lty=2)
 dev.off()
-svg(paste0('plots/ipsen_hist_sr.', args[2], '.svg'))
+svg(paste0('plots/ipsen_hist_sr.', args[3], '.svg'))
 hist(im, xlim=c(0,1), breaks=sqrt(length(im)), main='Distance distribution [SQRT]', xlab='IM', prob=T, ylim=c(0,80))
 lines(density(im), col=4, lty=2)
 dev.off()
 if(IQR(im) != 0) {
-	svg(paste0('plots/ipsen_hist_fd.', args[2], '.svg'))
+	svg(paste0('plots/ipsen_hist_fd.', args[3], '.svg'))
 	hist(im, xlim=c(0,1), breaks=1/(2*IQR(im)/length(im)**(1/3)), main='Distance distribution [FD]', xlab='IM', prob=T, ylim=c(0,80))
 	lines(density(im), col=4, lty=2)
 	dev.off()
 }
 
-svg(paste0('plots/him_hist.', args[2], '.svg'))
+svg(paste0('plots/him_hist.', args[3], '.svg'))
 hist(him, xlim=c(0,1), main='Distance distribution', xlab='HIM', prob=T, ylim=c(0,80))
 lines(density(him), col=4, lty=2)
 dev.off()
-svg(paste0('plots/him_hist_sr.', args[2], '.svg'))
+svg(paste0('plots/him_hist_sr.', args[3], '.svg'))
 hist(him, xlim=c(0,1), breaks=sqrt(length(him)), main='Distance distribution [SQRT]', xlab='HIM', prob=T, ylim=c(0,80))
 lines(density(him), col=4, lty=2)
 dev.off()
 if(IQR(him) != 0) {
-	svg(paste0('plots/him_hist_fd.', args[2], '.svg'))
+	svg(paste0('plots/him_hist_fd.', args[3], '.svg'))
 	hist(him, xlim=c(0,1), breaks=1/(2*IQR(him)/length(him)**(1/3)), main='Distance distribution [FD]', xlab='HIM', prob=T, ylim=c(0,80))
 	lines(density(him), col=4, lty=2)
 	dev.off()
 }
 
-svg(paste0('plots/jim_hist.', args[2], '.svg'))
+svg(paste0('plots/jim_hist.', args[3], '.svg'))
 hist(jim, xlim=c(0,1), main='Distance distribution', xlab='H', prob=T, ylim=c(0,80))
 lines(density(jim), col=4, lty=2)
 dev.off()
-svg(paste0('plots/jim_hist_sr.', args[2], '.svg'))
+svg(paste0('plots/jim_hist_sr.', args[3], '.svg'))
 hist(jim, xlim=c(0,1), breaks=sqrt(length(jim)), main='Distance distribution [SQRT]', xlab='H', prob=T, ylim=c(0,80))
 lines(density(jim), col=4, lty=2)
 dev.off()
 if(IQR(jim) != 0) {
-	svg(paste0('plots/jim_hist_fd.', args[2], '.svg'))
+	svg(paste0('plots/jim_hist_fd.', args[3], '.svg'))
 	hist(jim, xlim=c(0,1), breaks=1/(2*IQR(jim)/length(jim)**(1/3)), main='Distance distribution [FD]', xlab='H', prob=T, ylim=c(0,80))
 	lines(density(jim), col=4, lty=2)
 	dev.off()
 }
 
-svg(paste0('plots/him_scatterplot.', args[2], '.svg'))
+svg(paste0('plots/him_scatterplot.', args[3], '.svg'))
 plot(hm, im, xlab='H', ylab='IM', main='H/IM space', xlim=c(0,1), ylim=c(0,1), pch=20, col='gray30')
 abline(h=0.5, lty=2, col=2)
 abline(v=0.5, lty=2, col=2)
 dev.off()
 
-svg(paste0('plots/jim_scatterplot.', args[2], '.svg'))
+svg(paste0('plots/jim_scatterplot.', args[3], '.svg'))
 plot(jm, im, xlab='J', ylab='IM', main='J/IM space', xlim=c(0,1), ylim=c(0,1), pch=20, col='gray30')
 abline(h=0.5, lty=2, col=2)
 abline(v=0.5, lty=2, col=2)
@@ -168,7 +167,7 @@ dev.off()
 print('> Prepare heatmaps.')
 if(!file.exists('heatmaps/')) dir.create('heatmaps')
 
-pv <- read.table(args[3], header=T)
+pv <- read.table(args[4], header=T)
 pvcl <- pv[which(paste0('gra_', pv$Bam.name, '.graphml') %in% flist),]
 pvcl$Bam.name <- paste0('gra_', pvcl$Bam.name, '.grapml')
 pvcl$Gleason.score <- pvcl$Gleason_Major + pvcl$Gleason_Minor
@@ -224,11 +223,11 @@ color.map.col4 <- sapply(pvcl$ERG.clean, function(x) {
 
 # HAMMING
 hc <- hclust(as.dist(hm))
-svg(paste0('heatmaps/hamming_dendrogram.', args[2], '.svg'))
+svg(paste0('heatmaps/hamming_dendrogram.', args[3], '.svg'))
 plot(hc, hang=-1, xlab='sample', main='Hamming-based Dendrogram', cex=0.3)
 dev.off()
 
-svg(paste0('heatmaps/hamming_heat.', args[2], '.svg'))
+svg(paste0('heatmaps/hamming_heat.', args[3], '.svg'))
 color.map.col <- cbind(color.map.col1, color.map.col2, color.map.col3, color.map.col4)
 color.map.row <- cbind(color.map.col4, color.map.col3, color.map.col2, color.map.col1)
 colnames(color.map.col) <- c('Age', 'PSA', 'GS', 'ERG')
@@ -243,11 +242,11 @@ dev.off()
 
 # JACCARD
 jc <- hclust(as.dist(jm))
-svg(paste0('heatmaps/jaccard_dendrogram.', args[2], '.svg'))
+svg(paste0('heatmaps/jaccard_dendrogram.', args[3], '.svg'))
 plot(jc, hang=-1, xlab='sample', main='Jaccard-based Dendrogram', cex=0.3)
 dev.off()
 
-svg(paste0('heatmaps/jaccard_heat.', args[2], '.svg'))
+svg(paste0('heatmaps/jaccard_heat.', args[3], '.svg'))
 color.map.col <- cbind(color.map.col1, color.map.col2, color.map.col3, color.map.col4)
 color.map.row <- cbind(color.map.col4, color.map.col3, color.map.col2, color.map.col1)
 colnames(color.map.col) <- c('Age', 'PSA', 'GS', 'ERG')
@@ -262,11 +261,11 @@ dev.off()
 
 # IPSEN
 ic <- hclust(as.dist(im))
-svg(paste0('heatmaps/ipsen_dendrogram.', args[2], '.svg'))
+svg(paste0('heatmaps/ipsen_dendrogram.', args[3], '.svg'))
 plot(ic, hang=-1, xlab='sample', main='Ipsen-based Dendrogram', cex=0.3)
 dev.off()
 
-svg(paste0('heatmaps/ipsen_heat.', args[2], '.svg'))
+svg(paste0('heatmaps/ipsen_heat.', args[3], '.svg'))
 color.map.col <- cbind(color.map.col1, color.map.col2, color.map.col3, color.map.col4)
 color.map.row <- cbind(color.map.col4, color.map.col3, color.map.col2, color.map.col1)
 colnames(color.map.col) <- c('Age', 'PSA', 'GS', 'ERG')
@@ -281,11 +280,11 @@ dev.off()
 
 # HIM
 hic <- hclust(as.dist(him))
-svg(paste0('heatmaps/him_dendrogram.', args[2], '.svg'))
+svg(paste0('heatmaps/him_dendrogram.', args[3], '.svg'))
 plot(hic, hang=-1, xlab='sample', main='HIM-based Dendrogram', cex=0.3)
 dev.off()
 
-svg(paste0('heatmaps/him_heat.', args[2], '.svg'))
+svg(paste0('heatmaps/him_heat.', args[3], '.svg'))
 color.map.col <- cbind(color.map.col1, color.map.col2, color.map.col3, color.map.col4)
 color.map.row <- cbind(color.map.col4, color.map.col3, color.map.col2, color.map.col1)
 colnames(color.map.col) <- c('Age', 'PSA', 'GS', 'ERG')
@@ -300,11 +299,11 @@ dev.off()
 
 # JIM
 jic <- hclust(as.dist(jim))
-svg(paste0('heatmaps/jim_dendrogram.', args[2], '.svg'))
+svg(paste0('heatmaps/jim_dendrogram.', args[3], '.svg'))
 plot(jic, hang=-1, xlab='sample', main='JIM-based Dendrogram', cex=0.3)
 dev.off()
 
-svg(paste0('heatmaps/jim_heat.', args[2], '.svg'))
+svg(paste0('heatmaps/jim_heat.', args[3], '.svg'))
 color.map.col <- cbind(color.map.col1, color.map.col2, color.map.col3, color.map.col4)
 color.map.row <- cbind(color.map.col4, color.map.col3, color.map.col2, color.map.col1)
 colnames(color.map.col) <- c('Age', 'PSA', 'GS', 'ERG')

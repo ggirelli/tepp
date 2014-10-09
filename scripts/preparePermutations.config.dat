@@ -1,0 +1,12 @@
+nperm	20
+seed	49033224
+nCores	20
+graph.dir	sample-graphs
+annotations	BacaBarbTCGA_Annotations.20140716.csv
+sample.col	Bam.name
+file-Gain	tabs/genesSCNA_clonalityTable.Gain.txt
+file-Loss	tabs/genesSCNA_clonalityTable.Loss.txt
+file-PM		tabs/PM_clonalityTable.out.txt
+m.outdir	ERGm
+p.outdir	ERGp
+gene.label	Gene.id
