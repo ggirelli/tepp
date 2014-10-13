@@ -3,6 +3,7 @@ seed	49033224
 nCores	20
 skip.base	TRUE
 skip.perm	TRUE
+skip.build	TRUE
 graph.dir	sample-graphs
 annotations	BacaBarbTCGA_Annotations.20140716.csv
 sample.col	Bam.name

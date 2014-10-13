@@ -143,18 +143,38 @@ if(is.na(p.outdir)) stop('Error: gene.label required.')
 
 skip.base <- getp(ps, 'skip.base')
 if(!is.na(skip.base)) {
-	if(skip.base == 'TRUE') cat("    * Skipping base networks.\n")
-	skip.base <- TRUE
+	if(skip.base == 'TRUE') {
+		cat("    * Skipping base networks.\n")
+		skip.base <- TRUE
+	} else {
+		skip.build <- FALSE
+	}
 } else {
 	skip.base <- FALSE
 }
 
 skip.perm <- getp(ps, 'skip.perm')
 if(!is.na(skip.perm)) {
-	if(skip.perm == 'TRUE') cat("    * Skipping permuting.\n")
-	skip.perm <- TRUE
+	if(skip.perm == 'TRUE') {
+		cat("    * Skipping permuting.\n")
+		skip.perm <- TRUE
+	} else {
+		skip.build <- FALSE
+	}
 } else {
 	skip.perm <- FALSE
+}
+
+skip.build <- getp(ps, 'skip.build')
+if(!is.na(skip.build)) {
+	if(skip.build == 'TRUE') {
+		cat("    * Skipping building permutations.\n")
+		skip.build <- TRUE
+	} else {
+		skip.build <- FALSE
+	}
+} else {
+	skip.build <- FALSE
 }
 
 # ----------- #
@@ -354,7 +374,7 @@ if(!skip.perm) {
 	    m.param.val <- c(nCores, 'TRUE', gene.label, m.outdir, lossTab.out.m, gainTab.out.m, pmTab.out.m)
 	    p.param.val <- c(nCores, 'TRUE', gene.label, p.outdir, lossTab.out.p, gainTab.out.p, pmTab.out.p)
 
-	    write(perms, paste0('s', i, '/perms.dat')
+	    write(perms, paste0('s', i, '/perms.dat'))
 	    write.table(cbind(param.names, m.param.val), paste0('s', i, '/paramS', i , 'ergm.txt'), quote=F, col.names=F, row.names=F, sep=' ')
 	    write.table(cbind(param.names, p.param.val), paste0('s', i, '/paramS', i , 'ergp.txt'), quote=F, col.names=F, row.names=F, sep=' ')
 	}
@@ -374,34 +394,36 @@ if(!skip.base) {
 	system(paste0('./Graph_Builder.script.R -p=param.ergp.txt > log.ergp.dat'))
 }
 
-for (i in 1:nperm) {
-	system.time({
-		cat(paste0('    * Building permutation #', i, "\n"))
-		setwd(paste0('s', i))
+if(!skip.build) {
+	for (i in 1:nperm) {
+		system.time({
+			cat(paste0('    * Building permutation #', i, "\n"))
+			setwd(paste0('s', i))
 
-		cat(paste0("         - Building ERGm dependency graph.\n"))
-		system(paste0('../Graph_Builder.parentDir.script.R -p=paramS', i, 'ergm.txt > log.s', i, '.ergm.dat'))
-		cat(paste0("         - Building ERGp dependency graph.\n"))
-		system(paste0('../Graph_Builder.parentDir.script.R -p=paramS', i, 'ergp.txt > log.s', i, '.ergp.dat'))
+			cat(paste0("         - Building ERGm dependency graph.\n"))
+			system(paste0('../Graph_Builder.parentDir.script.R -p=paramS', i, 'ergm.txt > log.s', i, '.ergm.dat'))
+			cat(paste0("         - Building ERGp dependency graph.\n"))
+			system(paste0('../Graph_Builder.parentDir.script.R -p=paramS', i, 'ergp.txt > log.s', i, '.ergp.dat'))
 
-		setwd('..')
-	})
+			setwd('..')
+		})
+	}
 }
 
 # ------------------ #
 # CALCULATE DISTANCE #
 # ------------------ #
 
-cat(paste0('> Calculating distances'))
+cat(paste0('> Calculating distances\n'))
 
-if(!skip.base) {
-	source('./01_Graph_Manager.class.R')
-	gm <- read.graph(paste0(p.outdir, '/total_graph.graphml'), format='graphml')
-	gp <- read.graph(paste0(m.outdir, '/total_graph.graphml'), format='graphml')
-	ds <- GraphManager()$calcDistances(gm, gp, 1)
-	write(ds, 'distances.dat')
-}
+cat('	* Working on original data.\n')
+source('./01_Graph_Manager.class.R')
+gm <- read.graph(paste0(p.outdir, '/total_graph.graphml'), format='graphml')
+gp <- read.graph(paste0(m.outdir, '/total_graph.graphml'), format='graphml')
+ds <- GraphManager()$calcDistances(gm, gp, 1)
+write(ds, 'distances.dat')
 
+cat('	* Working on permutations.\n')
 cores <- makeCluster(nCores)
 registerDoParallel(cores)
 
