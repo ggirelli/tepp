@@ -367,17 +367,11 @@ if(!skip.perm) {
 # -------- #
 # BUILDING #
 # -------- #
-cat('> Building dependency networks and calculating distances.\n')
+cat('> Building dependency networks.\n')
 
 if(!skip.base) {
 	system(paste0('./Graph_Builder.script.R -p=param.ergm.txt > log.ergm.dat'))
 	system(paste0('./Graph_Builder.script.R -p=param.ergp.txt > log.ergp.dat'))
-
-	source('./01_Graph_Manager.class.R')
-	gm <- read.graph(paste0(p.outdir, '/total_graph.graphml'), format='graphml')
-	gp <- read.graph(paste0(m.outdir, '/total_graph.graphml'), format='graphml')
-	ds <- GraphManager()$calcDistances(gm, gp, 1)
-	write(ds, 'distances.dat')
 }
 
 for (i in 1:nperm) {
@@ -398,7 +392,15 @@ for (i in 1:nperm) {
 # CALCULATE DISTANCE #
 # ------------------ #
 
-cat(paste0('    * Measuring distances'))
+cat(paste0('> Measuring distances'))
+
+if(!skip.base) {
+	source('./01_Graph_Manager.class.R')
+	gm <- read.graph(paste0(p.outdir, '/total_graph.graphml'), format='graphml')
+	gp <- read.graph(paste0(m.outdir, '/total_graph.graphml'), format='graphml')
+	ds <- GraphManager()$calcDistances(gm, gp, 1)
+	write(ds, 'distances.dat')
+}
 
 cores <- makeCluster(nCores)
 registerDoParallel(cores)
