@@ -180,12 +180,16 @@ library(heatmap.plus)
 # Heatmap notations
 color.map.col1 <- sapply(pvcl$Age, function(x) {
 	if(is.na(x)) return('white')
-	if (45<=x && x<55) {
+	if (30<=x && x<40) {
+		return('green')
+	} else if (40<=x && x<50) {
 		return('deepskyblue')
-	} else if (55<=x && x<65) {
+	} else if (50<=x && x<60) {
 		return('darkgreen')
-	} else if (65<=x && x<75) {
+	} else if (60<=x && x<70) {
 		return('darkorange')
+	} else if (70<=x && x<80) {
+		return('orange')
 	}
 })
 color.map.col2 <- sapply(pvcl$Serum_PSA_at_diagnosis, function(x) {
@@ -228,10 +232,9 @@ plot(hc, hang=-1, xlab='sample', main='Hamming-based Dendrogram', cex=0.3)
 dev.off()
 
 svg(paste0('heatmaps/hamming_heat.', args[3], '.svg'))
-color.map.col <- cbind(color.map.col1, color.map.col2, color.map.col3, color.map.col4)
-color.map.row <- cbind(color.map.col4, color.map.col3, color.map.col2, color.map.col1)
+length(c(color.map.col1, color.map.col2, color.map.col3, color.map.col4))
+color.map.col <- matrix(unlist(c(color.map.col1, color.map.col2, color.map.col3, color.map.col4)), nrow=length(flist), ncol=4)
 colnames(color.map.col) <- c('Age', 'PSA', 'GS', 'ERG')
-colnames(color.map.row) <- c('ERG', 'GS', 'PSA', 'Age')
 rownames(hm) <- colnames(hm)
 heatmap.plus::heatmap.plus(hm, Rowv=as.dendrogram(hc), Colv=rev(as.dendrogram(hc)), na.rm=F, symm=T, margins=c(5,12), ColSideColors=color.map.col, cexRow=0.3, cexCol=0.3, main='Hamming')
 legend(0.86,0.9,legend=c("45-55","55-65","65-75"),pch=15,col=c('deepskyblue', 'darkgreen', 'darkorange'),cex=0.7,title="Age")
@@ -247,10 +250,8 @@ plot(jc, hang=-1, xlab='sample', main='Jaccard-based Dendrogram', cex=0.3)
 dev.off()
 
 svg(paste0('heatmaps/jaccard_heat.', args[3], '.svg'))
-color.map.col <- cbind(color.map.col1, color.map.col2, color.map.col3, color.map.col4)
-color.map.row <- cbind(color.map.col4, color.map.col3, color.map.col2, color.map.col1)
+color.map.col <- matrix(unlist(c(color.map.col1, color.map.col2, color.map.col3, color.map.col4)), nrow=length(flist), ncol=4)
 colnames(color.map.col) <- c('Age', 'PSA', 'GS', 'ERG')
-colnames(color.map.row) <- c('ERG', 'GS', 'PSA', 'Age')
 rownames(jm) <- colnames(jm)
 heatmap.plus::heatmap.plus(jm, Rowv=as.dendrogram(jc), Colv=rev(as.dendrogram(jc)), na.rm=F, symm=T, margins=c(5,12), ColSideColors=color.map.col, cexRow=0.3, cexCol=0.3, main='Hamming')
 legend(0.86,0.9,legend=c("45-55","55-65","65-75"),pch=15,col=c('deepskyblue', 'darkgreen', 'darkorange'),cex=0.7,title="Age")
@@ -266,10 +267,8 @@ plot(ic, hang=-1, xlab='sample', main='Ipsen-based Dendrogram', cex=0.3)
 dev.off()
 
 svg(paste0('heatmaps/ipsen_heat.', args[3], '.svg'))
-color.map.col <- cbind(color.map.col1, color.map.col2, color.map.col3, color.map.col4)
-color.map.row <- cbind(color.map.col4, color.map.col3, color.map.col2, color.map.col1)
+color.map.col <- matrix(unlist(c(color.map.col1, color.map.col2, color.map.col3, color.map.col4)), nrow=length(flist), ncol=4)
 colnames(color.map.col) <- c('Age', 'PSA', 'GS', 'ERG')
-colnames(color.map.row) <- c('ERG', 'GS', 'PSA', 'Age')
 rownames(im) <- colnames(im)
 heatmap.plus::heatmap.plus(im, Rowv=as.dendrogram(ic), Colv=rev(as.dendrogram(ic)), na.rm=F, symm=T, margins=c(5,12), ColSideColors=color.map.col, cexRow=0.3, cexCol=0.3, main='Ipsen')
 legend(0.86,0.9,legend=c("45-55","55-65","65-75"),pch=15,col=c('deepskyblue', 'darkgreen', 'darkorange'),cex=0.7,title="Age")
@@ -285,10 +284,8 @@ plot(hic, hang=-1, xlab='sample', main='HIM-based Dendrogram', cex=0.3)
 dev.off()
 
 svg(paste0('heatmaps/him_heat.', args[3], '.svg'))
-color.map.col <- cbind(color.map.col1, color.map.col2, color.map.col3, color.map.col4)
-color.map.row <- cbind(color.map.col4, color.map.col3, color.map.col2, color.map.col1)
+color.map.col <- matrix(unlist(c(color.map.col1, color.map.col2, color.map.col3, color.map.col4)), nrow=length(flist), ncol=4)
 colnames(color.map.col) <- c('Age', 'PSA', 'GS', 'ERG')
-colnames(color.map.row) <- c('ERG', 'GS', 'PSA', 'Age')
 rownames(him) <- colnames(him)
 heatmap.plus::heatmap.plus(him, Rowv=as.dendrogram(hic), Colv=rev(as.dendrogram(hic)), na.rm=F, symm=T, margins=c(5,12), ColSideColors=color.map.col, cexRow=0.3, cexCol=0.3, main='HIM')
 legend(0.86,0.9,legend=c("45-55","55-65","65-75"),pch=15,col=c('deepskyblue', 'darkgreen', 'darkorange'),cex=0.7,title="Age")
@@ -304,10 +301,8 @@ plot(jic, hang=-1, xlab='sample', main='JIM-based Dendrogram', cex=0.3)
 dev.off()
 
 svg(paste0('heatmaps/jim_heat.', args[3], '.svg'))
-color.map.col <- cbind(color.map.col1, color.map.col2, color.map.col3, color.map.col4)
-color.map.row <- cbind(color.map.col4, color.map.col3, color.map.col2, color.map.col1)
+color.map.col <- matrix(unlist(c(color.map.col1, color.map.col2, color.map.col3, color.map.col4)), nrow=length(flist), ncol=4)
 colnames(color.map.col) <- c('Age', 'PSA', 'GS', 'ERG')
-colnames(color.map.row) <- c('ERG', 'GS', 'PSA', 'Age')
 rownames(jim) <- colnames(jim)
 heatmap.plus::heatmap.plus(jim, Rowv=as.dendrogram(jic), Colv=rev(as.dendrogram(jic)), na.rm=F, symm=T, margins=c(5,12), ColSideColors=color.map.col, cexRow=0.3, cexCol=0.3, main='JIM')
 legend(0.86,0.9,legend=c("45-55","55-65","65-75"),pch=15,col=c('deepskyblue', 'darkgreen', 'darkorange'),cex=0.7,title="Age")
