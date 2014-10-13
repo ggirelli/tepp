@@ -9,7 +9,7 @@ library('igraph')
 source('01_Graph_Manager.class.R')
 
 args <- commandArgs(trailingOnly=TRUE)
-if(length(args) != 3) stop('./calcSampleCouplesDistances.R numberOfCores graphDirectory suffix annotationFile')
+if(length(args) != 4) stop('./calcSampleCouplesDistances.R numberOfCores graphDirectory suffix annotationFile')
 
 print('> Prepare.')
 flist <- list.files(args[2])
