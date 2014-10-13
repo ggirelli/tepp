@@ -392,7 +392,7 @@ for (i in 1:nperm) {
 # CALCULATE DISTANCE #
 # ------------------ #
 
-cat(paste0('> Measuring distances'))
+cat(paste0('> Calculating distances'))
 
 if(!skip.base) {
 	source('./01_Graph_Manager.class.R')
@@ -408,7 +408,6 @@ registerDoParallel(cores)
 res <- foreach(i=1:nperm) %dopar% {
 	setwd(paste0('s', i))
 
-	#cat(paste0('    * Measuring distance for permutation #', i, "\n"))
 	source('../01_Graph_Manager.parentDir.class.R')
 	gm <- read.graph(paste0(p.outdir, '/total_graph.graphml'), format='graphml')
 	gp <- read.graph(paste0(m.outdir, '/total_graph.graphml'), format='graphml')
