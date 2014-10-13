@@ -354,11 +354,12 @@ if(!skip.perm) {
 	    m.param.val <- c(nCores, 'TRUE', gene.label, m.outdir, lossTab.out.m, gainTab.out.m, pmTab.out.m)
 	    p.param.val <- c(nCores, 'TRUE', gene.label, p.outdir, lossTab.out.p, gainTab.out.p, pmTab.out.p)
 
+	    write(perms, paste0('s', i, '/perms.dat')
 	    write.table(cbind(param.names, m.param.val), paste0('s', i, '/paramS', i , 'ergm.txt'), quote=F, col.names=F, row.names=F, sep=' ')
 	    write.table(cbind(param.names, p.param.val), paste0('s', i, '/paramS', i , 'ergp.txt'), quote=F, col.names=F, row.names=F, sep=' ')
 	}
 	cat('> Saving permutations log.\n')
-	write(perms, 'perms.dat')
+	system('cat s*/perms.dat > perms.dat')
 
 	stopCluster(cores)
 }
