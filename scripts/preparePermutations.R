@@ -147,7 +147,7 @@ if(!is.na(skip.base)) {
 		cat("    * Skipping base networks.\n")
 		skip.base <- TRUE
 	} else {
-		skip.build <- FALSE
+		skip.base <- FALSE
 	}
 } else {
 	skip.base <- FALSE
@@ -159,7 +159,7 @@ if(!is.na(skip.perm)) {
 		cat("    * Skipping permuting.\n")
 		skip.perm <- TRUE
 	} else {
-		skip.build <- FALSE
+		skip.perm <- FALSE
 	}
 } else {
 	skip.perm <- FALSE
