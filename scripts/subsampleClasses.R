@@ -374,9 +374,9 @@ for (i in 1:length(flist)) {
 		setwd(paste0('s', i))
 
 		cat(paste0("         	+ Building ERGm dependency graph.\n"))
-		system(paste0('../Graph_Builder.parentDir.script.R -p=paramS', i, 'ergm.txt > log.s', i, '.ergm.dat'))
+		system(paste0('../Graph_Builder.parentDir.script.R -p=param.rgm.txt > log.s', i, '.ergm.dat'))
 		cat(paste0("         	+ Building ERGp dependency graph.\n"))
-		system(paste0('../Graph_Builder.parentDir.script.R -p=paramS', i, 'ergp.txt > log.s', i, '.ergp.dat'))
+		system(paste0('../Graph_Builder.parentDir.script.R -p=param.ergp.txt > log.s', i, '.ergp.dat'))
 
 		setwd('..')
 	})
