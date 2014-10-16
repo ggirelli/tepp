@@ -42,19 +42,25 @@ fitness = function(chr) {
 	return(d)
 }
 
-monitor = function(obj) {
-	cat(obj@population, '\n')
-	cat(obj@fitness, '\n')
-}
+system.time({
+	ga <- ga(
+		type = 'binary',
+		fitness = fitness,
+		nBits = length(genes.tot),
+		min = 20,
+		max = 30,
+		names = genes.tot,
+		maxiter = 100,
+		popSize = 100,
+		parallel = nCores
+	)
+})
 
-ga <- ga(
-	type = 'binary',
-	fitness = fitness,
-	nBits = length(genes.tot),
-	min = 20,
-	max = 30,
-	names = genes.tot,
-	maxiter = 100,
-	popSize = 100,
-	parallel = nCores
-)
+svg('ga_convergence.svg')
+plot(1:600, ga@summary[,1], type='l', main='Genetic Algorithm', xlab='iteration', ylab='d(ERG+, ERG-)')
+lines(1:600, ga@summary[,2], lty=2, col=2)
+lines(1:600, ga@summary[,4], lty=1, col=4)
+legend(0, 0.25, c('max', 'min', 'mean'), lty=c(1,1,2), col=c(1,4,2))
+dev.off()
+
+write.table(ga@summary, 'ga_summary.dat', row.names=F, quote=F)

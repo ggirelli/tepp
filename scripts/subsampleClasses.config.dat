@@ -1,5 +1,6 @@
 nCores	20
-skip.prep	TRUE
+skip.prep	FALSE
+skip.build	FALSE
 graph.dir	sample-graphs
 annotations	BacaBarbTCGA_Annotations.20140716.csv
 sample.col	Bam.name

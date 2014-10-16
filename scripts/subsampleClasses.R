@@ -127,13 +127,25 @@ if(is.na(p.outdir)) stop('Error: gene.label required.')
 skip.prep <- getp(ps, 'skip.prep')
 if(!is.na(skip.prep)) {
 	if(skip.prep == 'TRUE') {
-		cat("    * Skipping permuting.\n")
+		cat("    * Skipping preparation.\n")
 		skip.prep <- TRUE
 	} else {
 		skip.prep <- FALSE
 	}
 } else {
 	skip.prep <- FALSE
+}
+
+skip.build <- getp(ps, 'skip.build')
+if(!is.na(skip.build)) {
+	if(skip.build == 'TRUE') {
+		cat("    * Skipping building.\n")
+		skip.build <- TRUE
+	} else {
+		skip.build <- FALSE
+	}
+} else {
+	skip.build <- FALSE
 }
 
 if(!skip.prep) {
@@ -359,27 +371,30 @@ if(!skip.prep) {
 # -------- #
 # BUILDING #
 # -------- #
-cat('> Building dependency networks and calculating distances.\n')
 
-cat('	- Working on original data\n')
-cat('		* Building ERG-\n')
-system(paste0('./Graph_Builder.script.R -p=param.ergm.txt > log.ergm.dat'))
-cat('		* Building ERG+\n')
-system(paste0('./Graph_Builder.script.R -p=param.ergp.txt > log.ergp.dat'))
+if(!skip.build) {
+	cat('> Building dependency networks and calculating distances.\n')
 
-cat('	- Working on subsamples\n')
-for (i in 1:length(flist)) {
-	system.time({
-		cat(paste0('    	* Building subsample #', i, "\n"))
-		setwd(paste0('s', i))
+	cat('	- Working on original data\n')
+	cat('		* Building ERG-\n')
+	system(paste0('./Graph_Builder.script.R -p=param.ergm.txt > log.ergm.dat'))
+	cat('		* Building ERG+\n')
+	system(paste0('./Graph_Builder.script.R -p=param.ergp.txt > log.ergp.dat'))
 
-		cat(paste0("         	+ Building ERGm dependency graph.\n"))
-		system(paste0('../Graph_Builder.parentDir.script.R -p=param.rgm.txt > log.s', i, '.ergm.dat'))
-		cat(paste0("         	+ Building ERGp dependency graph.\n"))
-		system(paste0('../Graph_Builder.parentDir.script.R -p=param.ergp.txt > log.s', i, '.ergp.dat'))
+	cat('	- Working on subsamples\n')
+	for (i in 1:length(flist)) {
+		system.time({
+			cat(paste0('    	* Building subsample #', i, "\n"))
+			setwd(paste0('s', i))
 
-		setwd('..')
-	})
+			cat(paste0("         	+ Building ERGm dependency graph.\n"))
+			system(paste0('../Graph_Builder.parentDir.script.R -p=param.rgm.txt > log.s', i, '.ergm.dat'))
+			cat(paste0("         	+ Building ERGp dependency graph.\n"))
+			system(paste0('../Graph_Builder.parentDir.script.R -p=param.ergp.txt > log.s', i, '.ergp.dat'))
+
+			setwd('..')
+		})
+	}
 }
 
 # ------------------ #
