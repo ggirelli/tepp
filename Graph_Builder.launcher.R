@@ -1,6 +1,8 @@
 #!/usr/bin/env Rscript
 source('./Graph_Builder.class.R')
 
+gb.version <- 10
+
 #-----------------#
 # Read parameters #
 #-----------------#
@@ -63,7 +65,7 @@ for(arg in args) if(grepl('^-p=[a-zA-Z0-9()./_~-]*$', arg)) {
   cat('\nNo param file detected.')
 }
 
-cat('\nExecuting script (v09) with', clusters, 'clusters.\n')
+cat('\nExecuting script (v', gb.version, ') with', clusters, 'clusters.\n')
 if(verbose) {
   cat('Verbosity at maximum.\n')
 } else {
