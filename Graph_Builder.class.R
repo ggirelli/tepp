@@ -350,17 +350,22 @@ GraphBuilder <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
         vertices.table <- unique(c(source.table, target.table))
         if(gb$verbose) cat("Adding vertices with attributes\n")
         g <- add.vertices(g, nv=length(vertices.table), attr=list(name=vertices.table, aberration=matrix(unlist(strsplit(vertices.table, '~')), nrow=2)[2,], HUGO=matrix(unlist(strsplit(vertices.table, '~')), nrow=2)[1,]))
+
         if(doOcc) {
           if(gb$verbose) cat("Adding vertices occurrencies\n")
+
           # Declare parallelism
           cores <- makeCluster(gb$clusters)
           registerDoParallel(cores)
+
           # Get vertices occurrencies
           v.occs <- foreach(i=1:length(V(g)), .combine=rbind) %dopar% {
             library('igraph')
-            return(c(V(g)[i]$name, length(unique(edges[which(edges[,1] == V(g)$HUGO[i]),6])), length(unique(edges[which(edges[,2] == V(g)$HUGO[i]),6]))))
+            return(c(V(g)[i]$name, length(unique(edges[which(source.table == V(g)$name[i]),6])), length(unique(edges[which(target.table == V(g)$name[i]),6]))))
           }
+
           stopCluster(cores)
+
           for(i in 1:length(V(g))) {
             j <- which(v.occs[,1] == V(g)$name[i])
             V(g)$clonal.occ[i] <- v.occs[j,2]
