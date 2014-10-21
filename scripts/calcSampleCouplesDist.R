@@ -2,11 +2,11 @@
 #
 # ./calcSampleCouplesDistances.R numberOfCores graphDirectory suffix annotationFile
 # 
-# 01_Graph_Manager.class.R and extendigraph.R are required.
+# Graph_Manager.class.R and extendigraph.R are required.
 
 library('doParallel')
 library('igraph')
-source('01_Graph_Manager.class.R')
+source('Graph_Manager.class.R')
 
 args <- commandArgs(trailingOnly=TRUE)
 if(length(args) != 4) stop('./calcSampleCouplesDistances.R numberOfCores graphDirectory suffix annotationFile')
@@ -178,6 +178,7 @@ for (i in which(is.na(pvcl$ERG.clean))) pvcl$ERG.clean[i] <- pvcl$ETS.fusion.det
 library(heatmap.plus)
 
 # Heatmap notations
+
 color.map.col1 <- sapply(pvcl$Age, function(x) {
 	if(is.na(x)) return('white')
 	if (30<=x && x<40) {
@@ -189,7 +190,7 @@ color.map.col1 <- sapply(pvcl$Age, function(x) {
 	} else if (60<=x && x<70) {
 		return('darkorange')
 	} else if (70<=x && x<80) {
-		return('orange')
+		return('gold')
 	}
 })
 color.map.col2 <- sapply(pvcl$Serum_PSA_at_diagnosis, function(x) {
@@ -237,10 +238,10 @@ color.map.col <- matrix(unlist(c(color.map.col1, color.map.col2, color.map.col3,
 colnames(color.map.col) <- c('Age', 'PSA', 'GS', 'ERG')
 rownames(hm) <- colnames(hm)
 heatmap.plus::heatmap.plus(hm, Rowv=as.dendrogram(hc), Colv=rev(as.dendrogram(hc)), na.rm=F, symm=T, margins=c(5,12), ColSideColors=color.map.col, cexRow=0.3, cexCol=0.3, main='Hamming')
-legend(0.86,0.9,legend=c("45-55","55-65","65-75"),pch=15,col=c('deepskyblue', 'darkgreen', 'darkorange'),cex=0.7,title="Age")
-legend(0.86,0.7,legend=c("6-","3+4","4+3","8+"),pch=15,col=c("gold", "firebrick1", "darkmagenta", "forestgreen"),cex=0.7,title="GS")
-legend(0.86,0.5,legend=c("< 4","4~10","> 10"),pch=15,col=c("cyan3", "blueviolet", "brown1"),cex=0.7,title="PSA")
-legend(0.86,0.3,legend=c("-","+"),pch=15,col=c("deepskyblue", "darkorange"),cex=0.7,title="ERG")
+legend(0.86,0.3,legend=c('30-40', '40-50', '50-60', '60-70', '70-80'),pch=15,col=c('green', 'deepskyblue', 'darkgreen', 'darkorange', 'gold'),cex=0.7,title="Age")
+legend(0.86,0.5,legend=c("6-","3+4","4+3","8+"),pch=15,col=c("gold", "firebrick1", "darkmagenta", "forestgreen"),cex=0.7,title="GS")
+legend(0.86,0.7,legend=c("< 4","4~10","> 10"),pch=15,col=c("cyan3", "blueviolet", "brown1"),cex=0.7,title="PSA")
+legend(0.86,0.9,legend=c("-","+"),pch=15,col=c("deepskyblue", "darkorange"),cex=0.7,title="ERG")
 dev.off()
 
 # JACCARD
@@ -253,11 +254,11 @@ svg(paste0('heatmaps/jaccard_heat.', args[3], '.svg'))
 color.map.col <- matrix(unlist(c(color.map.col1, color.map.col2, color.map.col3, color.map.col4)), nrow=length(flist), ncol=4)
 colnames(color.map.col) <- c('Age', 'PSA', 'GS', 'ERG')
 rownames(jm) <- colnames(jm)
-heatmap.plus::heatmap.plus(jm, Rowv=as.dendrogram(jc), Colv=rev(as.dendrogram(jc)), na.rm=F, symm=T, margins=c(5,12), ColSideColors=color.map.col, cexRow=0.3, cexCol=0.3, main='Hamming')
-legend(0.86,0.9,legend=c("45-55","55-65","65-75"),pch=15,col=c('deepskyblue', 'darkgreen', 'darkorange'),cex=0.7,title="Age")
-legend(0.86,0.7,legend=c("6-","3+4","4+3","8+"),pch=15,col=c("gold", "firebrick1", "darkmagenta", "forestgreen"),cex=0.7,title="GS")
-legend(0.86,0.5,legend=c("< 4","4~10","> 10"),pch=15,col=c("cyan3", "blueviolet", "brown1"),cex=0.7,title="PSA")
-legend(0.86,0.3,legend=c("-","+"),pch=15,col=c("deepskyblue", "darkorange"),cex=0.7,title="ERG")
+heatmap.plus::heatmap.plus(jm, Rowv=as.dendrogram(jc), Colv=rev(as.dendrogram(jc)), na.rm=F, symm=T, margins=c(5,12), ColSideColors=color.map.col, cexRow=0.3, cexCol=0.3, main='Jaccard')
+legend(0.86,0.3,legend=c('30-40', '40-50', '50-60', '60-70', '70-80'),pch=15,col=c('green', 'deepskyblue', 'darkgreen', 'darkorange', 'gold'),cex=0.7,title="Age")
+legend(0.86,0.5,legend=c("6-","3+4","4+3","8+"),pch=15,col=c("gold", "firebrick1", "darkmagenta", "forestgreen"),cex=0.7,title="GS")
+legend(0.86,0.7,legend=c("< 4","4~10","> 10"),pch=15,col=c("cyan3", "blueviolet", "brown1"),cex=0.7,title="PSA")
+legend(0.86,0.9,legend=c("-","+"),pch=15,col=c("deepskyblue", "darkorange"),cex=0.7,title="ERG")
 dev.off()
 
 # IPSEN
@@ -271,10 +272,10 @@ color.map.col <- matrix(unlist(c(color.map.col1, color.map.col2, color.map.col3,
 colnames(color.map.col) <- c('Age', 'PSA', 'GS', 'ERG')
 rownames(im) <- colnames(im)
 heatmap.plus::heatmap.plus(im, Rowv=as.dendrogram(ic), Colv=rev(as.dendrogram(ic)), na.rm=F, symm=T, margins=c(5,12), ColSideColors=color.map.col, cexRow=0.3, cexCol=0.3, main='Ipsen')
-legend(0.86,0.9,legend=c("45-55","55-65","65-75"),pch=15,col=c('deepskyblue', 'darkgreen', 'darkorange'),cex=0.7,title="Age")
-legend(0.86,0.7,legend=c("6-","3+4","4+3","8+"),pch=15,col=c("gold", "firebrick1", "darkmagenta", "forestgreen"),cex=0.7,title="GS")
-legend(0.86,0.5,legend=c("< 4","4~10","> 10"),pch=15,col=c("cyan3", "blueviolet", "brown1"),cex=0.7,title="PSA")
-legend(0.86,0.3,legend=c("-","+"),pch=15,col=c("deepskyblue", "darkorange"),cex=0.7,title="ERG")
+legend(0.86,0.3,legend=c('30-40', '40-50', '50-60', '60-70', '70-80'),pch=15,col=c('green', 'deepskyblue', 'darkgreen', 'darkorange', 'gold'),cex=0.7,title="Age")
+legend(0.86,0.5,legend=c("6-","3+4","4+3","8+"),pch=15,col=c("gold", "firebrick1", "darkmagenta", "forestgreen"),cex=0.7,title="GS")
+legend(0.86,0.7,legend=c("< 4","4~10","> 10"),pch=15,col=c("cyan3", "blueviolet", "brown1"),cex=0.7,title="PSA")
+legend(0.86,0.9,legend=c("-","+"),pch=15,col=c("deepskyblue", "darkorange"),cex=0.7,title="ERG")
 dev.off()
 
 # HIM
@@ -288,10 +289,10 @@ color.map.col <- matrix(unlist(c(color.map.col1, color.map.col2, color.map.col3,
 colnames(color.map.col) <- c('Age', 'PSA', 'GS', 'ERG')
 rownames(him) <- colnames(him)
 heatmap.plus::heatmap.plus(him, Rowv=as.dendrogram(hic), Colv=rev(as.dendrogram(hic)), na.rm=F, symm=T, margins=c(5,12), ColSideColors=color.map.col, cexRow=0.3, cexCol=0.3, main='HIM')
-legend(0.86,0.9,legend=c("45-55","55-65","65-75"),pch=15,col=c('deepskyblue', 'darkgreen', 'darkorange'),cex=0.7,title="Age")
-legend(0.86,0.7,legend=c("6-","3+4","4+3","8+"),pch=15,col=c("gold", "firebrick1", "darkmagenta", "forestgreen"),cex=0.7,title="GS")
-legend(0.86,0.5,legend=c("< 4","4~10","> 10"),pch=15,col=c("cyan3", "blueviolet", "brown1"),cex=0.7,title="PSA")
-legend(0.86,0.3,legend=c("-","+"),pch=15,col=c("deepskyblue", "darkorange"),cex=0.7,title="ERG")
+legend(0.86,0.3,legend=c('30-40', '40-50', '50-60', '60-70', '70-80'),pch=15,col=c('green', 'deepskyblue', 'darkgreen', 'darkorange', 'gold'),cex=0.7,title="Age")
+legend(0.86,0.5,legend=c("6-","3+4","4+3","8+"),pch=15,col=c("gold", "firebrick1", "darkmagenta", "forestgreen"),cex=0.7,title="GS")
+legend(0.86,0.7,legend=c("< 4","4~10","> 10"),pch=15,col=c("cyan3", "blueviolet", "brown1"),cex=0.7,title="PSA")
+legend(0.86,0.9,legend=c("-","+"),pch=15,col=c("deepskyblue", "darkorange"),cex=0.7,title="ERG")
 dev.off()
 
 # JIM
@@ -305,10 +306,10 @@ color.map.col <- matrix(unlist(c(color.map.col1, color.map.col2, color.map.col3,
 colnames(color.map.col) <- c('Age', 'PSA', 'GS', 'ERG')
 rownames(jim) <- colnames(jim)
 heatmap.plus::heatmap.plus(jim, Rowv=as.dendrogram(jic), Colv=rev(as.dendrogram(jic)), na.rm=F, symm=T, margins=c(5,12), ColSideColors=color.map.col, cexRow=0.3, cexCol=0.3, main='JIM')
-legend(0.86,0.9,legend=c("45-55","55-65","65-75"),pch=15,col=c('deepskyblue', 'darkgreen', 'darkorange'),cex=0.7,title="Age")
-legend(0.86,0.7,legend=c("6-","3+4","4+3","8+"),pch=15,col=c("gold", "firebrick1", "darkmagenta", "forestgreen"),cex=0.7,title="GS")
-legend(0.86,0.5,legend=c("< 4","4~10","> 10"),pch=15,col=c("cyan3", "blueviolet", "brown1"),cex=0.7,title="PSA")
-legend(0.86,0.3,legend=c("-","+"),pch=15,col=c("deepskyblue", "darkorange"),cex=0.7,title="ERG")
+legend(0.86,0.3,legend=c('30-40', '40-50', '50-60', '60-70', '70-80'),pch=15,col=c('green', 'deepskyblue', 'darkgreen', 'darkorange', 'gold'),cex=0.7,title="Age")
+legend(0.86,0.5,legend=c("6-","3+4","4+3","8+"),pch=15,col=c("gold", "firebrick1", "darkmagenta", "forestgreen"),cex=0.7,title="GS")
+legend(0.86,0.7,legend=c("< 4","4~10","> 10"),pch=15,col=c("cyan3", "blueviolet", "brown1"),cex=0.7,title="PSA")
+legend(0.86,0.9,legend=c("-","+"),pch=15,col=c("deepskyblue", "darkorange"),cex=0.7,title="ERG")
 dev.off()
 
 print('~ END ~')
