@@ -5,7 +5,7 @@
 library('igraph')
 
 args <- commandArgs(trailingOnly=TRUE)
-if(length(args) != 2) stop('./countHugos.R graphDirectory outputFile')
+if(length(args) != 2) stop('./countHugos.R graphName outputFile')
 
 cat('> Prepare.\n')
 g <- read.graph(file.path('.', args[1]), format='graphml')
