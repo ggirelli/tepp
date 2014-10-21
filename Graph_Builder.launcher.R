@@ -19,7 +19,9 @@ clusters <- 4
 verbose <- TRUE
 file.list <- list()
 genes.label <- "Gene.id"
-output.dir <- ''
+clonal.val <- c('clonal')
+subclonal.val <- c('subclonal')
+output.dir <- 'output'
 white.list <- list()
 black.list <- list()
 clean <- FALSE
