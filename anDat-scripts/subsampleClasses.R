@@ -6,10 +6,10 @@
 # Requires the following files in the same folder:
 #     * Graph_Builder.class.R
 #     * Graph_Builder.script.R
-#     * Graph_Builder.parentDir.class.R
-#     * Graph_Builder.parentDir.script.R
-#     * 01_Graph_Manager.class.R
-#     * 01_Graph_Manager.parentDir.class.R
+#     * parentDir.Graph_Builder.class.R
+#     * parentDir.Graph_Builder.script.R
+#     * Graph_Manager.class.R
+#     * parentDir.Graph_Manager.class.R
 #     * extendigraph.R
 
 library(igraph)
@@ -377,9 +377,9 @@ if(!skip.build) {
 
 	cat('	- Working on original data\n')
 	cat('		* Building ERG-\n')
-	system(paste0('./Graph_Builder.script.R -p=param.ergm.txt > log.ergm.dat'))
+	system(paste0('./Graph_Builder.launcher.R -p=param.ergm.txt > log.ergm.dat'))
 	cat('		* Building ERG+\n')
-	system(paste0('./Graph_Builder.script.R -p=param.ergp.txt > log.ergp.dat'))
+	system(paste0('./Graph_Builder.launcher.R -p=param.ergp.txt > log.ergp.dat'))
 
 	cat('	- Working on subsamples\n')
 	for (i in 1:length(flist)) {
@@ -388,9 +388,9 @@ if(!skip.build) {
 			setwd(paste0('s', i))
 
 			cat(paste0("         	+ Building ERGm dependency graph.\n"))
-			system(paste0('../Graph_Builder.parentDir.script.R -p=param.rgm.txt > log.s', i, '.ergm.dat'))
+			system(paste0('../parentDir.Graph_Builder.launcher.R -p=param.rgm.txt > log.s', i, '.ergm.dat'))
 			cat(paste0("         	+ Building ERGp dependency graph.\n"))
-			system(paste0('../Graph_Builder.parentDir.script.R -p=param.ergp.txt > log.s', i, '.ergp.dat'))
+			system(paste0('../parentDir.Graph_Builder.launcher.R -p=param.ergp.txt > log.s', i, '.ergp.dat'))
 
 			setwd('..')
 		})
@@ -410,7 +410,7 @@ res <- foreach(i=1:length(flist), .combine=rbind) %dopar% {
 	setwd(paste0('s', i))
 
 	#cat(paste0('    * Measuring distance for permutation #', i, "\n"))
-	source('../01_Graph_Manager.parentDir.class.R')
+	source('../parentDir.Graph_Manager.class.R')
 	gm <- read.graph(paste0(p.outdir, '/total_graph.graphml'), format='graphml')
 	gp <- read.graph(paste0(m.outdir, '/total_graph.graphml'), format='graphml')
 	ds <- GraphManager()$calcDistances(gm, gp, 1)
