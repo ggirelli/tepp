@@ -148,44 +148,44 @@ if(!is.na(skip.build)) {
 	skip.build <- FALSE
 }
 
+# ---------- #
+# INITIATION #
+# ---------- #
+
+cat('> Prepare.\n')
+cat('    * Get graph list.\n')
+# Retrieve graph list
+flist <- list.files(file.path('.', paste0(graph.dir, '/')))
+remove.id <- c()
+for (i in 1:length(flist)) {
+	g <- read.graph(paste0('sample-graphs/', flist[i]), format='graphml')
+	if (length(E(g)) == 0) remove.id <- append(remove.id, i)
+}
+remove.id <- sort(remove.id, decreasing=T)
+for (id in remove.id) flist <- flist[-id]
+
+cat('    * Prepare pathology features vector.\n')
+# Prepare pathology features vector
+pf <- read.table(file.path('.', annotations), header=T)
+pfcl <- pf[which(paste0('gra_', eval(parse(text=paste0('pf$', sample.col))), '.graphml') %in% flist),]
+pfcl$sample <- eval(parse(text=paste0('pfcl$', sample.col)))
+eval(parse(text=paste0('pfcl$', sample.col, ' <- paste0(\'gra_\', eval(parse(text=paste0(\'pfcl$\', sample.col))), \'.graphml\')')))
+pfcl$Gleason.score <- pfcl$Gleason_Major + pfcl$Gleason_Minor
+pfcl$Gleason.clean <- paste0(pfcl$Gleason_Major,'+',pfcl$Gleason_Minor)
+pfcl$ERG.clean <- pfcl$TMPRSS2.ERG_Fusion_Status_FISH
+for (i in which(is.na(pfcl$ERG.clean))) {
+    pfcl$ERG.clean[i] <- pfcl$ETS.fusion.detected.by.sequencing[i]
+}
+
+
+cat('    * Distinguish classes\n')
+# Distinguish classes
+erg.m <- eval(parse(text=paste0('pfcl$', sample.col)))[which(pfcl$ERG.clean == 0)]
+cat(paste0('> Found ', length(erg.m), ' ERG- samples.', "\n"))
+erg.p <- eval(parse(text=paste0('pfcl$', sample.col)))[which(pfcl$ERG.clean > 0)]
+cat(paste0('> Found ', length(erg.p), ' ERG+ samples.', "\n"))
+
 if(!skip.prep) {
-
-	# ----------- #
-	# PREPARATION #
-	# ----------- #
-
-	cat('> Prepare.\n')
-	cat('    * Get graph list.\n')
-	# Retrieve graph list
-	flist <- list.files(file.path('.', paste0(graph.dir, '/')))
-	remove.id <- c()
-	for (i in 1:length(flist)) {
-		g <- read.graph(paste0('sample-graphs/', flist[i]), format='graphml')
-		if (length(E(g)) == 0) remove.id <- append(remove.id, i)
-	}
-	remove.id <- sort(remove.id, decreasing=T)
-	for (id in remove.id) flist <- flist[-id]
-
-	cat('    * Prepare pathology features vector.\n')
-	# Prepare pathology features vector
-	pf <- read.table(file.path('.', annotations), header=T)
-	pfcl <- pf[which(paste0('gra_', eval(parse(text=paste0('pf$', sample.col))), '.graphml') %in% flist),]
-	pfcl$sample <- eval(parse(text=paste0('pfcl$', sample.col)))
-	eval(parse(text=paste0('pfcl$', sample.col, ' <- paste0(\'gra_\', eval(parse(text=paste0(\'pfcl$\', sample.col))), \'.graphml\')')))
-	pfcl$Gleason.score <- pfcl$Gleason_Major + pfcl$Gleason_Minor
-	pfcl$Gleason.clean <- paste0(pfcl$Gleason_Major,'+',pfcl$Gleason_Minor)
-	pfcl$ERG.clean <- pfcl$TMPRSS2.ERG_Fusion_Status_FISH
-	for (i in which(is.na(pfcl$ERG.clean))) {
-	    pfcl$ERG.clean[i] <- pfcl$ETS.fusion.detected.by.sequencing[i]
-	}
-
-
-	cat('    * Distinguish classes\n')
-	# Distinguish classes
-	erg.m <- eval(parse(text=paste0('pfcl$', sample.col)))[which(pfcl$ERG.clean == 0)]
-	cat(paste0('> Found ', length(erg.m), ' ERG- samples.', "\n"))
-	erg.p <- eval(parse(text=paste0('pfcl$', sample.col)))[which(pfcl$ERG.clean > 0)]
-	cat(paste0('> Found ', length(erg.p), ' ERG+ samples.', "\n"))
 
 	# ------------------------- #
 	# PREPARE ORIGINAL DISTANCE #

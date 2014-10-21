@@ -22,6 +22,7 @@ genes.label <- "Gene.id"
 clonal.val <- c('clonal')
 subclonal.val <- c('subclonal')
 output.dir <- 'output'
+attr.table <- ''
 white.list <- list()
 black.list <- list()
 clean <- FALSE
@@ -43,9 +44,13 @@ for(arg in args) if(grepl('^-p=[a-zA-Z0-9()./_~-]*$', arg)) {
     output.dir <- toString(ff[which(ff[, 1] == 'output.dir'), 2])
 
     file.list$PM <- toString(ff[which(ff[, 1] == 'file-PM'), 2])
+    if(file.list$PM == '') file.list$PM <- NA
     file.list$Gain <- toString(ff[which(ff[, 1] == 'file-Gain'), 2])
+    if(file.list$Gain == '') file.list$Gain <- NA
     file.list$Loss <- toString(ff[which(ff[, 1] == 'file-Loss'), 2])
+    if(file.list$Loss == '') file.list$Loss <- NA
     file.list$RR <- toString(ff[which(ff[, 1] == 'file-RR'), 2])
+    if(file.list$RR == '') file.list$RR <- NA
 
     genes.label <- toString(ff[which(ff[, 1] == 'genes.label'), 2])
     white.list <- toString(ff[which(ff[, 1] == 'white.list'), 2])
@@ -128,19 +133,19 @@ system.time({
   #-------------------#
 
   # PM #
-  if(file.list$PM != "") gb <- gb$readData(file.path=file.list$PM, sample.column='sample', abe.type='PM', temp.sample.list=gb$sample.list)
+  if(length(file.list$PM) != 0 & !is.na(file.list$PM)) gb <- gb$readData(file.path=file.list$PM, sample.column='sample', abe.type='PM', temp.sample.list=gb$sample.list)
   cat('\n')
 
   # Gain #
-  if(file.list$Gain != "") gb <- gb$readData(file.path=file.list$Gain, sample.column='sample', abe.type='Gain', temp.sample.list=gb$sample.list)
+  if(length(file.list$Gain) != 0 & !is.na(file.list$Gain)) gb <- gb$readData(file.path=file.list$Gain, sample.column='sample', abe.type='Gain', temp.sample.list=gb$sample.list)
   cat('\n')
 
   # Loss #
-  if(file.list$Loss != "") gb <- gb$readData(file.path=file.list$Loss, sample.column='sample', abe.type='Loss', temp.sample.list=gb$sample.list)
+  if(length(file.list$Loss) != 0 & !is.na(file.list$Loss)) gb <- gb$readData(file.path=file.list$Loss, sample.column='sample', abe.type='Loss', temp.sample.list=gb$sample.list)
   cat('\n')
 
   # RR #
-  if(file.list$RR != "") gb <- gb$readData(file.path=file.list$RR, sample.column='sample', abe.type='RR', temp.sample.list=gb$sample.list)
+  if(length(file.list$RR) != 0 & !is.na(file.list$RR)) gb <- gb$readData(file.path=file.list$RR, sample.column='sample', abe.type='RR', temp.sample.list=gb$sample.list)
   cat('\n')
 
   #---------------------#
