@@ -152,14 +152,14 @@ if(IQR(jim) != 0) {
 	dev.off()
 }
 
-svg(paste0('plots/him_scatterplot.', args[3], '.svg'))
-plot(hm, im, xlab='H', ylab='IM', main='H/IM space', xlim=c(0,1), ylim=c(0,1), pch=20, col='gray30')
+svg(paste0('him_scatterplot.', args[3], '.svg'), width=10, height=10)
+plot(hm[lower.tri(hm, diag=F)], im[lower.tri(im, diag=F)], xlab='H', ylab='IM', main='H/IM space', xlim=c(0,1), ylim=c(0,1), pch=20, col=rgb(0,0,0,.1))
 abline(h=0.5, lty=2, col=2)
 abline(v=0.5, lty=2, col=2)
 dev.off()
 
-svg(paste0('plots/jim_scatterplot.', args[3], '.svg'))
-plot(jm, im, xlab='J', ylab='IM', main='J/IM space', xlim=c(0,1), ylim=c(0,1), pch=20, col='gray30')
+svg(paste0('jim_scatterplot.', args[3], '.svg'), width=10, height=10)
+plot(jm[lower.tri(jm, diag=F)], im[lower.tri(im, diag=F)], xlab='J', ylab='IM', main='J/IM space', xlim=c(0,1), ylim=c(0,1), pch=20, col=rgb(0,0,0,.1))
 abline(h=0.5, lty=2, col=2)
 abline(v=0.5, lty=2, col=2)
 dev.off()
