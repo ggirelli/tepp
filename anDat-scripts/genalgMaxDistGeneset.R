@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 #
 # ./genalgMaxDistGeneset.R totalGraph1 totalGraph2 label1 label2 nCores
-# 01_Graph_Manager.class.R and extendigraph.R are required.
+# Graph_Manager.class.R and extendigraph.R are required.
 
 library('GA')
 library('igraph')
@@ -20,7 +20,7 @@ genes2 <- unique(V(g2)$HUGO)
 genes.tot <- union(genes1, genes2)
 
 fitness = function(chr) {
-	source('01_Graph_Manager.class.R')
+	source('Graph_Manager.class.R')
 	
 	cat('\n    * Prepare genelist\n')
 	genes <- genes.tot[chr == 1]
