@@ -50,7 +50,7 @@ system.time({
 		min = 20,
 		max = 30,
 		names = genes.tot,
-		maxiter = 100,
+		maxiter = 1000,
 		popSize = 100,
 		parallel = nCores
 	)

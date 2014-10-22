@@ -6,10 +6,7 @@
 # Requires the following files in the same folder:
 #     * Graph_Builder.class.R
 #     * Graph_Builder.script.R
-#     * parentDir.Graph_Builder.class.R
-#     * parentDir.Graph_Builder.script.R
 #     * Graph_Manager.class.R
-#     * parentDir.Graph_Manager.class.R
 #     * extendigraph.R
 
 library(igraph)
@@ -177,7 +174,6 @@ for (i in which(is.na(pfcl$ERG.clean))) {
     pfcl$ERG.clean[i] <- pfcl$ETS.fusion.detected.by.sequencing[i]
 }
 
-
 cat('    * Distinguish classes\n')
 # Distinguish classes
 erg.m <- eval(parse(text=paste0('pfcl$', sample.col)))[which(pfcl$ERG.clean == 0)]
@@ -267,105 +263,6 @@ if(!skip.prep) {
 
 	write.table(cbind(param.names, m.param.val), paste0('param.ergm.txt'), quote=F, col.names=F, row.names=F, sep=' ')
 	write.table(cbind(param.names, p.param.val), paste0('param.ergp.txt'), quote=F, col.names=F, row.names=F, sep=' ')
-
-	# -------------------------- #
-	# PREPARE SUBSAMPLE DISTANCE #
-	# -------------------------- #
-	cat('> Preparing subsamples\n')
-
-	for (i in 1:length(flist)) {
-		cat(paste0('	- Subsample #', i, '\n'))
-		flist.subsample <- flist[-i]
-		pfcl.subsample <-pfcl[,-i]
-		sample.rm <- flist[i]
-
-		# Mkdir and cd
-		dir.create(paste0('s', i))
-		setwd(paste0('s', i))
-
-		dir.create(file.path(p.outdir), showWarnings = FALSE)
-		dir.create(file.path(m.outdir), showWarnings = FALSE)
-
-		gainTab.out <- NA
-		lossTab.out <- NA
-		pmTab.out <- NA
-
-		if(!is.na(gainTab)) {
-			gainTab.out <- 'erg_clonTab.Gain.txt'
-			lossTab.out <- 'erg_clonTab.Loss.txt'
-
-			# Retrieve gain/loss data
-			gain <- read.table(file.path('..', gainTab), header=T, sep='\t')
-			gain <- gain[-which(paste0('gra_', gain$sample, '.graphml') == sample.rm),]
-			loss <- read.table(file.path('..', lossTab), header=T, sep='\t')
-			loss <- loss[-which(paste0('gra_', loss$sample, '.graphml') == sample.rm),]
-
-			# Dividing classes in gain/loss
-			cat('		* Dividing gain/loss in classes\n')
-			erg.p.gain <- gain[which(gain$sample %in% pfcl.subsample$sample[which(pfcl.subsample$ERG.clean > 0)]),]
-			erg.p.loss <- loss[which(loss$sample %in% pfcl.subsample$sample[which(pfcl.subsample$ERG.clean > 0)]),]
-			write.table(erg.p.gain, paste0(p.outdir, '/erg_clonTab.Gain.txt'), quote=F, sep='\t')
-			write.table(erg.p.loss, paste0(p.outdir, '/erg_clonTab.Loss.txt'), quote=F, sep='\t')
-
-			erg.m.gain <- gain[which(gain$sample %in% pfcl.subsample$sample[which(pfcl.subsample$ERG.clean == 0)]),]
-			erg.m.loss <- loss[which(loss$sample %in% pfcl.subsample$sample[which(pfcl.subsample$ERG.clean == 0)]),]
-			write.table(erg.m.gain, paste0(m.outdir, '/erg_clonTab.Gain.txt'), quote=F, sep='\t')
-			write.table(erg.m.loss, paste0(m.outdir, '/erg_clonTab.Loss.txt'), quote=F, sep='\t')
-		}
-		if(!is.na(pmTab)) {
-			pmTab.out <- 'erg_clonTab.pm.txt'
-
-			# Retrieve gain/loss data
-			pm <- read.table(file.path('..', pmTab), header=T, sep='\t')
-			pm <- pm[-which(paste0('gra_', pm$sample, '.graphml') == sample.rm),]
-
-			# Dividing classes in gain/loss
-			cat('		* Dividing pm in classes\n')
-			erg.p.pm <- pm[which(pm$sample %in% pfcl.subsample$sample[which(pfcl.subsample$ERG.clean > 0)]),]
-			erg.m.pm <- pm[which(pm$sample %in% pfcl.subsample$sample[which(pfcl.subsample$ERG.clean == 0)]),]
-			write.table(erg.p.pm, paste0(p.outdir, '/erg_clonTab.pm.txt'), quote=F, sep='\t')
-			write.table(erg.m.pm, paste0(m.outdir, '/erg_clonTab.pm.txt'), quote=F, sep='\t')
-		}
-
-		if(!is.na(gainTab.out)) {
-			gainTab.out.m <- paste0(m.outdir, '/', gainTab.out)
-		} else {
-			gainTab.out.m <- ''
-		}
-		if(!is.na(lossTab.out)) {
-			lossTab.out.m <- paste0(m.outdir, '/', lossTab.out)
-		} else {
-			lossTab.out.m <- ''
-		}
-		if(!is.na(gainTab.out)) {
-			gainTab.out.p <- paste0(p.outdir, '/', gainTab.out)
-		} else {
-			gainTab.out.p <- ''
-		}
-		if(!is.na(lossTab.out)) {
-			lossTab.out.p <- paste0(p.outdir, '/', lossTab.out)
-		} else {
-			lossTab.out.p <- ''
-		}
-		if(!is.na(pmTab.out)) {
-			pmTab.out.m <- paste0(m.outdir, '/', pmTab.out)
-		} else {
-			pmTab.out.m <- ''
-		}
-		if(!is.na(pmTab.out)) {
-			pmTab.out.p <- paste0(p.outdir, '/', pmTab.out)
-		} else {
-			pmTab.out.p <- ''
-		}
-		param.names <- c('clusters', 'verbose', 'genes.label', 'output.dir', 'file-Gain', 'file-Loss', 'file-PM')
-		m.param.val <- c(nCores, 'TRUE', gene.label, m.outdir, lossTab.out.m, gainTab.out.m, pmTab.out.m)
-		p.param.val <- c(nCores, 'TRUE', gene.label, p.outdir, lossTab.out.p, gainTab.out.p, pmTab.out.p)
-
-		write.table(cbind(param.names, m.param.val), paste0('param.ergm.txt'), quote=F, col.names=F, row.names=F, sep=' ')
-		write.table(cbind(param.names, p.param.val), paste0('param.ergp.txt'), quote=F, col.names=F, row.names=F, sep=' ')
-
-		setwd('..')
-	}
 }
 
 # -------- #
@@ -380,21 +277,6 @@ if(!skip.build) {
 	system(paste0('./Graph_Builder.launcher.R -p=param.ergm.txt > log.ergm.dat'))
 	cat('		* Building ERG+\n')
 	system(paste0('./Graph_Builder.launcher.R -p=param.ergp.txt > log.ergp.dat'))
-
-	cat('	- Working on subsamples\n')
-	for (i in 1:length(flist)) {
-		system.time({
-			cat(paste0('    	* Building subsample #', i, "\n"))
-			setwd(paste0('s', i))
-
-			cat(paste0("         	+ Building ERGm dependency graph.\n"))
-			system(paste0('../parentDir.Graph_Builder.launcher.R -p=param.ergm.txt > log.s', i, '.ergm.dat'))
-			cat(paste0("         	+ Building ERGp dependency graph.\n"))
-			system(paste0('../parentDir.Graph_Builder.launcher.R -p=param.ergp.txt > log.s', i, '.ergp.dat'))
-
-			setwd('..')
-		})
-	}
 }
 
 # ------------------ #
@@ -403,35 +285,11 @@ if(!skip.build) {
 
 cat(paste0('    * Measuring distances'))
 
-cat('	* Working on original data.\n')
 source('./01_Graph_Manager.class.R')
 gm <- read.graph(paste0(p.outdir, '/total_graph.graphml'), format='graphml')
 gp <- read.graph(paste0(m.outdir, '/total_graph.graphml'), format='graphml')
 ds <- GraphManager()$calcDistances(gm, gp, 1)
 write(ds, 'distances.dat')
-
-cat('	* Working on permutations.\n')
-cores <- makeCluster(nCores)
-registerDoParallel(cores)
-
-res <- foreach(i=1:length(flist), .combine=rbind) %dopar% {
-	setwd(paste0('s', i))
-
-	#cat(paste0('    * Measuring distance for permutation #', i, "\n"))
-	source('../parentDir.Graph_Manager.class.R')
-	gm <- read.graph(paste0(p.outdir, '/total_graph.graphml'), format='graphml')
-	gp <- read.graph(paste0(m.outdir, '/total_graph.graphml'), format='graphml')
-	ds <- GraphManager()$calcDistances(gm, gp, 1)
-	write.table(ds, 'distances.dat', row.names=F, col.names=F, quote=F, sep='\t')
-
-	setwd('..')
-
-	return(ds)
-}
-
-write.table(res, 'dist.subs.dat', row.names=F, col.names=F, quote=F, sep='\t')
-
-stopCluster(cores)
 
 cat('~ END ~\n')
 
