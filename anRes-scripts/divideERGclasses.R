@@ -285,7 +285,7 @@ if(!skip.build) {
 
 cat(paste0('    * Measuring distances'))
 
-source('./01_Graph_Manager.class.R')
+source('./Graph_Manager.class.R')
 gm <- read.graph(paste0(p.outdir, '/total_graph.graphml'), format='graphml')
 gp <- read.graph(paste0(m.outdir, '/total_graph.graphml'), format='graphml')
 ds <- GraphManager()$calcDistances(gm, gp, 1)
