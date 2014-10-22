@@ -388,7 +388,7 @@ if(!skip.build) {
 			setwd(paste0('s', i))
 
 			cat(paste0("         	+ Building ERGm dependency graph.\n"))
-			system(paste0('../parentDir.Graph_Builder.launcher.R -p=param.rgm.txt > log.s', i, '.ergm.dat'))
+			system(paste0('../parentDir.Graph_Builder.launcher.R -p=param.ergm.txt > log.s', i, '.ergm.dat'))
 			cat(paste0("         	+ Building ERGp dependency graph.\n"))
 			system(paste0('../parentDir.Graph_Builder.launcher.R -p=param.ergp.txt > log.s', i, '.ergp.dat'))
 
@@ -414,7 +414,7 @@ res <- foreach(i=1:length(flist), .combine=rbind) %dopar% {
 	gm <- read.graph(paste0(p.outdir, '/total_graph.graphml'), format='graphml')
 	gp <- read.graph(paste0(m.outdir, '/total_graph.graphml'), format='graphml')
 	ds <- GraphManager()$calcDistances(gm, gp, 1)
-	write.table(ds, 'distances.dat', row.names=F, col.names=F, quote=F, sep='\t')
+	write.table(ds, 'distances.dat', row.names=F, col.names=F, quote=F, sep='\t')ù
 
 	setwd('..')
 
