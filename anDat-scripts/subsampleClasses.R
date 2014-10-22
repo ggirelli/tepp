@@ -296,9 +296,11 @@ if(!skip.prep) {
 
 			# Retrieve gain/loss data
 			gain <- read.table(file.path('..', gainTab), header=T, sep='\t')
-			gain <- gain[-which(paste0('gra_', gain$sample, '.graphml') == sample.rm),]
+			gain.rm <- which(paste0('gra_', gain$sample, '.graphml') == sample.rm)
+			if(length(gain) != 0) gain <- gain[-gain.rm,]
 			loss <- read.table(file.path('..', lossTab), header=T, sep='\t')
-			loss <- loss[-which(paste0('gra_', loss$sample, '.graphml') == sample.rm),]
+			loss.rm <- which(paste0('gra_', loss$sample, '.graphml') == sample.rm)
+			if(length(loss) != 0) loss <- loss[-loss.rm,]
 
 			# Dividing classes in gain/loss
 			cat('		* Dividing gain/loss in classes\n')
@@ -317,7 +319,8 @@ if(!skip.prep) {
 
 			# Retrieve gain/loss data
 			pm <- read.table(file.path('..', pmTab), header=T, sep='\t')
-			pm <- pm[-which(paste0('gra_', pm$sample, '.graphml') == sample.rm),]
+			pm.rm <- which(paste0('gra_', pm$sample, '.graphml') == sample.rm)
+			if(length(pm.rm) != 0) pm <- pm[-pm.rm,]
 
 			# Dividing classes in gain/loss
 			cat('		* Dividing pm in classes\n')
@@ -401,7 +404,7 @@ if(!skip.build) {
 # CALCULATE DISTANCE #
 # ------------------ #
 
-cat(paste0('    * Measuring distances'))
+cat(paste0('    * Measuring distances\n'))
 
 cat('	* Working on original data.\n')
 source('./Graph_Manager.class.R')
