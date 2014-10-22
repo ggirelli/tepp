@@ -297,10 +297,10 @@ if(!skip.prep) {
 			# Retrieve gain/loss data
 			gain <- read.table(file.path('..', gainTab), header=T, sep='\t')
 			gain.rm <- which(paste0('gra_', gain$sample, '.graphml') == sample.rm)
-			if(length(gain) != 0) gain <- gain[-gain.rm,]
+			if(length(gain.rm) != 0) gain <- gain[-gain.rm,]
 			loss <- read.table(file.path('..', lossTab), header=T, sep='\t')
 			loss.rm <- which(paste0('gra_', loss$sample, '.graphml') == sample.rm)
-			if(length(loss) != 0) loss <- loss[-loss.rm,]
+			if(length(loss.rm) != 0) loss <- loss[-loss.rm,]
 
 			# Dividing classes in gain/loss
 			cat('		* Dividing gain/loss in classes\n')
