@@ -269,22 +269,22 @@ if(!skip.prep) {
 	write.table(cbind(param.names, p.param.val), paste0('param.ergp.txt'), quote=F, col.names=F, row.names=F, sep=' ')
 
 	# -------------------------- #
-	# PREPARE SUBSAMPLE DISTANCE #
+	# PREPARE SUBSAMPLE DISTANC F
 	# -------------------------- #
 	cat('> Preparing subsamples\n')
 
 	for (i in 1:length(flist)) {
 		cat(paste0('	- Subsample #', i, '\n'))
 		flist.subsample <- flist[-i]
-		pfcl.subsample <-pfcl[,-i]
+		pfcl.subsample <-pfcl[-i,]
 		sample.rm <- flist[i]
 
 		# Mkdir and cd
-		dir.create(paste0('s', i))
+		dir.create(paste0('s', i), showWarnings=F)
 		setwd(paste0('s', i))
 
-		dir.create(file.path(p.outdir), showWarnings = FALSE)
-		dir.create(file.path(m.outdir), showWarnings = FALSE)
+		dir.create(file.path(p.outdir), showWarnings=F)
+		dir.create(file.path(m.outdir), showWarnings=F)
 
 		gainTab.out <- NA
 		lossTab.out <- NA
