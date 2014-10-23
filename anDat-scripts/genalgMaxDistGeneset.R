@@ -38,11 +38,19 @@ fitness = function(chr) {
 	g2.tmp <- delete.vertices(g2.tmp, V(g2)[degree(g2, V(g2)) == 0])
 	cat('\t- Graph #2 has', length(unique(V(g2.tmp)$HUGO)), ' nodes\n')
 
-	cat('    * Calculate distance\n')
+	cat('\t* Calculate distance\n')
 	d <- GraphManager()$calcHIMDist(g1.tmp, g2.tmp, 1)
 	cat('\t- d = ', d, '\n')
 	return(d)
 }
+
+cat('> Running GA binary algorithm with:\n')
+cat('\t- nBits:', length(genes.tot), '\n')
+cat('\t- min:', 0, '\n')
+cat('\t- max:', length(genes.tot), '\n')
+cat('\t- maxiter:', n.iter, '\n')
+cat('\t- popSize:', 100, '\n')
+cat('\t- nCores:', nCores, '\n')
 
 system.time({
 	ga <- ga(
