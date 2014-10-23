@@ -7,7 +7,9 @@ library('GA')
 library('igraph')
 
 args <- commandArgs(trailingOnly=TRUE)
-if(length(args) != 5) stop('./genalgMaxDistGeneset.R totalGraph1 totalGraph2 label1 label2 nCores')
+if(length(args) != 6) stop('./genalgMaxDistGeneset.R totalGraph1 totalGraph2 label1 label2 nCores n.iter')
+
+n.iter <- as.numeric(args[6])
 
 nCores <- as.numeric(args[5])
 if(nCores == 1 | is.na(nCores)) nCores <- FALSE
@@ -50,17 +52,17 @@ system.time({
 		min = 0,
 		max = length(genes.tot),
 		names = genes.tot,
-		maxiter = 1000,
+		maxiter = n.iter,
 		popSize = 100,
 		parallel = nCores
 	)
 })
 
+write.table(ga@summary, 'ga_summary.dat', row.names=F, quote=F)
+
 svg('ga_convergence.svg')
-plot(1:600, ga@summary[,1], type='l', main='Genetic Algorithm', xlab='iteration', ylab='d(ERG+, ERG-)')
-lines(1:600, ga@summary[,2], lty=2, col=2)
-lines(1:600, ga@summary[,4], lty=1, col=4)
+plot(1:n.iter, ga@summary[,1], type='l', main='Genetic Algorithm', xlab='iteration', ylab='d(ERG+, ERG-)')
+lines(1:n.iter, ga@summary[,2], lty=2, col=2)
+lines(1:n.iter, ga@summary[,4], lty=1, col=4)
 legend(0, 0.25, c('max', 'min', 'mean'), lty=c(1,1,2), col=c(1,4,2))
 dev.off()
-
-write.table(ga@summary, 'ga_summary.dat', row.names=F, quote=F)
