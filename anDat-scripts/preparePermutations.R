@@ -5,11 +5,11 @@
 # SSDNs must be in the folder 'sample-graphs'
 # Requires the following files in the same folder:
 #     * Graph_Builder.class.R
-#     * Graph_Builder.script.R
-#     * Graph_Builder.parentDir.class.R
-#     * Graph_Builder.parentDir.script.R
-#     * 01_Graph_Manager.class.R
-#     * 01_Graph_Manager.parentDir.class.R
+#     * Graph_Builder.launcher.R
+#     * parentDir.Graph_Builder.class.R
+#     * parentDir.Graph_Builder.launcher.R
+#     * Graph_Manager.class.R
+#     * parentDir.Graph_Manager.class.R
 #     * extendigraph.R
 
 library(igraph)
@@ -390,8 +390,10 @@ if(!skip.perm) {
 cat('> Building dependency networks.\n')
 
 if(!skip.base) {
-	system(paste0('./Graph_Builder.script.R -p=param.ergm.txt > log.ergm.dat'))
-	system(paste0('./Graph_Builder.script.R -p=param.ergp.txt > log.ergp.dat'))
+	cat('	* Building original ERG- dependency graph\n')
+	system(paste0('./Graph_Builder.launcher.R -p=param.ergm.txt > log.ergm.dat'))
+	cat('	* Building original ERG+ dependency graph\n')
+	system(paste0('./Graph_Builder.launcher.R -p=param.ergp.txt > log.ergp.dat'))
 }
 
 if(!skip.build) {
@@ -401,9 +403,9 @@ if(!skip.build) {
 			setwd(paste0('s', i))
 
 			cat(paste0("         - Building ERGm dependency graph.\n"))
-			system(paste0('../Graph_Builder.parentDir.script.R -p=paramS', i, 'ergm.txt > log.s', i, '.ergm.dat'))
+			system(paste0('../parentDir.Graph_Builder.launcher.R -p=paramS', i, 'ergm.txt > log.s', i, '.ergm.dat'))
 			cat(paste0("         - Building ERGp dependency graph.\n"))
-			system(paste0('../Graph_Builder.parentDir.script.R -p=paramS', i, 'ergp.txt > log.s', i, '.ergp.dat'))
+			system(paste0('../parentDir.Graph_Builder.launcher.R -p=paramS', i, 'ergp.txt > log.s', i, '.ergp.dat'))
 
 			setwd('..')
 		})
@@ -417,7 +419,7 @@ if(!skip.build) {
 cat(paste0('> Calculating distances\n'))
 
 cat('	* Working on original data.\n')
-source('./01_Graph_Manager.class.R')
+source('./Graph_Manager.class.R')
 gm <- read.graph(paste0(p.outdir, '/total_graph.graphml'), format='graphml')
 gp <- read.graph(paste0(m.outdir, '/total_graph.graphml'), format='graphml')
 ds <- GraphManager()$calcDistances(gm, gp, 1)
@@ -430,7 +432,7 @@ registerDoParallel(cores)
 res <- foreach(i=1:nperm) %dopar% {
 	setwd(paste0('s', i))
 
-	source('../01_Graph_Manager.parentDir.class.R')
+	source('../parentDir.Graph_Manager.class.R')
 	gm <- read.graph(paste0(p.outdir, '/total_graph.graphml'), format='graphml')
 	gp <- read.graph(paste0(m.outdir, '/total_graph.graphml'), format='graphml')
 	ds <- GraphManager()$calcDistances(gm, gp, 1)
