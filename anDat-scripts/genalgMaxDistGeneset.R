@@ -74,3 +74,5 @@ lines(1:n.iter, ga@summary[,2], lty=2, col=2)
 lines(1:n.iter, ga@summary[,4], lty=1, col=4)
 legend(0, 0.25, c('max', 'min', 'mean'), lty=c(1,1,2), col=c(1,4,2))
 dev.off()
+
+save('ga', file='ga.drop.Rdata')
