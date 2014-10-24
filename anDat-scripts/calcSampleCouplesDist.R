@@ -8,9 +8,11 @@ library('doParallel')
 library('igraph')
 source('Graph_Manager.class.R')
 
+# Read params
 args <- commandArgs(trailingOnly=TRUE)
 if(length(args) != 4) stop('./calcSampleCouplesDistances.R numberOfCores graphDirectory suffix annotationFile')
 
+# Prepare file list (no empty DNs)
 print('> Prepare.')
 flist <- list.files(args[2])
 remove.id <- c()
@@ -20,13 +22,13 @@ for (i in 1:length(flist)) {
 }
 remove.id <- sort(remove.id, decreasing=T)
 for (id in remove.id) flist <- flist[-id]
-
 n <- length(flist)
-distances <- matrix(0, n, n)
 
+# Prepare couples
 print('> Build couples.')
 couples <- cbind(rep(1:n,n), sort(rep(1:n,n)))
 
+# Start parallel distance calculation
 print('> Start parallel')
 nclusters <- as.numeric(args[1])
 par <- makeCluster(nclusters)
@@ -64,9 +66,13 @@ distances <- foreach (i=l, .combine=rbind) %dopar% {
 stopCluster(par)
 print('> End parallel.')
 
+# Output distance
+
 distances <- data.frame(distances)
 colnames(distances) <- c('g.one', 'g.two', 'dh', 'dj', 'dim', 'dhim', 'djim')
 write.table(distances, paste0('dist.', args[3], '.dat'), quote=F, row.names=F)
+
+# Print plots
 
 print('> Prepare plots.')
 hm <- matrix(as.numeric(distances$dh), n, n)
@@ -74,91 +80,90 @@ jm <- matrix(as.numeric(distances$dj), n, n)
 im <- matrix(as.numeric(distances$dim), n, n)
 him <- matrix(as.numeric(distances$dhim), n, n)
 jim <- matrix(as.numeric(distances$djim), n, n)
+hm <- hm[lower.tri(hm, diag=F)]
+jm <- jm[lower.tri(jm, diag=F)]
+im <- im[lower.tri(im, diag=F)]
+him <- him[lower.tri(him, diag=F)]
+jim <- jim[lower.tri(jim, diag=F)]
 
 if(!file.exists('plots/')) dir.create('plots')
 
+y.max <- max(c(hist(hm, plot=F)$density, hist(im, plot=F)$density, hist(him, plot=F)$density, hist(jim, plot=F)$density, density(hm)$y, density(im)$y, density(him)$y, density(jim)$y))
 svg(paste0('plots/hamming_hist.', args[3], '.svg'))
-hist(hm, xlim=c(0,1), main='Distance distribution', xlab='H', prob=T, ylim=c(0,80))
+hist(hm, xlim=c(0,1), ylim=c(0, y.max), main='Distance distribution', xlab='H', prob=T)
 lines(density(hm), col=4, lty=2)
 dev.off()
-svg(paste0('plots/hamming_hist_sr.', args[3], '.svg'))
-hist(hm, xlim=c(0,1), breaks=sqrt(length(hm)), main='Distance distribution [SQRT]', xlab='H', prob=T, ylim=c(0,80))
-lines(density(hm), col=4, lty=2)
-dev.off()
-if(IQR(hm) != 0) {
-	svg(paste0('plots/hamming_hist_fd.', args[3], '.svg'))
-	hist(hm, xlim=c(0,1), breaks=1/(2*IQR(hm)/length(hm)**(1/3)), main='Distance distribution [FD]', xlab='H', prob=T, ylim=c(0,80))
-	lines(density(hm), col=4, lty=2)
-	dev.off()
-}
-
 svg(paste0('plots/jaccard_hist.', args[3], '.svg'))
-hist(jm, xlim=c(0,1), main='Distance distribution', xlab='J', prob=T, ylim=c(0,80))
+hist(jm, xlim=c(0,1), ylim=c(0, y.max), main='Distance distribution', xlab='J', prob=T)
 lines(density(jm), col=4, lty=2)
+dev.off()
+svg(paste0('plots/ipsen_hist.', args[3], '.svg'))
+hist(im, xlim=c(0,1), ylim=c(0, y.max), main='Distance distribution', xlab='IM', prob=T)
+lines(density(im), col=4, lty=2)
+dev.off()
+svg(paste0('plots/him_hist.', args[3], '.svg'))
+hist(him, xlim=c(0,1), ylim=c(0, y.max), main='Distance distribution', xlab='HIM', prob=T)
+lines(density(him), col=4, lty=2)
+dev.off()
+svg(paste0('plots/jim_hist.', args[3], '.svg'))
+hist(jim, xlim=c(0,1), ylim=c(0, y.max), main='Distance distribution', xlab='JIM', prob=T)
+lines(density(jim), col=4, lty=2)
+dev.off()
+
+y.max <- max(c(hist(hm, breaks=sqrt(length(hm)), plot=F)$density, hist(im, breaks=sqrt(length(im)), plot=F)$density, hist(him, breaks=sqrt(length(him)), plot=F)$density, hist(jim, breaks=sqrt(length(jim)), plot=F)$density, density(hm)$y, density(im)$y, density(him)$y, density(jim)$y))
+svg(paste0('plots/hamming_hist_sr.', args[3], '.svg'))
+hist(hm, xlim=c(0,1), ylim=c(0,y.max), breaks=sqrt(length(hm)), main='Distance distribution [SQRT]', xlab='H', prob=T)
+lines(density(hm), col=4, lty=2)
 dev.off()
 svg(paste0('plots/jaccard_hist_sr.', args[3], '.svg'))
-hist(jm, xlim=c(0,1), breaks=sqrt(length(jm)), main='Distance distribution [SQRT]', xlab='J', prob=T, ylim=c(0,80))
+hist(jm, xlim=c(0,1), ylim=c(0,y.max), breaks=sqrt(length(jm)), main='Distance distribution [SQRT]', xlab='J', prob=T)
 lines(density(jm), col=4, lty=2)
 dev.off()
-if(IQR(jm) != 0) {
-	svg(paste0('plots/jaccard_hist_fd.', args[3], '.svg'))
-	hist(jm, xlim=c(0,1), breaks=1/(2*IQR(jm)/length(jm)**(1/3)), main='Distance distribution [FD]', xlab='J', prob=T, ylim=c(0,80))
-	lines(density(jm), col=4, lty=2)
-	dev.off()
-}
-
-svg(paste0('plots/ipsen_hist.', args[3], '.svg'))
-hist(im, xlim=c(0,1), main='Distance distribution', xlab='IM', prob=T, ylim=c(0,80))
-lines(density(im), col=4, lty=2)
-dev.off()
 svg(paste0('plots/ipsen_hist_sr.', args[3], '.svg'))
-hist(im, xlim=c(0,1), breaks=sqrt(length(im)), main='Distance distribution [SQRT]', xlab='IM', prob=T, ylim=c(0,80))
+hist(im, xlim=c(0,1), ylim=c(0,y.max), breaks=sqrt(length(im)), main='Distance distribution [SQRT]', xlab='IM', prob=T)
 lines(density(im), col=4, lty=2)
-dev.off()
-if(IQR(im) != 0) {
-	svg(paste0('plots/ipsen_hist_fd.', args[3], '.svg'))
-	hist(im, xlim=c(0,1), breaks=1/(2*IQR(im)/length(im)**(1/3)), main='Distance distribution [FD]', xlab='IM', prob=T, ylim=c(0,80))
-	lines(density(im), col=4, lty=2)
-	dev.off()
-}
-
-svg(paste0('plots/him_hist.', args[3], '.svg'))
-hist(him, xlim=c(0,1), main='Distance distribution', xlab='HIM', prob=T, ylim=c(0,80))
-lines(density(him), col=4, lty=2)
 dev.off()
 svg(paste0('plots/him_hist_sr.', args[3], '.svg'))
-hist(him, xlim=c(0,1), breaks=sqrt(length(him)), main='Distance distribution [SQRT]', xlab='HIM', prob=T, ylim=c(0,80))
+hist(him, xlim=c(0,1), ylim=c(0,y.max), breaks=sqrt(length(him)), main='Distance distribution [SQRT]', xlab='HIM', prob=T)
 lines(density(him), col=4, lty=2)
 dev.off()
-if(IQR(him) != 0) {
+svg(paste0('plots/jim_hist_sr.', args[3], '.svg'))
+hist(jim, xlim=c(0,1), ylim=c(0,y.max), breaks=sqrt(length(jim)), main='Distance distribution [SQRT]', xlab='JIM', prob=T)
+lines(density(jim), col=4, lty=2)
+dev.off()
+
+if(IQR(hm) != 0 & IQR(jm) != 0 & IQR(im) != 0 & IQR(him) != 0 & IQR(jim) != 0) {
+
+	y.max <- max(c(hist(hm, breaks=1/(2*IQR(hm)/length(hm)**(1/3)), plot=F)$density, hist(im, breaks=1/(2*IQR(im)/length(im)**(1/3)), plot=F)$density, hist(him, breaks=1/(2*IQR(him)/length(him)**(1/3)), plot=F)$density, hist(jim, breaks=1/(2*IQR(jim)/length(jim)**(1/3)), plot=F)$density, density(hm)$y, density(im)$y, density(him)$y, density(jim)$y))
+	svg(paste0('plots/hamming_hist_fd.', args[3], '.svg'))
+	hist(hm, xlim=c(0,1), ylim=c(0,y.max), breaks=1/(2*IQR(hm)/length(hm)**(1/3)), main='Distance distribution [FD]', xlab='H', prob=T)
+	lines(density(hm), col=4, lty=2)
+	dev.off()
+	svg(paste0('plots/jaccard_hist_fd.', args[3], '.svg'))
+	hist(jm, xlim=c(0,1), ylim=c(0,y.max), breaks=1/(2*IQR(jm)/length(jm)**(1/3)), main='Distance distribution [FD]', xlab='J', prob=T)
+	lines(density(jm), col=4, lty=2)
+	dev.off()
+	svg(paste0('plots/ipsen_hist_fd.', args[3], '.svg'))
+	hist(im, xlim=c(0,1), ylim=c(0,y.max), breaks=1/(2*IQR(im)/length(im)**(1/3)), main='Distance distribution [FD]', xlab='IM', prob=T)
+	lines(density(im), col=4, lty=2)
+	dev.off()
 	svg(paste0('plots/him_hist_fd.', args[3], '.svg'))
-	hist(him, xlim=c(0,1), breaks=1/(2*IQR(him)/length(him)**(1/3)), main='Distance distribution [FD]', xlab='HIM', prob=T, ylim=c(0,80))
+	hist(him, xlim=c(0,1), ylim=c(0,y.max), breaks=1/(2*IQR(him)/length(him)**(1/3)), main='Distance distribution [FD]', xlab='HIM', prob=T)
 	lines(density(him), col=4, lty=2)
 	dev.off()
-}
-
-svg(paste0('plots/jim_hist.', args[3], '.svg'))
-hist(jim, xlim=c(0,1), main='Distance distribution', xlab='H', prob=T, ylim=c(0,80))
-lines(density(jim), col=4, lty=2)
-dev.off()
-svg(paste0('plots/jim_hist_sr.', args[3], '.svg'))
-hist(jim, xlim=c(0,1), breaks=sqrt(length(jim)), main='Distance distribution [SQRT]', xlab='H', prob=T, ylim=c(0,80))
-lines(density(jim), col=4, lty=2)
-dev.off()
-if(IQR(jim) != 0) {
 	svg(paste0('plots/jim_hist_fd.', args[3], '.svg'))
-	hist(jim, xlim=c(0,1), breaks=1/(2*IQR(jim)/length(jim)**(1/3)), main='Distance distribution [FD]', xlab='H', prob=T, ylim=c(0,80))
+	hist(jim, xlim=c(0,1), ylim=c(0,y.max), breaks=1/(2*IQR(jim)/length(jim)**(1/3)), main='Distance distribution [FD]', xlab='JIM', prob=T)
 	lines(density(jim), col=4, lty=2)
 	dev.off()
 }
 
-svg(paste0('him_scatterplot.', args[3], '.svg'), width=10, height=10)
+svg(paste0('plots/him_scatterplot.', args[3], '.svg'), width=10, height=10)
 plot(hm[lower.tri(hm, diag=F)], im[lower.tri(im, diag=F)], xlab='H', ylab='IM', main='H/IM space', xlim=c(0,1), ylim=c(0,1), pch=20, col=rgb(0,0,0,.1))
 abline(h=0.5, lty=2, col=2)
 abline(v=0.5, lty=2, col=2)
 dev.off()
 
-svg(paste0('jim_scatterplot.', args[3], '.svg'), width=10, height=10)
+svg(paste0('plots/jim_scatterplot.', args[3], '.svg'), width=10, height=10)
 plot(jm[lower.tri(jm, diag=F)], im[lower.tri(im, diag=F)], xlab='J', ylab='IM', main='J/IM space', xlim=c(0,1), ylim=c(0,1), pch=20, col=rgb(0,0,0,.1))
 abline(h=0.5, lty=2, col=2)
 abline(v=0.5, lty=2, col=2)
@@ -226,6 +231,12 @@ color.map.col4 <- sapply(pvcl$ERG.clean, function(x) {
 	if(x > 0) return('darkorange')
 })
 
+hm <- matrix(as.numeric(distances$dh), n, n)
+jm <- matrix(as.numeric(distances$dj), n, n)
+im <- matrix(as.numeric(distances$dim), n, n)
+him <- matrix(as.numeric(distances$dhim), n, n)
+jim <- matrix(as.numeric(distances$djim), n, n)
+
 # HAMMING
 hc <- hclust(as.dist(hm))
 svg(paste0('heatmaps/hamming_dendrogram.', args[3], '.svg'))
@@ -233,7 +244,6 @@ plot(hc, hang=-1, xlab='sample', main='Hamming-based Dendrogram', cex=0.3)
 dev.off()
 
 svg(paste0('heatmaps/hamming_heat.', args[3], '.svg'))
-length(c(color.map.col1, color.map.col2, color.map.col3, color.map.col4))
 color.map.col <- matrix(unlist(c(color.map.col1, color.map.col2, color.map.col3, color.map.col4)), nrow=length(flist), ncol=4)
 colnames(color.map.col) <- c('Age', 'PSA', 'GS', 'ERG')
 rownames(hm) <- colnames(hm)
