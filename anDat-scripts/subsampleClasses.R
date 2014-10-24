@@ -413,7 +413,7 @@ gp <- read.graph(paste0(m.outdir, '/total_graph.graphml'), format='graphml')
 ds <- GraphManager()$calcDistances(gm, gp, 1)
 write(ds, 'distances.dat')
 
-cat('	* Working on permutations.\n')
+cat('	* Working on subsamples.\n')
 cores <- makeCluster(nCores)
 registerDoParallel(cores)
 
@@ -432,6 +432,7 @@ res <- foreach(i=1:length(flist), .combine=rbind) %dopar% {
 	return(ds)
 }
 
+colnames(res) <- c('H', 'J', 'IM', 'HIM', 'JIM')
 write.table(res, 'dist.subs.dat', row.names=F, col.names=F, quote=F, sep='\t')
 
 stopCluster(cores)
