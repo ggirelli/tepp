@@ -262,12 +262,10 @@ GraphManager <- function() {
 			#	The Hamming distance H(g.one,g.two)
 
 			# Check if size is the same
-			if (length(V(g.one)) != length(V(g.two))) {
-				add.one <- V(g.two)[which(!(V(g.two)$name %in% V(g.one)$name))]
-				add.two <- V(g.one)[which(!(V(g.one)$name %in% V(g.two)$name))]
-				g.one <- add.vertices(g.one, length(add.one), attr=list(name=add.one$name))
-				g.two <- add.vertices(g.two, length(add.two), attr=list(name=add.two$name))
-			}
+			add.one <- V(g.two)[which(!(V(g.two)$name %in% V(g.one)$name))]
+			add.two <- V(g.one)[which(!(V(g.one)$name %in% V(g.two)$name))]
+			g.one <- add.vertices(g.one, length(add.one), attr=list(name=add.one$name))
+			g.two <- add.vertices(g.two, length(add.two), attr=list(name=add.two$name))
 			n <- length(V(g.one))
 
 			# Get edges
@@ -301,12 +299,10 @@ GraphManager <- function() {
 			#	The Jaccard distance J(g.one,g.two)
 
 			# Check if size is the same
-			if (length(V(g.one)) != length(V(g.two))) {
-				add.one <- V(g.two)[which(!(V(g.two)$name %in% V(g.one)$name))]
-				add.two <- V(g.one)[which(!(V(g.one)$name %in% V(g.two)$name))]
-				g.one <- add.vertices(g.one, length(add.one), attr=list(name=add.one$name))
-				g.two <- add.vertices(g.two, length(add.two), attr=list(name=add.two$name))
-			}
+			add.one <- V(g.two)[which(!(V(g.two)$name %in% V(g.one)$name))]
+			add.two <- V(g.one)[which(!(V(g.one)$name %in% V(g.two)$name))]
+			g.one <- add.vertices(g.one, length(add.one), attr=list(name=add.one$name))
+			g.two <- add.vertices(g.two, length(add.two), attr=list(name=add.two$name))
 			n <- length(V(g.one))
 
 			# Get edges
@@ -338,12 +334,10 @@ GraphManager <- function() {
 			gs <- list(g.one, g.two)
 
 			# Check if size is the same
-			if (length(V(g.one)) != length(V(g.two))) {
-				add.one <- V(g.two)[which(!(V(g.two)$name %in% V(g.one)$name))]
-				add.two <- V(g.one)[which(!(V(g.one)$name %in% V(g.two)$name))]
-				g.one <- add.vertices(g.one, length(add.one), attr=list(name=add.one$name))
-				g.two <- add.vertices(g.two, length(add.two), attr=list(name=add.two$name))
-			}
+			add.one <- V(g.two)[which(!(V(g.two)$name %in% V(g.one)$name))]
+			add.two <- V(g.one)[which(!(V(g.one)$name %in% V(g.two)$name))]
+			g.one <- add.vertices(g.one, length(add.one), attr=list(name=add.one$name))
+			g.two <- add.vertices(g.two, length(add.two), attr=list(name=add.two$name))
 			n <- length(V(g.one))
 
 			gammaBar = function(gamma, n) {
