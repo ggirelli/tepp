@@ -11,7 +11,7 @@ GraphManager <- function() {
 		# ATTRIBUTES #
 		#------------#
 
-
+		version = 2,
 
 		#-----------#
 		# FUNCTIONS #
