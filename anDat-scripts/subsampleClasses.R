@@ -5,9 +5,9 @@
 # SSDNs must be in the folder 'sample-graphs'
 # Requires the following files in the same folder:
 #     * Graph_Builder.class.R
-#     * Graph_Builder.script.R
+#     * Graph_Builder.launcher.R
 #     * parentDir.Graph_Builder.class.R
-#     * parentDir.Graph_Builder.script.R
+#     * parentDir.Graph_Builder.launcher.R
 #     * Graph_Manager.class.R
 #     * parentDir.Graph_Manager.class.R
 #     * extendigraph.R

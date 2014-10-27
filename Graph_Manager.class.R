@@ -33,7 +33,7 @@ GraphManager <- function() {
 			if(!is.directed(g)) return(F)
 			
 			# Create undirected empty graph
-			gf <- graph.empty(directed=T)
+			gf <- graph.empty(directed=F)
 
 			# Add vertices
 			gf <- gf + vertices(paste0(V(g)$name, '~IN'))
@@ -63,7 +63,7 @@ GraphManager <- function() {
 			if(!is.directed(g)) return(F)
 			
 			# Create undirected empty graph
-			gf <- graph.empty(directed=T)
+			gf <- graph.empty(directed=F)
 
 			# Add vertices
 			gf <- gf + vertices(paste0(V(g)$name, '~IN'))
@@ -261,6 +261,9 @@ GraphManager <- function() {
 			# Returns:
 			#	The Hamming distance H(g.one,g.two)
 
+			if (is.directed(g.one)) g.one <- gm$undirected.noAttr(g.one)
+			if (is.directed(g.two)) g.two <- gm$undirected.noAttr(g.two)
+
 			# Check if size is the same
 			add.one <- V(g.two)[which(!(V(g.two)$name %in% V(g.one)$name))]
 			add.two <- V(g.one)[which(!(V(g.one)$name %in% V(g.two)$name))]
@@ -298,6 +301,9 @@ GraphManager <- function() {
 			# Returns:
 			#	The Jaccard distance J(g.one,g.two)
 
+			if (is.directed(g.one)) g.one <- gm$undirected.noAttr(g.one)
+			if (is.directed(g.two)) g.two <- gm$undirected.noAttr(g.two)
+
 			# Check if size is the same
 			add.one <- V(g.two)[which(!(V(g.two)$name %in% V(g.one)$name))]
 			add.two <- V(g.one)[which(!(V(g.one)$name %in% V(g.two)$name))]
@@ -330,6 +336,9 @@ GraphManager <- function() {
 			# Returns:
 			#	The Ipsen-Mikhailov distance IM(g.one,g.two)
 			
+			if (is.directed(g.one)) g.one <- gm$undirected.noAttr(g.one)
+			if (is.directed(g.two)) g.two <- gm$undirected.noAttr(g.two)
+
 			# Read graphs
 			gs <- list(g.one, g.two)
 
@@ -408,6 +417,9 @@ GraphManager <- function() {
 			# Returns:
 			#	The HIM distance (g.one,g.two)
 			
+			if (is.directed(g.one)) g.one <- gm$undirected.noAttr(g.one)
+			if (is.directed(g.two)) g.two <- gm$undirected.noAttr(g.two)
+
 			dH <- gm$calcHammingDist(g.one, g.two)
 			dIM <- gm$calcIpsenDist(g.one, g.two)
 			dHIM <- (1/sqrt(1+xi)) * sqrt(dH**2 + xi * dIM**2)
@@ -424,7 +436,10 @@ GraphManager <- function() {
 			#
 			# Returns:
 			#	The JIM distance (g.one,g.two)
-			
+
+			if (is.directed(g.one)) g.one <- gm$undirected.noAttr(g.one)
+			if (is.directed(g.two)) g.two <- gm$undirected.noAttr(g.two)
+
 			dJ <- gm$calcJaccardDist(g.one, g.two)
 			dIM <- gm$calcIpsenDist(g.one, g.two)
 			dJIM <- (1/sqrt(1+xi)) * sqrt(dJ**2 + xi * dIM**2)
@@ -441,6 +456,9 @@ GraphManager <- function() {
 			# 	
 			# Returns:
 			# 	A tuble containing respectiveli H, IM and HIM distances
+			
+			if (is.directed(g.one)) g.one <- gm$undirected.noAttr(g.one)
+			if (is.directed(g.two)) g.two <- gm$undirected.noAttr(g.two)
 			
 			dH <- gm$calcHammingDist(g.one, g.two)
 			dJ <- gm$calcJaccardDist(g.one, g.two)

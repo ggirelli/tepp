@@ -5,6 +5,7 @@
 
 library('GA')
 library('igraph')
+source('Graph_Manager.class.R')
 
 args <- commandArgs(trailingOnly=TRUE)
 if(length(args) != 6) stop('./genalgMaxDistGeneset.R totalGraph1 totalGraph2 label1 label2 nCores n.iter')
@@ -20,6 +21,9 @@ g2 <- read.graph(args[2], format='graphml')
 genes1 <- unique(V(g1)$HUGO)
 genes2 <- unique(V(g2)$HUGO)
 genes.tot <- union(genes1, genes2)
+
+if (is.directed(g1)) g1 <- GraphManager()$undirected(g1)
+if (is.directed(g2)) g2 <- GraphManager()$undirected(g2)
 
 fitness = function(chr) {
 	source('Graph_Manager.class.R')
