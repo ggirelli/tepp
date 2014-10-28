@@ -7,9 +7,12 @@ v. 11
 
 v. 10
 
-* Fixed a major bug in the clonal/subclonal occurrency counts step of build MSMA dependency network function. (1a0885c)
+* Fixed a major bug in the clonal/subclonal occurrency counts step of build
+  MSMA dependency network function. (1a0885c)
 
 v. 9
 
-* Fixed duplicated nodes issue in single-sample dependency networks for PM and SCNAs. (e6938d8, 07289d7, 96bbc41, 90cfef7)
-* Fixed bug when param file is not detected. Now it triggers a warning. (2b8a47f)
+* Fixed duplicated nodes issue in single-sample dependency networks for PM and
+  SCNAs. (e6938d8, 07289d7, 96bbc41, 90cfef7)
+* Fixed bug when param file is not detected.
+  Now it triggers a warning. (2b8a47f)
