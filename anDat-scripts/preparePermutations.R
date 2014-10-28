@@ -429,7 +429,7 @@ cat('	* Working on permutations.\n')
 cores <- makeCluster(nCores)
 registerDoParallel(cores)
 
-res <- foreach(i=1:nperm) %dopar% {
+res <- foreach(i=1:nperm, .combine='rbind') %dopar% {
 	setwd(paste0('s', i))
 
 	source('../parentDir.Graph_Manager.class.R')
@@ -446,6 +446,156 @@ res <- foreach(i=1:nperm) %dopar% {
 write.table(res, 'dist.perm.dat', row.names=F, col.names=F, quote=F, sep='\t')
 
 stopCluster(cores)
+
+# ------------- #
+# PREPARE PLOTS #
+# ------------- #
+
+cat(paste0('> Plotting\n'))
+
+t <- res
+ori <- ds
+
+hm <- t[,1]
+jm <- t[,2]
+im <- t[,3]
+him <- t[,4]
+jim <- t[,5]
+
+if(!file.exists('plots/')) dir.create('plots')
+
+svg(paste0('plots/hamming_hist.', args[3], '.svg'))
+hist(hm, xlim=c(0,1), main='Distance distribution', xlab='H', prob=T)
+lines(density(hm), col=4, lty=2)
+abline(v=ori[1], col=2, lty=3, lwd=1)
+dev.off()
+svg(paste0('plots/hamming_hist_sr.', args[3], '.svg'))
+hist(hm, xlim=c(0,1), breaks=sqrt(length(hm)), main='Distance distribution [SQRT]', xlab='H', prob=T)
+lines(density(hm), col=4, lty=2)
+abline(v=ori[1], col=2, lty=3, lwd=1)
+dev.off()
+if(IQR(hm) != 0) {
+	svg(paste0('plots/hamming_hist_fd.', args[3], '.svg'))
+	hist(hm, xlim=c(0,1), breaks=1/(2*IQR(hm)/length(hm)**(1/3)), main='Distance distribution [FD]', xlab='H', prob=T)
+	lines(density(hm), col=4, lty=2)
+	abline(v=ori[1], col=2, lty=3, lwd=1)
+	dev.off()
+}
+
+svg(paste0('plots/jaccard_hist.', args[3], '.svg'))
+hist(jm, xlim=c(0,1), main='Distance distribution', xlab='J', prob=T)
+lines(density(jm), col=4, lty=2)
+abline(v=ori[2], col=2, lty=3, lwd=1)
+dev.off()
+svg(paste0('plots/jaccard_hist_sr.', args[3], '.svg'))
+hist(jm, xlim=c(0,1), breaks=sqrt(length(jm)), main='Distance distribution [SQRT]', xlab='J', prob=T)
+lines(density(jm), col=4, lty=2)
+abline(v=ori[2], col=2, lty=3, lwd=1)
+dev.off()
+if(IQR(jm) != 0) {
+	svg(paste0('plots/jaccard_hist_fd.', args[3], '.svg'))
+	hist(jm, xlim=c(0,1), breaks=1/(2*IQR(jm)/length(jm)**(1/3)), main='Distance distribution [FD]', xlab='J', prob=T)
+	lines(density(jm), col=4, lty=2)
+	abline(v=ori[2], col=2, lty=3, lwd=1)
+	dev.off()
+}
+
+svg(paste0('plots/ipsen_hist.', args[3], '.svg'))
+hist(im, xlim=c(0,1), main='Distance distribution', xlab='IM', prob=T)
+lines(density(im), col=4, lty=2)
+abline(v=ori[3], col=2, lty=3, lwd=1)
+dev.off()
+svg(paste0('plots/ipsen_hist_sr.', args[3], '.svg'))
+hist(im, xlim=c(0,1), breaks=sqrt(length(im)), main='Distance distribution [SQRT]', xlab='IM', prob=T)
+lines(density(im), col=4, lty=2)
+abline(v=ori[3], col=2, lty=3, lwd=1)
+dev.off()
+if(IQR(im) != 0) {
+	svg(paste0('plots/ipsen_hist_fd.', args[3], '.svg'))
+	hist(im, xlim=c(0,1), breaks=1/(2*IQR(im)/length(im)**(1/3)), main='Distance distribution [FD]', xlab='IM', prob=T)
+	lines(density(im), col=4, lty=2)
+	abline(v=ori[3], col=2, lty=3, lwd=1)
+	dev.off()
+}
+
+svg(paste0('plots/him_hist.', args[3], '.svg'))
+hist(him, xlim=c(0,1), main='Distance distribution', xlab='HIM', prob=T)
+lines(density(him), col=4, lty=2)
+abline(v=ori[4], col=2, lty=3, lwd=1)
+dev.off()
+svg(paste0('plots/him_hist_sr.', args[3], '.svg'))
+hist(him, xlim=c(0,1), breaks=sqrt(length(him)), main='Distance distribution [SQRT]', xlab='HIM', prob=T)
+lines(density(him), col=4, lty=2)
+abline(v=ori[4], col=2, lty=3, lwd=1)
+dev.off()
+if(IQR(him) != 0) {
+	svg(paste0('plots/him_hist_fd.', args[3], '.svg'))
+	hist(him, xlim=c(0,1), breaks=1/(2*IQR(him)/length(him)**(1/3)), main='Distance distribution [FD]', xlab='HIM', prob=T)
+	lines(density(him), col=4, lty=2)
+	abline(v=ori[4], col=2, lty=3, lwd=1)
+	dev.off()
+}
+
+svg(paste0('plots/jim_hist.', args[3], '.svg'))
+hist(jim, xlim=c(0,1), main='Distance distribution', xlab='H', prob=T)
+lines(density(jim), col=4, lty=2)
+abline(v=ori[5], col=2, lty=3, lwd=1)
+dev.off()
+svg(paste0('plots/jim_hist_sr.', args[3], '.svg'))
+hist(jim, xlim=c(0,1), breaks=sqrt(length(jim)), main='Distance distribution [SQRT]', xlab='H', prob=T)
+lines(density(jim), col=4, lty=2)
+abline(v=ori[5], col=2, lty=3, lwd=1)
+dev.off()
+if(IQR(jim) != 0) {
+	svg(paste0('plots/jim_hist_fd.', args[3], '.svg'))
+	hist(jim, xlim=c(0,1), breaks=1/(2*IQR(jim)/length(jim)**(1/3)), main='Distance distribution [FD]', xlab='H', prob=T)
+	lines(density(jim), col=4, lty=2)
+	abline(v=ori[5], col=2, lty=3, lwd=1)
+	dev.off()
+}
+
+svg(paste0('plots/him_scatterplot.', args[3], '.svg'), width=10, height=10)
+plot(hm[lower.tri(hm, diag=F)], im[lower.tri(im, diag=F)], xlab='H', ylab='IM', main='H/IM space', xlim=c(0,1), ylim=c(0,1), pch=20, col=rgb(0,0,0,.1))
+abline(h=0.5, lty=2, col=2)
+abline(v=0.5, lty=2, col=2)
+dev.off()
+
+svg(paste0('plots/jim_scatterplot.', args[3], '.svg'), width=10, height=10)
+plot(jm[lower.tri(jm, diag=F)], im[lower.tri(im, diag=F)], xlab='J', ylab='IM', main='J/IM space', xlim=c(0,1), ylim=c(0,1), pch=20, col=rgb(0,0,0,.1))
+abline(h=0.5, lty=2, col=2)
+abline(v=0.5, lty=2, col=2)
+dev.off()
+
+# plot
+
+svg('plots/HIMspace.svg', width=10, height=10)
+plot(t[,1], t[,3], xlim=c(0,1), ylim=c(0,1), pch=20, col=rgb(0,0,0,.1), xlab='H', ylab='IM', main='H/IM space after subsampling ERG+/- classes (n=1)')
+abline(h=0.5, col=2, lty=2, lwd=2)
+abline(v=0.5, col=2, lty=2, lwd=2)
+abline(h=ori[3], col=4, lty=3, lwd=2)
+abline(v=ori[1], col=4, lty=3, lwd=2)
+dev.off()
+
+svg('plots/HIMspace_zoom.svg', width=10, height=10)
+plot(t[,1], t[,3], pch=20, col=rgb(0,0,0,.2), xlab='H', ylab='IM', main='H/IM space after subsampling ERG+/- classes (n=1)')
+abline(h=ori[3], col=4, lty=3, lwd=2)
+abline(v=ori[1], col=4, lty=3, lwd=2)
+dev.off()
+
+
+svg('plots/JIMspace.svg', width=10, height=10)
+plot(t[,2], t[,3], xlim=c(0,1), ylim=c(0,1), pch=20, col=rgb(0,0,0,.1), xlab='J', ylab='IM', main='J/IM space after subsampling ERG+/- classes (n=1)')
+abline(h=0.5, col=2, lty=2, lwd=2)
+abline(v=0.5, col=2, lty=2, lwd=2)
+abline(h=ori[3], col=4, lty=3, lwd=2)
+abline(v=ori[2], col=4, lty=3, lwd=2)
+dev.off()
+
+svg('plots/JIMspace_zoom.svg', width=10, height=10)
+plot(t[,2], t[,3], pch=20, col=rgb(0,0,0,.2), xlab='J', ylab='IM', main='J/IM space after subsampling ERG+/- classes (n=1)')
+abline(h=ori[3], col=4, lty=3, lwd=2)
+abline(v=ori[2], col=4, lty=3, lwd=2)
+dev.off()
 
 cat('~ END ~\n')
 
