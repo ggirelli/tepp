@@ -153,7 +153,7 @@ if(IQR(hm) != 0 & IQR(jm) != 0 & IQR(im) != 0 & IQR(him) != 0 & IQR(jim) != 0) {
 	dev.off()
 	svg(paste0('plots/jim_hist_fd.', args[3], '.svg'))
 	hist(jim, xlim=c(0,1), ylim=c(0,y.max), breaks=1/(2*IQR(jim)/length(jim)**(1/3)), main='Distance distribution [FD]', xlab='JIM', prob=T)
-	lines(density(jim), col=4, lty=2)ù
+	lines(density(jim), col=4, lty=2)
 	dev.off()
 }
 
