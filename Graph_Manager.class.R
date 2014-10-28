@@ -278,6 +278,7 @@ GraphManager <- function() {
 			# Get number of common edges
 			common <- length(intersect(paste0(el.one[,1], '~', el.one[,2]), paste0(el.two[,1], '~', el.two[,2])))
 			common <- common + length(intersect(paste0(el.one[,2], '~', el.one[,1]), paste0(el.two[,1], '~', el.two[,2])))
+			
 			# Not normalized distance
 			dH.raw <- (length(el.one[,1]) + length(el.two[,1])) - (2 * common)
 
