@@ -1,0 +1,7 @@
+# Changelog
+# -----------------------------------------
+
+v. 2
+
+* Fixed bug in directed-to-undirected graph conversion, required step for distance calculation. (493c282)
+* Fixed MAJOR bug in distance functions. The networks MUST always have the same nodes (and not only the same size). (f429fbd)
