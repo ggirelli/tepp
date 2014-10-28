@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 source('./Graph_Builder.class.R')
 
-gb.version <- 10
+gb.version <- 11
 
 #-----------------#
 # Read parameters #
@@ -26,6 +26,7 @@ attr.table <- ''
 white.list <- list()
 black.list <- list()
 clean <- FALSE
+write.cooc <- FALSE
 
 # Read number of clusters
 for(arg in args) if(grepl('^-c=[0-9]*$', arg))  clusters <- as.numeric(strsplit(arg, '-c=')[[1]][2])
@@ -59,6 +60,8 @@ for(arg in args) if(grepl('^-p=[a-zA-Z0-9()./_~-]*$', arg)) {
     if(black.list != '') black.list <- read.table(black.list, header=FALSE, sep='\t')[,1]
     clean <- as.logical(ff[which(ff[, 1] == 'clean'), 2])
     if(!is.logical(clean) || length(clean) == 0) clean <- FALSE
+    write.cooc <- as.logical(ff[which(ff[, 1] == 'write.cooc'), 2])
+    if(!is.logical(write.cooc) || length(write.cooc) == 0) write.cooc <- FALSE
 
     clonal.val <- strsplit(toString(ff[which(ff[, 1] == 'clonal.val'), 2]), ',')[[1]]
     if(length(clonal.val) == 0) clonal.val <- c('clonal')
@@ -125,7 +128,7 @@ if(length(attr.table) != 0 && attr.table != '') {
 system.time({
 
   # Declare GraphManager instance
-  gb <- GraphBuilder(clusters=clusters, verbose=verbose, genes.label=genes.label, white.list=white.list, black.list=black.list, clonal.val=clonal.val, subclonal.val=subclonal.val, attr.table=attr.table, clean=clean, output.dir=output.dir)
+  gb <- GraphBuilder(clusters=clusters, verbose=verbose, genes.label=genes.label, white.list=white.list, black.list=black.list, clonal.val=clonal.val, subclonal.val=subclonal.val, attr.table=attr.table, clean=clean, output.dir=output.dir, write.cooc=write.cooc)
   cat('\n')
 
   #-------------------#

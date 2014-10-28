@@ -1,5 +1,5 @@
 # Class to build and manage graphs
-GraphBuilder <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white.list=list(), black.list=list(), clonal.val=c('clonal'), subclonal.val=c('subclonal'), attr.table='', clean=FALSE, output.dir='.') {
+GraphBuilder <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white.list=list(), black.list=list(), clonal.val=c('clonal'), subclonal.val=c('subclonal'), attr.table='', clean=FALSE, output.dir='.', write.cooc=FALSE) {
   library('igraph')
   library('doParallel')
 
@@ -7,7 +7,13 @@ GraphBuilder <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
   
   # Define GraphBuilder attributes
   gb <- list(
+
+    # ---------- #
+    # ATTRIBUTES #
+    # ---------- #
     
+    version = 11,
+
     #------------------#
     # INPUT PARAMETERS #
     #------------------#
@@ -34,6 +40,9 @@ GraphBuilder <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
 
     # Clean: keeps only whitelisted genes
     clean = clean,
+
+    # Wether to write the co-occurrency graphs in graphml format
+    write.cooc = write.cooc,
 
     # Sample list
     sample.list = list(),
@@ -510,7 +519,7 @@ GraphBuilder <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
     },
 
     # Manage building
-    build = function(abe.list, genes.label=gb$genes.label, clonality.label="clonality.status", clonal.val=gb$clonal.val, subclonal.val=gb$subclonal.val, sample.list=gb$sample.list, attr.table=gb$attr.table, output.dir=gb$output.dir) {
+    build = function(abe.list, genes.label=gb$genes.label, clonality.label="clonality.status", clonal.val=gb$clonal.val, subclonal.val=gb$subclonal.val, sample.list=gb$sample.list, attr.table=gb$attr.table, output.dir=gb$output.dir, write.cooc=gb$write.cooc) {
       # Builds graphs after data read/split
       #
       # Args:
@@ -581,9 +590,19 @@ GraphBuilder <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
 
       if(gb$verbose) cat("\nWriting graph\n")
       write.graph(g.total, file.path(output.dir, 'total_graph.graphml'), format='graphml')
-      #write.graph(g.clonal, file.path(output.dir, 'clonal_graph.graphml'), format='graphml')
-      #write.graph(g.subclonal, file.path(output.dir, 'subclonal_graph.graphml'), format='graphml')
-      #write.graph(g.nonclonal, file.path(output.dir, 'nonclonal_graph.graphml'), format='graphml')
+
+      if(!write.cooc) {
+        E(g.clonal)$weight <- as.character(E(g.clonal)$weight)
+        write.graph(g.clonal, file.path(output.dir, 'clonal_graph.lgl'), format='lgl', names='name', weights='weight')
+        E(g.subclonal)$weight <- as.character(E(g.subclonal)$weight)
+        write.graph(g.subclonal, file.path(output.dir, 'subclonal_graph.lgl'), format='lgl', names='name', weights='weight')
+        E(g.nonclonal)$weight <- as.character(E(g.nonclonal)$weight)
+        write.graph(g.nonclonal, file.path(output.dir, 'nonclonal_graph.lgl'), format='lgl', names='name', weights='weight')
+      } else {
+        write.graph(g.clonal, file.path(output.dir, 'clonal_graph.graphml'), format='graphml')
+        write.graph(g.subclonal, file.path(output.dir, 'subclonal_graph.graphml'), format='graphml')
+        write.graph(g.nonclonal, file.path(output.dir, 'nonclonal_graph.graphml'), format='graphml')
+      }
 
       if(gb$verbose) cat("\nFIN\n\n")
     }
