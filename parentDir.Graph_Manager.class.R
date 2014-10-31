@@ -11,7 +11,7 @@ GraphManager <- function() {
 		# ATTRIBUTES #
 		#------------#
 
-		version = 2,
+		version = 2.1,
 
 		#-----------#
 		# FUNCTIONS #
@@ -304,13 +304,6 @@ GraphManager <- function() {
 			if (is.directed(g.one)) g.one <- gm$undirected.noAttr(g.one)
 			if (is.directed(g.two)) g.two <- gm$undirected.noAttr(g.two)
 
-			# Check if size is the same
-			add.one <- V(g.two)[which(!(V(g.two)$name %in% V(g.one)$name))]
-			add.two <- V(g.one)[which(!(V(g.one)$name %in% V(g.two)$name))]
-			g.one <- add.vertices(g.one, length(add.one), attr=list(name=add.one$name))
-			g.two <- add.vertices(g.two, length(add.two), attr=list(name=add.two$name))
-			n <- length(V(g.one))
-
 			# Get edges
 			el.one <- get.edgelist(g.one)
 			el.two <- get.edgelist(g.two)
@@ -323,6 +316,35 @@ GraphManager <- function() {
 
 			# Return distance
 			return(dJ)
+		},
+
+		calcJaccardSubsetDist = function(g.one, g.two) {
+			# Calculates the Jaccard Subset (edit) distance between two UNDIRECTED graphs
+			#
+			# Args:
+			#	g.one: first graph
+			#	g.two: second graph
+			#
+			# Returns:
+			#	The Jaccard distance J(g.one,g.two)
+
+			if (is.directed(g.one)) g.one <- gm$undirected.noAttr(g.one)
+			if (is.directed(g.two)) g.two <- gm$undirected.noAttr(g.two)
+
+			# Get edges
+			el.one <- get.edgelist(g.one)
+			el.two <- get.edgelist(g.two)
+
+			# Get number of common edges
+			common <- length(intersect(paste0(el.one[,1], '~', el.one[,2]), paste0(el.two[,1], '~', el.two[,2])))
+			common <- common + length(intersect(paste0(el.one[,2], '~', el.one[,1]), paste0(el.two[,1], '~', el.two[,2])))
+
+			# Calculate similarity and than distance
+			JS <- common / min(length(el.one[,1]), length(el.two[,1]))
+			dJS <- 1 - JS
+
+			# Return distance
+			return(dJS)
 		},
 
 		calcIpsenDist = function(g.one, g.two) {
@@ -446,6 +468,26 @@ GraphManager <- function() {
 			return(dJIM)
 		},
 
+		calcJIMSDist = function(g.one, g.two, xi) {
+			# Calculates the JIMS between two UNDIRECTED graphs
+			#
+			# Args:
+			#	g.one: first graph
+			#	g.two: second graph
+			#	xi: parameter corresponding to the weight of dIM over dJ in the final distance
+			#
+			# Returns:
+			#	The JIM distance (g.one,g.two)
+
+			if (is.directed(g.one)) g.one <- gm$undirected.noAttr(g.one)
+			if (is.directed(g.two)) g.two <- gm$undirected.noAttr(g.two)
+
+			dJS <- gm$calcJaccardSubsetDist(g.one, g.two)
+			dIM <- gm$calcIpsenDist(g.one, g.two)
+			dJIM <- (1/sqrt(1+xi)) * sqrt(dJS**2 + xi * dIM**2)
+			return(dJIM)
+		},
+
 		calcDistances = function(g.one, g.two, xi) {
 			# Calculates Hamming, Ipsen-Mikhailov and HIM distances between two undirected graphs
 			# 
@@ -462,10 +504,12 @@ GraphManager <- function() {
 			
 			dH <- gm$calcHammingDist(g.one, g.two)
 			dJ <- gm$calcJaccardDist(g.one, g.two)
+			dJS <- gm$calcJaccardSubsetDist(g.one, g.two)
 			dIM <- gm$calcIpsenDist(g.one, g.two)
 			dHIM <- (1/sqrt(1+xi)) * sqrt(dH**2 + xi * dIM**2)
 			dJIM <- (1/sqrt(1+xi)) * sqrt(dJ**2 + xi * dIM**2)
-			return(c(dH, dJ, dIM, dHIM, dJIM))
+			dJIMS <- (1/sqrt(1+xi)) * sqrt(dJS**2 + xi * dIM**2)
+			return(c(dH, dJ, dJS, dIM, dHIM, dJIM, dJIMS))
 		},
 
 		# Operations

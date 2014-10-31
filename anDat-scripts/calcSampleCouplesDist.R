@@ -2,15 +2,18 @@
 #
 # ./calcSampleCouplesDistances.R numberOfCores graphDirectory suffix annotationFile
 # 
-# Graph_Manager.class.R and extendigraph.R are required.
-
-library('doParallel')
-library('igraph')
-source('Graph_Manager.class.R')
+# GMv2.1 and extendigraph.R are required.
 
 # Read params
 args <- commandArgs(trailingOnly=TRUE)
 if(length(args) != 4) stop('./calcSampleCouplesDistances.R numberOfCores graphDirectory suffix annotationFile')
+
+source('Graph_Manager.class.R')
+if(GraphManager()$version != 2.1) stop('Requires GMv2.1')
+
+# Load libraries
+library('doParallel')
+library('igraph')
 
 # Prepare file list (no empty DNs)
 print('> Prepare.')
@@ -69,7 +72,7 @@ print('> End parallel.')
 # Output distance
 
 distances <- data.frame(distances)
-colnames(distances) <- c('g.one', 'g.two', 'dh', 'dj', 'dim', 'dhim', 'djim')
+colnames(distances) <- c('g.one', 'g.two', 'dh', 'dj', 'djs', 'dim', 'dhim', 'djim', 'djims')
 write.table(distances, paste0('dist.', args[3], '.dat'), quote=F, row.names=F)
 
 # Print plots
@@ -77,18 +80,34 @@ write.table(distances, paste0('dist.', args[3], '.dat'), quote=F, row.names=F)
 print('> Prepare plots.')
 hm <- matrix(as.numeric(distances$dh), n, n)
 jm <- matrix(as.numeric(distances$dj), n, n)
+jsm <- matrix(as.numeric(distances$djs), n, n)
 im <- matrix(as.numeric(distances$dim), n, n)
 him <- matrix(as.numeric(distances$dhim), n, n)
 jim <- matrix(as.numeric(distances$djim), n, n)
+jims <- matrix(as.numeric(distances$djims), n, n)
 hm <- hm[lower.tri(hm, diag=F)]
 jm <- jm[lower.tri(jm, diag=F)]
+jsm <- jsm[lower.tri(jsm, diag=F)]
 im <- im[lower.tri(im, diag=F)]
 him <- him[lower.tri(him, diag=F)]
 jim <- jim[lower.tri(jim, diag=F)]
+jims <- jims[lower.tri(jims, diag=F)]
 
 if(!file.exists('plots/')) dir.create('plots')
 
-y.max <- max(c(hist(hm, plot=F)$density, hist(im, plot=F)$density, hist(him, plot=F)$density, hist(jim, plot=F)$density, density(hm)$y, density(im)$y, density(him)$y, density(jim)$y))
+y.max <- max(c(
+	hist(hm, plot=F)$density,
+	hist(im, plot=F)$density,
+	hist(him, plot=F)$density,
+	hist(jim, plot=F)$density,
+	hist(jims, plot=F)$density,
+	density(hm)$y,
+	density(im)$y,
+	density(him)$y,
+	density(jim)$y,
+	density(jims)$y
+	)
+)
 svg(paste0('plots/hamming_hist.', args[3], '.svg'))
 hist(hm, xlim=c(0,1), ylim=c(0, y.max), main='Distance distribution', xlab='H', prob=T)
 lines(density(hm), col=4, lty=2)
@@ -96,6 +115,10 @@ dev.off()
 svg(paste0('plots/jaccard_hist.', args[3], '.svg'))
 hist(jm, xlim=c(0,1), ylim=c(0, y.max), main='Distance distribution', xlab='J', prob=T)
 lines(density(jm), col=4, lty=2)
+dev.off()
+svg(paste0('plots/jaccard_subset_hist.', args[3], '.svg'))
+hist(jsm, xlim=c(0,1), ylim=c(0, y.max), main='Distance distribution', xlab='JS', prob=T)
+lines(density(jsm), col=4, lty=2)
 dev.off()
 svg(paste0('plots/ipsen_hist.', args[3], '.svg'))
 hist(im, xlim=c(0,1), ylim=c(0, y.max), main='Distance distribution', xlab='IM', prob=T)
@@ -109,8 +132,24 @@ svg(paste0('plots/jim_hist.', args[3], '.svg'))
 hist(jim, xlim=c(0,1), ylim=c(0, y.max), main='Distance distribution', xlab='JIM', prob=T)
 lines(density(jim), col=4, lty=2)
 dev.off()
+svg(paste0('plots/jims_hist.', args[3], '.svg'))
+hist(jims, xlim=c(0,1), ylim=c(0, y.max), main='Distance distribution', xlab='JIMS', prob=T)
+lines(density(jims), col=4, lty=2)
+dev.off()
 
-y.max <- max(c(hist(hm, breaks=sqrt(length(hm)), plot=F)$density, hist(im, breaks=sqrt(length(im)), plot=F)$density, hist(him, breaks=sqrt(length(him)), plot=F)$density, hist(jim, breaks=sqrt(length(jim)), plot=F)$density, density(hm)$y, density(im)$y, density(him)$y, density(jim)$y))
+y.max <- max(c(
+	hist(hm, breaks=sqrt(length(hm)), plot=F)$density,
+	hist(im, breaks=sqrt(length(im)), plot=F)$density,
+	hist(him, breaks=sqrt(length(him)), plot=F)$density,
+	hist(jim, breaks=sqrt(length(jim)), plot=F)$density,
+	hist(jims, breaks=sqrt(length(jims)), plot=F)$density,
+	density(hm)$y,
+	density(im)$y,
+	density(him)$y,
+	density(jim)$y,
+	density(jims)$y
+	)
+)
 svg(paste0('plots/hamming_hist_sr.', args[3], '.svg'))
 hist(hm, xlim=c(0,1), ylim=c(0,y.max), breaks=sqrt(length(hm)), main='Distance distribution [SQRT]', xlab='H', prob=T)
 lines(density(hm), col=4, lty=2)
@@ -118,6 +157,10 @@ dev.off()
 svg(paste0('plots/jaccard_hist_sr.', args[3], '.svg'))
 hist(jm, xlim=c(0,1), ylim=c(0,y.max), breaks=sqrt(length(jm)), main='Distance distribution [SQRT]', xlab='J', prob=T)
 lines(density(jm), col=4, lty=2)
+dev.off()
+svg(paste0('plots/jaccard_subset_hist_sr.', args[3], '.svg'))
+hist(jsm, xlim=c(0,1), ylim=c(0,y.max), breaks=sqrt(length(jm)), main='Distance distribution [SQRT]', xlab='JS', prob=T)
+lines(density(jsm), col=4, lty=2)
 dev.off()
 svg(paste0('plots/ipsen_hist_sr.', args[3], '.svg'))
 hist(im, xlim=c(0,1), ylim=c(0,y.max), breaks=sqrt(length(im)), main='Distance distribution [SQRT]', xlab='IM', prob=T)
@@ -131,10 +174,26 @@ svg(paste0('plots/jim_hist_sr.', args[3], '.svg'))
 hist(jim, xlim=c(0,1), ylim=c(0,y.max), breaks=sqrt(length(jim)), main='Distance distribution [SQRT]', xlab='JIM', prob=T)
 lines(density(jim), col=4, lty=2)
 dev.off()
+svg(paste0('plots/jims_hist_sr.', args[3], '.svg'))
+hist(jims, xlim=c(0,1), ylim=c(0,y.max), breaks=sqrt(length(jim)), main='Distance distribution [SQRT]', xlab='JIMS', prob=T)
+lines(density(jims), col=4, lty=2)
+dev.off()
 
-if(IQR(hm) != 0 & IQR(jm) != 0 & IQR(im) != 0 & IQR(him) != 0 & IQR(jim) != 0) {
+if(IQR(hm) != 0 & IQR(jm) != 0 & IQR(jsm) != 0 & IQR(im) != 0 & IQR(him) != 0 & IQR(jim) != 0 & IQR(jims) != 0) {
 
-	y.max <- max(c(hist(hm, breaks=1/(2*IQR(hm)/length(hm)**(1/3)), plot=F)$density, hist(im, breaks=1/(2*IQR(im)/length(im)**(1/3)), plot=F)$density, hist(him, breaks=1/(2*IQR(him)/length(him)**(1/3)), plot=F)$density, hist(jim, breaks=1/(2*IQR(jim)/length(jim)**(1/3)), plot=F)$density, density(hm)$y, density(im)$y, density(him)$y, density(jim)$y))
+	y.max <- max(c(
+		hist(hm, breaks=1/(2*IQR(hm)/length(hm)**(1/3)), plot=F)$density,
+		hist(im, breaks=1/(2*IQR(im)/length(im)**(1/3)), plot=F)$density,
+		hist(him, breaks=1/(2*IQR(him)/length(him)**(1/3)), plot=F)$density,
+		hist(jim, breaks=1/(2*IQR(jim)/length(jim)**(1/3)), plot=F)$density,
+		hist(jims, breaks=1/(2*IQR(jims)/length(jims)**(1/3)), plot=F)$density,
+		density(hm)$y,
+		density(im)$y,
+		density(him)$y,
+		density(jim)$y,
+		density(jims)$y
+		)
+	)
 	svg(paste0('plots/hamming_hist_fd.', args[3], '.svg'))
 	hist(hm, xlim=c(0,1), ylim=c(0,y.max), breaks=1/(2*IQR(hm)/length(hm)**(1/3)), main='Distance distribution [FD]', xlab='H', prob=T)
 	lines(density(hm), col=4, lty=2)
@@ -142,6 +201,10 @@ if(IQR(hm) != 0 & IQR(jm) != 0 & IQR(im) != 0 & IQR(him) != 0 & IQR(jim) != 0) {
 	svg(paste0('plots/jaccard_hist_fd.', args[3], '.svg'))
 	hist(jm, xlim=c(0,1), ylim=c(0,y.max), breaks=1/(2*IQR(jm)/length(jm)**(1/3)), main='Distance distribution [FD]', xlab='J', prob=T)
 	lines(density(jm), col=4, lty=2)
+	dev.off()
+	svg(paste0('plots/jaccard_subset_hist_fd.', args[3], '.svg'))
+	hist(jsm, xlim=c(0,1), ylim=c(0,y.max), breaks=1/(2*IQR(jm)/length(jm)**(1/3)), main='Distance distribution [FD]', xlab='JS', prob=T)
+	lines(density(jsm), col=4, lty=2)
 	dev.off()
 	svg(paste0('plots/ipsen_hist_fd.', args[3], '.svg'))
 	hist(im, xlim=c(0,1), ylim=c(0,y.max), breaks=1/(2*IQR(im)/length(im)**(1/3)), main='Distance distribution [FD]', xlab='IM', prob=T)
@@ -155,6 +218,10 @@ if(IQR(hm) != 0 & IQR(jm) != 0 & IQR(im) != 0 & IQR(him) != 0 & IQR(jim) != 0) {
 	hist(jim, xlim=c(0,1), ylim=c(0,y.max), breaks=1/(2*IQR(jim)/length(jim)**(1/3)), main='Distance distribution [FD]', xlab='JIM', prob=T)
 	lines(density(jim), col=4, lty=2)
 	dev.off()
+	svg(paste0('plots/jims_hist_fd.', args[3], '.svg'))
+	hist(jims, xlim=c(0,1), ylim=c(0,y.max), breaks=1/(2*IQR(jim)/length(jim)**(1/3)), main='Distance distribution [FD]', xlab='JIMS', prob=T)
+	lines(density(jims), col=4, lty=2)
+	dev.off()
 }
 
 svg(paste0('plots/him_scatterplot.', args[3], '.svg'), width=10, height=10)
@@ -167,6 +234,19 @@ svg(paste0('plots/jim_scatterplot.', args[3], '.svg'), width=10, height=10)
 plot(jm[lower.tri(jm, diag=F)], im[lower.tri(im, diag=F)], xlab='J', ylab='IM', main='J/IM space', xlim=c(0,1), ylim=c(0,1), pch=20, col=rgb(0,0,0,.1))
 abline(h=0.5, lty=2, col=2)
 abline(v=0.5, lty=2, col=2)
+dev.off()
+
+svg(paste0('plots/jims_scatterplot.', args[3], '.svg'), width=10, height=10)
+plot(jsm[lower.tri(jsm, diag=F)], im[lower.tri(im, diag=F)], xlab='JS', ylab='IM', main='JS/IM space', xlim=c(0,1), ylim=c(0,1), pch=20, col=rgb(0,0,0,.1))
+abline(h=0.5, lty=2, col=2)
+abline(v=0.5, lty=2, col=2)
+dev.off()
+
+svg('jjs_sscatter.svg', height=10, width=10)
+plot(jm, jsm, xlim=c(0,1), ylim=c(0,1), xlab='J', ylab='Jsub', pch=20, col=rgb(0,0,0,.1))
+abline(h=0.5, col=2, lty=2)
+abline(v=0.5, col=2, lty=2)
+abline(v=1, col=3, lty=3)
 dev.off()
 
 print('> Prepare heatmaps.')
@@ -233,9 +313,11 @@ color.map.col4 <- sapply(pvcl$ERG.clean, function(x) {
 
 hm <- matrix(as.numeric(distances$dh), n, n)
 jm <- matrix(as.numeric(distances$dj), n, n)
+jsm <- matrix(as.numeric(distances$djs), n, n)
 im <- matrix(as.numeric(distances$dim), n, n)
 him <- matrix(as.numeric(distances$dhim), n, n)
 jim <- matrix(as.numeric(distances$djim), n, n)
+jims <- matrix(as.numeric(distances$djims), n, n)
 
 # HAMMING
 hc <- hclust(as.dist(hm))
@@ -265,6 +347,23 @@ color.map.col <- matrix(unlist(c(color.map.col1, color.map.col2, color.map.col3,
 colnames(color.map.col) <- c('Age', 'PSA', 'GS', 'ERG')
 rownames(jm) <- colnames(jm)
 heatmap.plus::heatmap.plus(jm, Rowv=as.dendrogram(jc), Colv=rev(as.dendrogram(jc)), na.rm=F, symm=T, margins=c(5,12), ColSideColors=color.map.col, cexRow=0.3, cexCol=0.3, main='Jaccard')
+legend(0.86,0.3,legend=c('30-40', '40-50', '50-60', '60-70', '70-80'),pch=15,col=c('green', 'deepskyblue', 'darkgreen', 'darkorange', 'gold'),cex=0.7,title="Age")
+legend(0.86,0.5,legend=c("6-","3+4","4+3","8+"),pch=15,col=c("gold", "firebrick1", "darkmagenta", "forestgreen"),cex=0.7,title="GS")
+legend(0.86,0.7,legend=c("< 4","4~10","> 10"),pch=15,col=c("cyan3", "blueviolet", "brown1"),cex=0.7,title="PSA")
+legend(0.86,0.9,legend=c("-","+"),pch=15,col=c("deepskyblue", "darkorange"),cex=0.7,title="ERG")
+dev.off()
+
+# JACCARD SUBSET
+jsc <- hclust(as.dist(jsm))
+svg(paste0('heatmaps/jaccard_subs_dendrogram.', args[3], '.svg'))
+plot(jsc, hang=-1, xlab='sample', main='Jaccard Subset-based Dendrogram', cex=0.3)
+dev.off()
+
+svg(paste0('heatmaps/jaccard_subs_heat.', args[3], '.svg'))
+color.map.col <- matrix(unlist(c(color.map.col1, color.map.col2, color.map.col3, color.map.col4)), nrow=length(flist), ncol=4)
+colnames(color.map.col) <- c('Age', 'PSA', 'GS', 'ERG')
+rownames(jsm) <- colnames(jsm)
+heatmap.plus::heatmap.plus(jsm, Rowv=as.dendrogram(jsc), Colv=rev(as.dendrogram(jsc)), na.rm=F, symm=T, margins=c(5,12), ColSideColors=color.map.col, cexRow=0.3, cexCol=0.3, main='Jaccard Subset')
 legend(0.86,0.3,legend=c('30-40', '40-50', '50-60', '60-70', '70-80'),pch=15,col=c('green', 'deepskyblue', 'darkgreen', 'darkorange', 'gold'),cex=0.7,title="Age")
 legend(0.86,0.5,legend=c("6-","3+4","4+3","8+"),pch=15,col=c("gold", "firebrick1", "darkmagenta", "forestgreen"),cex=0.7,title="GS")
 legend(0.86,0.7,legend=c("< 4","4~10","> 10"),pch=15,col=c("cyan3", "blueviolet", "brown1"),cex=0.7,title="PSA")
@@ -316,6 +415,23 @@ color.map.col <- matrix(unlist(c(color.map.col1, color.map.col2, color.map.col3,
 colnames(color.map.col) <- c('Age', 'PSA', 'GS', 'ERG')
 rownames(jim) <- colnames(jim)
 heatmap.plus::heatmap.plus(jim, Rowv=as.dendrogram(jic), Colv=rev(as.dendrogram(jic)), na.rm=F, symm=T, margins=c(5,12), ColSideColors=color.map.col, cexRow=0.3, cexCol=0.3, main='JIM')
+legend(0.86,0.3,legend=c('30-40', '40-50', '50-60', '60-70', '70-80'),pch=15,col=c('green', 'deepskyblue', 'darkgreen', 'darkorange', 'gold'),cex=0.7,title="Age")
+legend(0.86,0.5,legend=c("6-","3+4","4+3","8+"),pch=15,col=c("gold", "firebrick1", "darkmagenta", "forestgreen"),cex=0.7,title="GS")
+legend(0.86,0.7,legend=c("< 4","4~10","> 10"),pch=15,col=c("cyan3", "blueviolet", "brown1"),cex=0.7,title="PSA")
+legend(0.86,0.9,legend=c("-","+"),pch=15,col=c("deepskyblue", "darkorange"),cex=0.7,title="ERG")
+dev.off()
+
+# JIMS
+jisc <- hclust(as.dist(jims))
+svg(paste0('heatmaps/jims_dendrogram.', args[3], '.svg'))
+plot(jisc, hang=-1, xlab='sample', main='JIMS-based Dendrogram', cex=0.3)
+dev.off()
+
+svg(paste0('heatmaps/jims_heat.', args[3], '.svg'))
+color.map.col <- matrix(unlist(c(color.map.col1, color.map.col2, color.map.col3, color.map.col4)), nrow=length(flist), ncol=4)
+colnames(color.map.col) <- c('Age', 'PSA', 'GS', 'ERG')
+rownames(jims) <- colnames(jims)
+heatmap.plus::heatmap.plus(jims, Rowv=as.dendrogram(jisc), Colv=rev(as.dendrogram(jisc)), na.rm=F, symm=T, margins=c(5,12), ColSideColors=color.map.col, cexRow=0.3, cexCol=0.3, main='JIMS')
 legend(0.86,0.3,legend=c('30-40', '40-50', '50-60', '60-70', '70-80'),pch=15,col=c('green', 'deepskyblue', 'darkgreen', 'darkorange', 'gold'),cex=0.7,title="Age")
 legend(0.86,0.5,legend=c("6-","3+4","4+3","8+"),pch=15,col=c("gold", "firebrick1", "darkmagenta", "forestgreen"),cex=0.7,title="GS")
 legend(0.86,0.7,legend=c("< 4","4~10","> 10"),pch=15,col=c("cyan3", "blueviolet", "brown1"),cex=0.7,title="PSA")

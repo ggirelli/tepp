@@ -1,6 +1,11 @@
 # Changelog
 # -----------------------------------------
 
+v. 2.1
+
+* Fixed bug in Jaccard distance calculation (wrong denominator).
+* Implemented Jaccard-subset distance calculation.
+
 v. 2
 
 * Fixed bug in directed-to-undirected graph conversion, required step for
