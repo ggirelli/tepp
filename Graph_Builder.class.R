@@ -222,7 +222,7 @@ GraphBuilder <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
           }
 
           # Output graph
-          write.graph(g, file.path(data.dir, paste0('gra_', sample.id, '.graphml')), format='graphml')
+          write.graph(g, file.path(data.dir, paste0(sample.id, '.graphml')), format='graphml')
         }
       }
       stopCluster(par)
@@ -305,9 +305,9 @@ GraphBuilder <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
           }
 
           # Output graph
-          if(length(V(g.clonal)) != 0) write.graph(g.clonal, file.path(data.dir, paste0('gra_clonal_', sample.id, '.graphml')), format='graphml')
-          if(length(V(g.subclonal)) != 0) write.graph(g.subclonal, file.path(data.dir, paste0('gra_subclonal_', sample.id, '.graphml')), format='graphml')
-          if(length(V(g.nonclonal)) != 0) write.graph(g.nonclonal, file.path(data.dir, paste0('gra_nonclonal_', sample.id, '.graphml')), format='graphml')
+          if(length(V(g.clonal)) != 0) write.graph(g.clonal, file.path(data.dir, paste0('clonal_', sample.id, '.graphml')), format='graphml')
+          if(length(V(g.subclonal)) != 0) write.graph(g.subclonal, file.path(data.dir, paste0('subclonal_', sample.id, '.graphml')), format='graphml')
+          if(length(V(g.nonclonal)) != 0) write.graph(g.nonclonal, file.path(data.dir, paste0('nonclonal_', sample.id, '.graphml')), format='graphml')
         }
       }
       stopCluster(par)
@@ -538,18 +538,18 @@ GraphBuilder <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
       if(gb$verbose) cat('SSMAs prepared.\n')
 
       if(gb$verbose) cat("\n# Merging SSMAs into MSMA\n")
-      g.total <- gb$buildMSMA(paste0('gra_', sample.list, '.graphml'), doOcc=TRUE)
+      g.total <- gb$buildMSMA(paste0(sample.list, '.graphml'), doOcc=TRUE)
 
       if(gb$verbose) cat('\n# Preparing Clonality SSMAs.\n')
       gb$buildClonalSSMA(abe.list, genes.label=genes.label, clonality.label=clonality.label, clonal.val=clonal.val, subclonal.val=subclonal.val, sample.list=sample.list, v.list=V(g.total)$name)
       if(gb$verbose) cat('SSMAs prepared.\n')
 
       if(gb$verbose) cat("\n# Merging SSMAs into MSMA · Clonal co-occurrency\n")
-      g.clonal <- gb$buildMSMA(paste0('gra_clonal_', sample.list, '.graphml'))
+      g.clonal <- gb$buildMSMA(paste0('clonal_', sample.list, '.graphml'))
       if(gb$verbose) cat("\n# Merging SSMAs into MSMA · Subclonal co-occurrency\n")
-      g.subclonal <- gb$buildMSMA(paste0('gra_subclonal_', sample.list, '.graphml'))
+      g.subclonal <- gb$buildMSMA(paste0('subclonal_', sample.list, '.graphml'))
       if(gb$verbose) cat("\n# Merging SSMAs into MSMA · Uncertain_clonality co-occurrency\n")
-      g.nonclonal <- gb$buildMSMA(paste0('gra_nonclonal_', sample.list, '.graphml'))
+      g.nonclonal <- gb$buildMSMA(paste0('nonclonal_', sample.list, '.graphml'))
 
       if(gb$verbose) cat("\n# Retrieving co-occurrency data\n")
       # Get which edges can be present in the co-occurrency graphs
