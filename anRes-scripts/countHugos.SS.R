@@ -26,12 +26,13 @@ for(f in flist) {
 	g <- read.graph(file.path('.', paste0(args[1], '/', f)), format='graphml')
 	#if(length(V(g)) != length(unique(V(g)$name))) print(f)
 	res <- rbind(res, c(f, length(V(g)), length(unique(V(g)$name))))
-	hugos <- append(hugos, unique(V(g)$name))
+	hugos <- append(hugos, V(g)$name)
 }
 
 cat('> Writing output.\n')
 write.table(res, args[3], quote=F, row.names=F, col.names=F, sep='\t')
-#write.table(hugos, 'hugo_list.dat', quote=F, row.names=F, col.names=F, sep='\t')
+write.table(hugos, 'hugo_list.dat', quote=F, row.names=F, col.names=F, sep='\t')
+write.table(table(hugos), 'hugo_table.dat', quote=F, row.names=F, sep='\t')
 
 svg('sample_per_gene.svg')
 hist(as.numeric(res[,3])/as.numeric(args[2]), main='Samples per %gene', xlab='%genes', ylab="#samples", xlim=c(0,1), breaks=seq(0, 1, by=0.05))

@@ -10,9 +10,7 @@ gb.version <- 11
 args <- commandArgs(trailingOnly=TRUE)
 
 # Check number of parameters
-if(length(args) > 2 || length(args) == 0) { cat('ERROR: script.R usage #1\n'); quit() }
-# Check parameters values and labels
-for(arg in args) if(!grepl('^(-v=(TRUE|FALSE|T|F)|-c=[0-9]*|-p=[a-zA-Z0-9()./_~-]*)$', arg)) { cat('ERROR: script.R usage #2\n'); quit() }
+if( length(args) != 1) stop('ERROR: script.R usage #1\n')
 
 # Set default values
 clusters <- 4
@@ -28,14 +26,9 @@ black.list <- list()
 clean <- FALSE
 write.cooc <- FALSE
 
-# Read number of clusters
-for(arg in args) if(grepl('^-c=[0-9]*$', arg))  clusters <- as.numeric(strsplit(arg, '-c=')[[1]][2])
-if(clusters == 0) clusters <- 1
-# Read verbose
-for(arg in args) if(grepl('^-v=(TRUE|FALSE|T|F)$', arg)) verbose <- as.logical(strsplit(arg, '-v=')[[1]][2])
 # Read param file
-for(arg in args) if(grepl('^-p=[a-zA-Z0-9()./_~-]*$', arg)) {
-  file.name <- strsplit(arg, '-p=')[[1]][2]
+if ( file.exists(args[1]) ) {
+  file.name <- strsplit(args[1], '-p=')[[1]][2]
   if(file.exists(file.name)) {
     ff <- read.table(file.name, head=FALSE)
 
