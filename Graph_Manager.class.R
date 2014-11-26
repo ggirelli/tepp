@@ -1,7 +1,7 @@
 library('igraph')
 
 # Class to manage graphml graphs and perform graph operations
-NetworkManager <- function() {
+GraphManager <- function() {
 
 	# Instantiate Graph Manager
 	nm <- list(
@@ -81,7 +81,7 @@ NetworkManager <- function() {
 				if ( !is.null(e.attr.table) ) names(e.attr.table) <- e.attr.list
 
 				# Add source/target columns
-				e.attr.table <- NetworkManager()$add.edges.extremities(e.attr.table, graph, T)
+				e.attr.table <- GraphManager()$add.edges.extremities(e.attr.table, graph, T)
 
 			} else {
 
@@ -94,7 +94,7 @@ NetworkManager <- function() {
 				if ( !is.null(e.attr.table) ) colnames(e.attr.table) <- e.attr.list
 
 				# Add source/target columns
-				e.attr.table <- NetworkManager()$add.edges.extremities(e.attr.table, graph, T)
+				e.attr.table <- GraphManager()$add.edges.extremities(e.attr.table, graph, T)
 
 			}
 
@@ -193,13 +193,13 @@ NetworkManager <- function() {
 
 				# Single-node graph
 				graph.list$nodes <- list(data=
-					NetworkManager()$get.vertex.attributes(V(graph)[1], graph))
+					GraphManager()$get.vertex.attributes(V(graph)[1], graph))
 
 			} else {
 
 				# 'normal' graph
 				graph.list$nodes <- lapply(V(graph), FUN=function(v) {
-					l <- NetworkManager()$get.vertex.attributes(v, graph)
+					l <- GraphManager()$get.vertex.attributes(v, graph)
 					return(list(data=l))
 				})
 
@@ -210,13 +210,13 @@ NetworkManager <- function() {
 
 				# Single-edge graph
 				graph.list$edges <- list(data=
-					NetworkManager()$get.edge.attributes(E(graph)[1], graph))
+					GraphManager()$get.edge.attributes(E(graph)[1], graph))
 
 			} else {
 
 				# 'normal' graph
 				graph.list$edges <- lapply(E(graph), FUN=function(e) {
-					l <- NetworkManager()$get.edge.attributes(e, graph)
+					l <- GraphManager()$get.edge.attributes(e, graph)
 					return(list(data=l))
 				})
 
@@ -296,7 +296,7 @@ NetworkManager <- function() {
 
 
 			graph.list <- list(nodes=list(), edges=list())
-			v.attr.table <- NetworkManager()$expand.attr.table(v.attr.table, c('x','y'))
+			v.attr.table <- GraphManager()$expand.attr.table(v.attr.table, c('x','y'))
 
 			# VERTICES #
 			if ( 1 == v.count ) {
@@ -987,7 +987,7 @@ NetworkManager <- function() {
 			} else if ( 1 == e.count ) {
 
 				# Single edge network
-				e.attr.table.tmp <- NetworkManager()$rm.cols(e.attr.table, c('source', 'target'))
+				e.attr.table.tmp <- GraphManager()$rm.cols(e.attr.table, c('source', 'target'))
 
 				add.col.name <- FALSE
 				if ( is.null(nrow(e.attr.table.tmp)) ) {
@@ -1010,7 +1010,7 @@ NetworkManager <- function() {
 			} else {
 				
 				# 'normal' network
-				e.attr.table.tmp <- NetworkManager()$rm.cols(e.attr.table, c('source', 'target'))
+				e.attr.table.tmp <- GraphManager()$rm.cols(e.attr.table, c('source', 'target'))
 
 				add.col.name <- FALSE
 				if ( is.null(nrow(e.attr.table.tmp)) ) {
@@ -1049,13 +1049,13 @@ NetworkManager <- function() {
 			if ( !is.null(nrow(table)) ) {
 
 				# Non-empty table
-				table <- NetworkManager()$expand.attr.table(table, c('id'))
+				table <- GraphManager()$expand.attr.table(table, c('id'))
 				table[, which('id' == colnames(table))] <- 0:(nrow(table) - 1)
 
 			} else if ( 0 != length(table) ) {
 
 				# Single-row table
-				table <- NetworkManager()$expand.attr.table(table, c('id'))
+				table <- GraphManager()$expand.attr.table(table, c('id'))
 				table[which('id' == names(table))] <- 0
 
 			}
@@ -1083,16 +1083,16 @@ NetworkManager <- function() {
 
 			# VERTICES #
 
-			v.attr.table <- NetworkManager()$update.row.ids(v.attr.table)
-			v.attr.table <- NetworkManager()$add.prefix.to.col(v.attr.table, 'id', 'v')
+			v.attr.table <- GraphManager()$update.row.ids(v.attr.table)
+			v.attr.table <- GraphManager()$add.prefix.to.col(v.attr.table, 'id', 'v')
 
 			# EDGES #
 			
-			e.attr.table <- NetworkManager()$check.extremities(e.attr.table, v.attr.table, v.identity.col)
-			e.attr.table <- NetworkManager()$convert.extremities.to.v.id.based.on.table(e.attr.table,
+			e.attr.table <- GraphManager()$check.extremities(e.attr.table, v.attr.table, v.identity.col)
+			e.attr.table <- GraphManager()$convert.extremities.to.v.id.based.on.table(e.attr.table,
 				v.attr.table, v.identity.col)
-			e.attr.table <- NetworkManager()$update.row.ids(e.attr.table)
-			e.attr.table <- NetworkManager()$add.prefix.to.col(e.attr.table, 'id', 'e')
+			e.attr.table <- GraphManager()$update.row.ids(e.attr.table)
+			e.attr.table <- GraphManager()$add.prefix.to.col(e.attr.table, 'id', 'e')
 
 
 			# END #
@@ -1119,8 +1119,8 @@ NetworkManager <- function() {
 				if ( 0 == length(v.attr.table) ) return(NULL)
 			}
 
-			v.attr.table <- NetworkManager()$update.row.ids(v.attr.table)
-			e.attr.table <- NetworkManager()$convert.extremities.to.v.id(e.attr.table,
+			v.attr.table <- GraphManager()$update.row.ids(v.attr.table)
+			e.attr.table <- GraphManager()$convert.extremities.to.v.id(e.attr.table,
 				v.attr.table, v.identity.col, graph)
 
 			if ( !is.null(nrow(e.attr.table)) ) {
@@ -1129,10 +1129,10 @@ NetworkManager <- function() {
 
 				# Replace numerical v.id with v.identity
 				source.col.id <- which('source' == colnames(e.attr.table))
-				e.attr.table[, source.col.id] <- NetworkManager()$get.col(v.attr.table,
+				e.attr.table[, source.col.id] <- GraphManager()$get.col(v.attr.table,
 					v.identity.col)[as.numeric(e.attr.table[, source.col.id])]
 				target.col.id <- which('target' == colnames(e.attr.table))
-				e.attr.table[, target.col.id] <- NetworkManager()$get.col(
+				e.attr.table[, target.col.id] <- GraphManager()$get.col(
 						v.attr.table, v.identity.col)[as.numeric(e.attr.table[, target.col.id])]
 
 			} else if ( 0!= length(e.attr.table) ) {
@@ -1141,10 +1141,10 @@ NetworkManager <- function() {
 
 				# Replace numerical v.id with v.identity
 				source.col.id <- which('source' == names(e.attr.table))
-				e.attr.table[source.col.id] <- NetworkManager()$get.col(v.attr.table,
+				e.attr.table[source.col.id] <- GraphManager()$get.col(v.attr.table,
 					v.identity.col)[as.numeric(e.attr.table[source.col.id])]
 				target.col.id <- which('target' == names(e.attr.table))
-				e.attr.table[target.col.id] <- NetworkManager()$get.col(v.attr.table,
+				e.attr.table[target.col.id] <- GraphManager()$get.col(v.attr.table,
 					v.identity.col)[as.numeric(e.attr.table[target.col.id])]
 
 			}
@@ -1172,12 +1172,12 @@ NetworkManager <- function() {
 				if ( 0 == length(v.attr.table) ) return(NULL)
 			}
 
-			v.attr.table <- NetworkManager()$update.row.ids(v.attr.table)
+			v.attr.table <- GraphManager()$update.row.ids(v.attr.table)
 
 			if ( !is.null(nrow(e.attr.table)) ) {
 
 				# Non-empty table
-				e.attr.table.tmp <- NetworkManager()$rm.cols(e.attr.table, c('source', 'target'))
+				e.attr.table.tmp <- GraphManager()$rm.cols(e.attr.table, c('source', 'target'))
 
 				add.col.name <- FALSE
 				if ( is.null(nrow(e.attr.table.tmp)) ) {
@@ -1186,7 +1186,7 @@ NetworkManager <- function() {
 				}
 
 				# Add numerical v.id as extremities
-				e.attr.table <- NetworkManager()$add.edges.extremities(e.attr.table.tmp, graph, F)
+				e.attr.table <- GraphManager()$add.edges.extremities(e.attr.table.tmp, graph, F)
 
 				if ( add.col.name) {
 					if ( 0 != length(col.name) ) colnames(e.attr.table)[1] <- col.name
@@ -1195,7 +1195,7 @@ NetworkManager <- function() {
 			} else if ( 0 != length(e.attr.table) ) {
 
 				# Single-row table
-				e.attr.table.tmp <- NetworkManager()$rm.cols(e.attr.table, c('source,', 'target'))
+				e.attr.table.tmp <- GraphManager()$rm.cols(e.attr.table, c('source,', 'target'))
 
 				add.col.name <- FALSE
 				if ( is.null(nrow(e.attr.table.tmp)) ) {
@@ -1204,7 +1204,7 @@ NetworkManager <- function() {
 				}
 
 				# Add numerical v.id as extremities
-				e.attr.table <- NetworkManager()$add.edges.extremities(e.attr.table.tmp, graph, F)
+				e.attr.table <- GraphManager()$add.edges.extremities(e.attr.table.tmp, graph, F)
 
 				if ( add.col.name) {
 					if ( 0 != length(col.name) ) names(e.attr.table)[1] <- col.name
@@ -1239,7 +1239,7 @@ NetworkManager <- function() {
 			if ( !is.null(nrow(e.attr.table)) ) {
 				
 				# Non-empty table
-				e.attr.table <- NetworkManager()$expand.attr.table(e.attr.table,
+				e.attr.table <- GraphManager()$expand.attr.table(e.attr.table,
 					c('source', 'target'))
 				source.col.id <- which('source' == colnames(e.attr.table))
 				target.col.id <- which('target' == colnames(e.attr.table))
@@ -1273,7 +1273,7 @@ NetworkManager <- function() {
 			} else if ( 0 != length(e.attr.table) ) {
 
 				# Single-row table
-				e.attr.table <- NetworkManager()$expand.attr.table(e.attr.table,
+				e.attr.table <- GraphManager()$expand.attr.table(e.attr.table,
 					c('source', 'target'))
 				source.col.id <- which('source' == names(e.attr.table))
 				target.col.id <- which('target' == names(e.attr.table))
@@ -1449,7 +1449,7 @@ NetworkManager <- function() {
 			# 	The rbound table.list
 
 			end.table <- c()
-			colnames <- NetworkManager()$get.colnames.from.table.list(table.list)
+			colnames <- GraphManager()$get.colnames.from.table.list(table.list)
 
 			# RBIND TABLES #
 			for (table in table.list) {
@@ -1458,7 +1458,7 @@ NetworkManager <- function() {
 
 					# Non-empty table
 					if ( 0 != length(which(!colnames(table) %in% colnames)) ) {
-						table <- NetworkManager()$expand.attr.table(table, colnames)
+						table <- GraphManager()$expand.attr.table(table, colnames)
 						table <- sort.table.cols(table)
 					}
 					end.table <- rbind(end.table, table)
@@ -1467,7 +1467,7 @@ NetworkManager <- function() {
 
 					# Single-row table
 					if ( 0 != length(which(!names(table) %in% colnames)) ) {
-						table <- NetworkManager()$expand.attr.table(table, colnames)
+						table <- GraphManager()$expand.attr.table(table, colnames)
 						table <- sort.table.cols(table)
 					}
 					end.table <- rbind(end.table, table)
@@ -1558,7 +1558,7 @@ NetworkManager <- function() {
 				identity.list.unique <- unique(identity.list)
 
 				for (id in identity.list.unique) {
-					subtable <- NetworkManager()$extract.subtable.based.on.identity(
+					subtable <- GraphManager()$extract.subtable.based.on.identity(
 						table, identity.col, id)
 
 					if ( !is.null(subtable) ) {
@@ -1643,7 +1643,7 @@ NetworkManager <- function() {
 							}
 
 							# Re-order columns, just in case
-							single.row <- NetworkManager()$sort.table.cols(single.row)
+							single.row <- GraphManager()$sort.table.cols(single.row)
 
 						} else if ( 0 != length(subtable) ) {
 
@@ -1670,7 +1670,7 @@ NetworkManager <- function() {
 									}
 								}
 							}
-							single.row <- NetworkManager()$rm.cols(single.row, cols.to.rm)
+							single.row <- GraphManager()$rm.cols(single.row, cols.to.rm)
 
 							# Add row count column
 							if ( add.count ) {
@@ -1679,7 +1679,7 @@ NetworkManager <- function() {
 							}
 
 							# Re-order columns, just in case
-							single.row <- NetworkManager()$sort.table.cols(single.row)
+							single.row <- GraphManager()$sort.table.cols(single.row)
 						}
 						end.table <- rbind(end.table, single.row)
 
@@ -1701,7 +1701,7 @@ NetworkManager <- function() {
 						}
 					}
 				}
-				single.row <- NetworkManager()$rm.cols(single.row, cols.to.rm)
+				single.row <- GraphManager()$rm.cols(single.row, cols.to.rm)
 
 				# Add row count column
 				if ( add.count ) {
@@ -1710,7 +1710,7 @@ NetworkManager <- function() {
 				}
 
 				# Re-order columns, just in case
-				single.row <- NetworkManager()$sort.table.cols(single.row)
+				single.row <- GraphManager()$sort.table.cols(single.row)
 
 				end.table <- single.row
 
@@ -1821,7 +1821,7 @@ NetworkManager <- function() {
 			# Returns:
 			# 	Updated graph
 			
-			for(old in names(map)) g <- gm$rename.vertex.attr(g, old, eval(parse(text=paste0('map$', old))))
+			for(old in names(map)) g <- GraphManager$rename.vertex.attr(g, old, eval(parse(text=paste0('map$', old))))
 			return(g)
 		},
 
@@ -1850,7 +1850,7 @@ NetworkManager <- function() {
 			# Returns:
 			# 	Updated graph
 			
-			for(old in names(map)) g <- gm$rename.edge.attr(g, old, eval(parse(text=paste0('map$', old))))
+			for(old in names(map)) g <- GraphManager$rename.edge.attr(g, old, eval(parse(text=paste0('map$', old))))
 			return(g)
 		},
 
@@ -1865,8 +1865,8 @@ NetworkManager <- function() {
 			# Returns:
 			# 	Updated graph
 
-			if(vertex.map != list()) g <- gm$rename.vertex.attributes(g, vertex.map)
-			if(edge.map != list()) g <- gm$rename.edge.attributes(g, edge.map)
+			if(vertex.map != list()) g <- GraphManager$rename.vertex.attributes(g, vertex.map)
+			if(edge.map != list()) g <- GraphManager$rename.edge.attributes(g, edge.map)
 			return(g)
 		},
 
@@ -1944,7 +1944,7 @@ NetworkManager <- function() {
 
 			# Calculates clustering coefficient for each node
 			c.list <- sapply(V(g), FUN=function(v, env, graph) {
-				return(gm$clusteringCoefficient(v, env, graph))
+				return(GraphManager$clusteringCoefficient(v, env, graph))
 			}, env=attr(V(g), 'env'), graph=g)
 
 			# Terminate
@@ -1964,8 +1964,8 @@ NetworkManager <- function() {
 			# Returns:
 			#	The Hamming distance H(g.one,g.two)
 
-			if (is.directed(g.one)) g.one <- gm$undirected.noAttr(g.one)
-			if (is.directed(g.two)) g.two <- gm$undirected.noAttr(g.two)
+			if (is.directed(g.one)) g.one <- GraphManager$undirected.noAttr(g.one)
+			if (is.directed(g.two)) g.two <- GraphManager$undirected.noAttr(g.two)
 
 			# Check if size is the same
 			add.one <- V(g.two)[which(!(V(g.two)$name %in% V(g.one)$name))]
@@ -2004,8 +2004,8 @@ NetworkManager <- function() {
 			# Returns:
 			#	The Jaccard distance J(g.one,g.two)
 
-			if (is.directed(g.one)) g.one <- gm$undirected.noAttr(g.one)
-			if (is.directed(g.two)) g.two <- gm$undirected.noAttr(g.two)
+			if (is.directed(g.one)) g.one <- GraphManager$undirected.noAttr(g.one)
+			if (is.directed(g.two)) g.two <- GraphManager$undirected.noAttr(g.two)
 
 			# Get edges
 			el.one <- get.edgelist(g.one)
@@ -2031,8 +2031,8 @@ NetworkManager <- function() {
 			# Returns:
 			#	The Jaccard distance J(g.one,g.two)
 
-			if (is.directed(g.one)) g.one <- gm$undirected.noAttr(g.one)
-			if (is.directed(g.two)) g.two <- gm$undirected.noAttr(g.two)
+			if (is.directed(g.one)) g.one <- GraphManager$undirected.noAttr(g.one)
+			if (is.directed(g.two)) g.two <- GraphManager$undirected.noAttr(g.two)
 
 			# Get edges
 			el.one <- get.edgelist(g.one)
@@ -2061,8 +2061,8 @@ NetworkManager <- function() {
 			# Returns:
 			#	The Ipsen-Mikhailov distance IM(g.one,g.two)
 			
-			if (is.directed(g.one)) g.one <- gm$undirected.noAttr(g.one)
-			if (is.directed(g.two)) g.two <- gm$undirected.noAttr(g.two)
+			if (is.directed(g.one)) g.one <- GraphManager$undirected.noAttr(g.one)
+			if (is.directed(g.two)) g.two <- GraphManager$undirected.noAttr(g.two)
 
 			# Read graphs
 			gs <- list(g.one, g.two)
@@ -2142,11 +2142,11 @@ NetworkManager <- function() {
 			# Returns:
 			#	The HIM distance (g.one,g.two)
 			
-			if (is.directed(g.one)) g.one <- gm$undirected.noAttr(g.one)
-			if (is.directed(g.two)) g.two <- gm$undirected.noAttr(g.two)
+			if (is.directed(g.one)) g.one <- GraphManager$undirected.noAttr(g.one)
+			if (is.directed(g.two)) g.two <- GraphManager$undirected.noAttr(g.two)
 
-			dH <- gm$calcHammingDist(g.one, g.two)
-			dIM <- gm$calcIpsenDist(g.one, g.two)
+			dH <- GraphManager$calcHammingDist(g.one, g.two)
+			dIM <- GraphManager$calcIpsenDist(g.one, g.two)
 			dHIM <- (1/sqrt(1+xi)) * sqrt(dH**2 + xi * dIM**2)
 			return(dHIM)
 		},
@@ -2162,11 +2162,11 @@ NetworkManager <- function() {
 			# Returns:
 			#	The JIM distance (g.one,g.two)
 
-			if (is.directed(g.one)) g.one <- gm$undirected.noAttr(g.one)
-			if (is.directed(g.two)) g.two <- gm$undirected.noAttr(g.two)
+			if (is.directed(g.one)) g.one <- GraphManager$undirected.noAttr(g.one)
+			if (is.directed(g.two)) g.two <- GraphManager$undirected.noAttr(g.two)
 
-			dJ <- gm$calcJaccardDist(g.one, g.two)
-			dIM <- gm$calcIpsenDist(g.one, g.two)
+			dJ <- GraphManager$calcJaccardDist(g.one, g.two)
+			dIM <- GraphManager$calcIpsenDist(g.one, g.two)
 			dJIM <- (1/sqrt(1+xi)) * sqrt(dJ**2 + xi * dIM**2)
 			return(dJIM)
 		},
@@ -2182,11 +2182,11 @@ NetworkManager <- function() {
 			# Returns:
 			#	The JIM distance (g.one,g.two)
 
-			if (is.directed(g.one)) g.one <- gm$undirected.noAttr(g.one)
-			if (is.directed(g.two)) g.two <- gm$undirected.noAttr(g.two)
+			if (is.directed(g.one)) g.one <- GraphManager$undirected.noAttr(g.one)
+			if (is.directed(g.two)) g.two <- GraphManager$undirected.noAttr(g.two)
 
-			dJS <- gm$calcJaccardSubsetDist(g.one, g.two)
-			dIM <- gm$calcIpsenDist(g.one, g.two)
+			dJS <- GraphManager$calcJaccardSubsetDist(g.one, g.two)
+			dIM <- GraphManager$calcIpsenDist(g.one, g.two)
 			dJIM <- (1/sqrt(1+xi)) * sqrt(dJS**2 + xi * dIM**2)
 			return(dJIM)
 		},
@@ -2202,13 +2202,13 @@ NetworkManager <- function() {
 			# Returns:
 			# 	A tuble containing respectiveli H, IM and HIM distances
 			
-			if (is.directed(g.one)) g.one <- gm$undirected.noAttr(g.one)
-			if (is.directed(g.two)) g.two <- gm$undirected.noAttr(g.two)
+			if (is.directed(g.one)) g.one <- GraphManager$undirected.noAttr(g.one)
+			if (is.directed(g.two)) g.two <- GraphManager$undirected.noAttr(g.two)
 			
-			dH <- gm$calcHammingDist(g.one, g.two)
-			dJ <- gm$calcJaccardDist(g.one, g.two)
-			dJS <- gm$calcJaccardSubsetDist(g.one, g.two)
-			dIM <- gm$calcIpsenDist(g.one, g.two)
+			dH <- GraphManager$calcHammingDist(g.one, g.two)
+			dJ <- GraphManager$calcJaccardDist(g.one, g.two)
+			dJS <- GraphManager$calcJaccardSubsetDist(g.one, g.two)
+			dIM <- GraphManager$calcIpsenDist(g.one, g.two)
 			dHIM <- (1/sqrt(1+xi)) * sqrt(dH**2 + xi * dIM**2)
 			dJIM <- (1/sqrt(1+xi)) * sqrt(dJ**2 + xi * dIM**2)
 			dJIMS <- (1/sqrt(1+xi)) * sqrt(dJS**2 + xi * dIM**2)
@@ -2218,8 +2218,8 @@ NetworkManager <- function() {
 	)
 
 	# Assign class attribute
-	class(nm) <- 'NetworkManager'
+	class(nm) <- 'GraphManager'
 
-	# Return instantiaded Graph Manager
+	# Return instantiated Graph Manager
 	return(nm)
 }
