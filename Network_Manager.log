@@ -1,6 +1,10 @@
 # Changelog
 # -----------------------------------------
 
+v. 2.2
+
+* Added attribute table managemente and format conversion.
+
 v. 2.1
 
 * Fixed bug in Jaccard distance calculation (wrong denominator).
