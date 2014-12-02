@@ -1734,7 +1734,7 @@ GraphManager <- function() {
 			# 	The UNDIRECTED graph
 			
 			if(!is.directed(g)) return(F)
-			
+
 			# Create undirected empty graph
 			gf <- graph.empty(directed=F)
 
@@ -1745,9 +1745,6 @@ GraphManager <- function() {
 			# Add edges
 			el <- get.edgelist(g)
 			gf <- gf + edges(c(t(cbind(paste0(el[,1], '~OUT'), paste0(el[,2], '~IN')))))
-
-			# Remove 0-degree vertices
-			gf <- delete.vertices(gf, V(gf)[which(degree(gf, V(gf)) == 0)])
 
 			# Return undirected graph
 			return(gf)
@@ -1787,9 +1784,6 @@ GraphManager <- function() {
 			attr.list <- list.edge.attributes(g)
 			for(attr.name in attr.list[which(attr.list != 'name')]) eval(parse(text=paste0('E(gf)$', attr.name, ' <- E(g)$', attr.name)))
 
-			# Remove 0-degree vertices
-			gf <- delete.vertices(gf, V(gf)[which(degree(gf, V(gf)) == 0)])
-
 			# Return undirected graph
 			return(gf)
 		},
@@ -1821,7 +1815,7 @@ GraphManager <- function() {
 			# Returns:
 			# 	Updated graph
 			
-			for(old in names(map)) g <- GraphManager$rename.vertex.attr(g, old, eval(parse(text=paste0('map$', old))))
+			for(old in names(map)) g <- GraphManager()$rename.vertex.attr(g, old, eval(parse(text=paste0('map$', old))))
 			return(g)
 		},
 
@@ -1850,7 +1844,7 @@ GraphManager <- function() {
 			# Returns:
 			# 	Updated graph
 			
-			for(old in names(map)) g <- GraphManager$rename.edge.attr(g, old, eval(parse(text=paste0('map$', old))))
+			for(old in names(map)) g <- GraphManager()$rename.edge.attr(g, old, eval(parse(text=paste0('map$', old))))
 			return(g)
 		},
 
@@ -1865,8 +1859,8 @@ GraphManager <- function() {
 			# Returns:
 			# 	Updated graph
 
-			if(vertex.map != list()) g <- GraphManager$rename.vertex.attributes(g, vertex.map)
-			if(edge.map != list()) g <- GraphManager$rename.edge.attributes(g, edge.map)
+			if(vertex.map != list()) g <- GraphManager()$rename.vertex.attributes(g, vertex.map)
+			if(edge.map != list()) g <- GraphManager()$rename.edge.attributes(g, edge.map)
 			return(g)
 		},
 
@@ -1944,7 +1938,7 @@ GraphManager <- function() {
 
 			# Calculates clustering coefficient for each node
 			c.list <- sapply(V(g), FUN=function(v, env, graph) {
-				return(GraphManager$clusteringCoefficient(v, env, graph))
+				return(GraphManager()$clusteringCoefficient(v, env, graph))
 			}, env=attr(V(g), 'env'), graph=g)
 
 			# Terminate
@@ -1964,8 +1958,8 @@ GraphManager <- function() {
 			# Returns:
 			#	The Hamming distance H(g.one,g.two)
 
-			if (is.directed(g.one)) g.one <- GraphManager$undirected.noAttr(g.one)
-			if (is.directed(g.two)) g.two <- GraphManager$undirected.noAttr(g.two)
+			if (is.directed(g.one)) g.one <- GraphManager()$undirected.noAttr(g.one)
+			if (is.directed(g.two)) g.two <- GraphManager()$undirected.noAttr(g.two)
 
 			# Check if size is the same
 			add.one <- V(g.two)[which(!(V(g.two)$name %in% V(g.one)$name))]
@@ -1987,7 +1981,7 @@ GraphManager <- function() {
 			# Normalize distance
 			max.v <- max(length(V(g.one)), length(V(g.two)))
 			K <- (max.v * (max.v - 1))
-			if(common != 0) K <- K / 2
+			#if(common != 0) K <- K / 2
 			dH <- dH.raw / K
 
 			# Return distance
@@ -2004,8 +1998,8 @@ GraphManager <- function() {
 			# Returns:
 			#	The Jaccard distance J(g.one,g.two)
 
-			if (is.directed(g.one)) g.one <- GraphManager$undirected.noAttr(g.one)
-			if (is.directed(g.two)) g.two <- GraphManager$undirected.noAttr(g.two)
+			if (is.directed(g.one)) g.one <- GraphManager()$undirected.noAttr(g.one)
+			if (is.directed(g.two)) g.two <- GraphManager()$undirected.noAttr(g.two)
 
 			# Get edges
 			el.one <- get.edgelist(g.one)
@@ -2031,8 +2025,8 @@ GraphManager <- function() {
 			# Returns:
 			#	The Jaccard distance J(g.one,g.two)
 
-			if (is.directed(g.one)) g.one <- GraphManager$undirected.noAttr(g.one)
-			if (is.directed(g.two)) g.two <- GraphManager$undirected.noAttr(g.two)
+			if (is.directed(g.one)) g.one <- GraphManager()$undirected.noAttr(g.one)
+			if (is.directed(g.two)) g.two <- GraphManager()$undirected.noAttr(g.two)
 
 			# Get edges
 			el.one <- get.edgelist(g.one)
@@ -2061,8 +2055,8 @@ GraphManager <- function() {
 			# Returns:
 			#	The Ipsen-Mikhailov distance IM(g.one,g.two)
 			
-			if (is.directed(g.one)) g.one <- GraphManager$undirected.noAttr(g.one)
-			if (is.directed(g.two)) g.two <- GraphManager$undirected.noAttr(g.two)
+			if (is.directed(g.one)) g.one <- GraphManager()$undirected.noAttr(g.one)
+			if (is.directed(g.two)) g.two <- GraphManager()$undirected.noAttr(g.two)
 
 			# Read graphs
 			gs <- list(g.one, g.two)
@@ -2142,11 +2136,11 @@ GraphManager <- function() {
 			# Returns:
 			#	The HIM distance (g.one,g.two)
 			
-			if (is.directed(g.one)) g.one <- GraphManager$undirected.noAttr(g.one)
-			if (is.directed(g.two)) g.two <- GraphManager$undirected.noAttr(g.two)
+			if (is.directed(g.one)) g.one <- GraphManager()$undirected.noAttr(g.one)
+			if (is.directed(g.two)) g.two <- GraphManager()$undirected.noAttr(g.two)
 
-			dH <- GraphManager$calcHammingDist(g.one, g.two)
-			dIM <- GraphManager$calcIpsenDist(g.one, g.two)
+			dH <- GraphManager()$calcHammingDist(g.one, g.two)
+			dIM <- GraphManager()$calcIpsenDist(g.one, g.two)
 			dHIM <- (1/sqrt(1+xi)) * sqrt(dH**2 + xi * dIM**2)
 			return(dHIM)
 		},
@@ -2162,11 +2156,11 @@ GraphManager <- function() {
 			# Returns:
 			#	The JIM distance (g.one,g.two)
 
-			if (is.directed(g.one)) g.one <- GraphManager$undirected.noAttr(g.one)
-			if (is.directed(g.two)) g.two <- GraphManager$undirected.noAttr(g.two)
+			if (is.directed(g.one)) g.one <- GraphManager()$undirected.noAttr(g.one)
+			if (is.directed(g.two)) g.two <- GraphManager()$undirected.noAttr(g.two)
 
-			dJ <- GraphManager$calcJaccardDist(g.one, g.two)
-			dIM <- GraphManager$calcIpsenDist(g.one, g.two)
+			dJ <- GraphManager()$calcJaccardDist(g.one, g.two)
+			dIM <- GraphManager()$calcIpsenDist(g.one, g.two)
 			dJIM <- (1/sqrt(1+xi)) * sqrt(dJ**2 + xi * dIM**2)
 			return(dJIM)
 		},
@@ -2182,11 +2176,11 @@ GraphManager <- function() {
 			# Returns:
 			#	The JIM distance (g.one,g.two)
 
-			if (is.directed(g.one)) g.one <- GraphManager$undirected.noAttr(g.one)
-			if (is.directed(g.two)) g.two <- GraphManager$undirected.noAttr(g.two)
+			if (is.directed(g.one)) g.one <- GraphManager()$undirected.noAttr(g.one)
+			if (is.directed(g.two)) g.two <- GraphManager()$undirected.noAttr(g.two)
 
-			dJS <- GraphManager$calcJaccardSubsetDist(g.one, g.two)
-			dIM <- GraphManager$calcIpsenDist(g.one, g.two)
+			dJS <- GraphManager()$calcJaccardSubsetDist(g.one, g.two)
+			dIM <- GraphManager()$calcIpsenDist(g.one, g.two)
 			dJIM <- (1/sqrt(1+xi)) * sqrt(dJS**2 + xi * dIM**2)
 			return(dJIM)
 		},
@@ -2202,13 +2196,13 @@ GraphManager <- function() {
 			# Returns:
 			# 	A tuble containing respectiveli H, IM and HIM distances
 			
-			if (is.directed(g.one)) g.one <- GraphManager$undirected.noAttr(g.one)
-			if (is.directed(g.two)) g.two <- GraphManager$undirected.noAttr(g.two)
+			if (is.directed(g.one)) g.one <- GraphManager()$undirected.noAttr(g.one)
+			if (is.directed(g.two)) g.two <- GraphManager()$undirected.noAttr(g.two)
 			
-			dH <- GraphManager$calcHammingDist(g.one, g.two)
-			dJ <- GraphManager$calcJaccardDist(g.one, g.two)
-			dJS <- GraphManager$calcJaccardSubsetDist(g.one, g.two)
-			dIM <- GraphManager$calcIpsenDist(g.one, g.two)
+			dH <- GraphManager()$calcHammingDist(g.one, g.two)
+			dJ <- GraphManager()$calcJaccardDist(g.one, g.two)
+			dJS <- GraphManager()$calcJaccardSubsetDist(g.one, g.two)
+			dIM <- GraphManager()$calcIpsenDist(g.one, g.two)
 			dHIM <- (1/sqrt(1+xi)) * sqrt(dH**2 + xi * dIM**2)
 			dJIM <- (1/sqrt(1+xi)) * sqrt(dJ**2 + xi * dIM**2)
 			dJIMS <- (1/sqrt(1+xi)) * sqrt(dJS**2 + xi * dIM**2)
