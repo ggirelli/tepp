@@ -1980,8 +1980,7 @@ GraphManager <- function() {
 
 			# Normalize distance
 			max.v <- max(length(V(g.one)), length(V(g.two)))
-			K <- (max.v * (max.v - 1))
-			#if(common != 0) K <- K / 2
+			K <- (max.v * (max.v - 1))/2
 			dH <- dH.raw / K
 
 			# Return distance
@@ -2037,7 +2036,17 @@ GraphManager <- function() {
 			common <- common + length(intersect(paste0(el.one[,2], '~', el.one[,1]), paste0(el.two[,1], '~', el.two[,2])))
 
 			# Calculate similarity and than distance
-			JS <- common / min(length(el.one[,1]), length(el.two[,1]))
+			num <- common
+			den <- min(length(el.one[,1]), length(el.two[,1]))
+			if ( den == 0 ) {
+				if ( length(el.one[,1]) == length(el.two[,1]) ) {
+					JS <- 1
+				} else {
+					JS <- 0
+				}
+			} else {
+				JS <- num / den
+			}
 			dJS <- 1 - JS
 
 			# Return distance
