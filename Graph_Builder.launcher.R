@@ -28,42 +28,39 @@ write.cooc <- FALSE
 
 # Read param file
 if ( file.exists(args[1]) ) {
-  file.name <- strsplit(args[1], '-p=')[[1]][2]
-  if(file.exists(file.name)) {
-    ff <- read.table(file.name, head=FALSE)
+  ff <- read.table(args[1], head=FALSE)
 
-    clusters <- as.numeric(as.matrix(ff[which(ff[, 1] == 'clusters'), 2]))
-    verbose <- as.logical(ff[which(ff[, 1] == 'verbose'), 2])
+  clusters <- as.numeric(as.matrix(ff[which(ff[, 1] == 'clusters'), 2]))
+  verbose <- as.logical(ff[which(ff[, 1] == 'verbose'), 2])
 
-    output.dir <- toString(ff[which(ff[, 1] == 'output.dir'), 2])
+  output.dir <- toString(ff[which(ff[, 1] == 'output.dir'), 2])
 
-    file.list$PM <- toString(ff[which(ff[, 1] == 'file-PM'), 2])
-    if(file.list$PM == '') file.list$PM <- NA
-    file.list$Gain <- toString(ff[which(ff[, 1] == 'file-Gain'), 2])
-    if(file.list$Gain == '') file.list$Gain <- NA
-    file.list$Loss <- toString(ff[which(ff[, 1] == 'file-Loss'), 2])
-    if(file.list$Loss == '') file.list$Loss <- NA
-    file.list$RR <- toString(ff[which(ff[, 1] == 'file-RR'), 2])
-    if(file.list$RR == '') file.list$RR <- NA
+  file.list$PM <- toString(ff[which(ff[, 1] == 'file-PM'), 2])
+  if(file.list$PM == '') file.list$PM <- NA
+  file.list$Gain <- toString(ff[which(ff[, 1] == 'file-Gain'), 2])
+  if(file.list$Gain == '') file.list$Gain <- NA
+  file.list$Loss <- toString(ff[which(ff[, 1] == 'file-Loss'), 2])
+  if(file.list$Loss == '') file.list$Loss <- NA
+  file.list$RR <- toString(ff[which(ff[, 1] == 'file-RR'), 2])
+  if(file.list$RR == '') file.list$RR <- NA
 
-    genes.label <- toString(ff[which(ff[, 1] == 'genes.label'), 2])
-    white.list <- toString(ff[which(ff[, 1] == 'white.list'), 2])
-    if(white.list != '') white.list <- read.table(white.list, header=FALSE, sep='\t')[,1]
-    black.list <- toString(ff[which(ff[, 1] == 'black.list'), 2])
-    if(black.list != '') black.list <- read.table(black.list, header=FALSE, sep='\t')[,1]
-    clean <- as.logical(ff[which(ff[, 1] == 'clean'), 2])
-    if(!is.logical(clean) || length(clean) == 0) clean <- FALSE
-    write.cooc <- as.logical(ff[which(ff[, 1] == 'write.cooc'), 2])
-    if(!is.logical(write.cooc) || length(write.cooc) == 0) write.cooc <- FALSE
+  genes.label <- toString(ff[which(ff[, 1] == 'genes.label'), 2])
+  white.list <- toString(ff[which(ff[, 1] == 'white.list'), 2])
+  if(white.list != '') white.list <- read.table(white.list, header=FALSE, sep='\t')[,1]
+  black.list <- toString(ff[which(ff[, 1] == 'black.list'), 2])
+  if(black.list != '') black.list <- read.table(black.list, header=FALSE, sep='\t')[,1]
+  clean <- as.logical(ff[which(ff[, 1] == 'clean'), 2])
+  if(!is.logical(clean) || length(clean) == 0) clean <- FALSE
+  write.cooc <- as.logical(ff[which(ff[, 1] == 'write.cooc'), 2])
+  if(!is.logical(write.cooc) || length(write.cooc) == 0) write.cooc <- FALSE
 
-    clonal.val <- strsplit(toString(ff[which(ff[, 1] == 'clonal.val'), 2]), ',')[[1]]
-    if(length(clonal.val) == 0) clonal.val <- c('clonal')
-    subclonal.val <- strsplit(toString(ff[which(ff[, 1] == 'subclonal.val'), 2]), ',')[[1]]
-    if(length(subclonal.val) == 0) subclonal.val <- c('subclonal')
+  clonal.val <- strsplit(toString(ff[which(ff[, 1] == 'clonal.val'), 2]), ',')[[1]]
+  if(length(clonal.val) == 0) clonal.val <- c('clonal')
+  subclonal.val <- strsplit(toString(ff[which(ff[, 1] == 'subclonal.val'), 2]), ',')[[1]]
+  if(length(subclonal.val) == 0) subclonal.val <- c('subclonal')
 
-    attr.table <- toString(ff[which(ff[, 1] == 'attr.table'), 2])
-    if(attr.table != '') attr.table <- read.table(attr.table, header=TRUE, sep='\t')
-  }
+  attr.table <- toString(ff[which(ff[, 1] == 'attr.table'), 2])
+  if(attr.table != '') attr.table <- read.table(attr.table, header=TRUE, sep='\t')
 } else {
   cat('\nNo param file detected.')
 }

@@ -557,6 +557,9 @@ GraphBuilder <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
       e.in.clo <- (el.tot[,1] %in% V(g.clonal)$name & el.tot[,2] %in% V(g.clonal)$name)
       e.in.sub <- (el.tot[,1] %in% V(g.subclonal)$name & el.tot[,2] %in% V(g.subclonal)$name)
       e.in.non <- (el.tot[,1] %in% V(g.nonclonal)$name & el.tot[,2] %in% V(g.nonclonal)$name)
+      print(e.in.clo)
+      print(e.in.sub)
+      print(e.in.non)
       # Retrieve correct clonal co-occurrency data
       if(length(V(g.clonal)) != 0) {
         if(gb$verbose) cat(" · Retrieving clonal co-occurrency data\n")
@@ -583,10 +586,10 @@ GraphBuilder <- function(clusters=0, verbose=FALSE, genes.label="Gene.id", white
       }
 
       # Retrieve and assign new vertex attributes
-      if(length(attr.table) != 0 && attr.table != '') {
-        if(gb$verbose) cat("\nAssigning new vertex attributes based on HUGO\n")
-        g.total <- gb$setVAttributes(g.total, attr.table)
-      }
+      #if(length(attr.table) != 0 && attr.table != '') {
+      #  if(gb$verbose) cat("\nAssigning new vertex attributes based on HUGO\n")
+      #  g.total <- gb$setVAttributes(g.total, attr.table)
+      #}
 
       if(gb$verbose) cat("\nWriting graph\n")
       write.graph(g.total, file.path(output.dir, 'total_graph.graphml'), format='graphml')
