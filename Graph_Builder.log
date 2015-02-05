@@ -4,6 +4,7 @@
 v. 11
 
 * Added output of co-occurrency networks in LGL or GraphML format.
+* Fixed minor bugs.
 
 v. 10
 
