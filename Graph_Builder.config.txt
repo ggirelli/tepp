@@ -1,7 +1,0 @@
-clusters    10
-verbose TRUE
-genes.label Gene.id
-output.dir output
-file-PM Tables/20140317.TCGA.246FreezeSamples.PM.txt
-file-Loss   Tables/20140317.TCGA.246FreezeSamples.Loss.txt
-file-Gain   Tables/20140317.TCGA.246FreezeSamples.Gain.txt

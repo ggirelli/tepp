@@ -1,12 +1,15 @@
+# Path to directory containing Graph_Builder.class.R
+pathToGBclass <- "."
+
 # List of paths to the different tables
 # PM = Point Mutations
 # Gain = CN > 2
 # Loss = CN < 2
 # RR = Rearrangement
 file.list <- list(
-	PM="",
-	Gain="",
-	Loss="",
+	PM="Tables/20140317.TCGA.246FreezeSamples.PM.txt",
+	Gain="Tables/20140317.TCGA.246FreezeSamples.Loss.txt",
+	Loss="Tables/20140317.TCGA.246FreezeSamples.Gain.txt",
 	RR=""
 )
 
@@ -20,8 +23,8 @@ subclonal.val <- c('subclonal')
 # Path to the output directory
 output.dir <- 'output'
 
-# NOT YET IMPLEMENTED
-attr.table <- ''
+# Tables with attribute to be added to the nodes [NOT YET IMPLEMENTED]
+#attr.table <- ''
 
 # List of genes to keep (white) and to remove (black)
 white.list <- list()
@@ -37,4 +40,4 @@ write.cooc <- FALSE
 verbose <- TRUE
 
 # Number of cores
-clusters <- 4
+Ncores <- 4
