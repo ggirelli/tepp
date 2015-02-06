@@ -17,7 +17,7 @@ if ( file.exists(args[1]) ) {
 ##############################
 source(file.path(pathToGBclass, 'Graph_Builder.class.R'))
 
-cat('\nExecuting script (v', GraphBuilder()$version, ') with', Ncores, ' cores.\n')
+cat('\nExecuting script (v', GraphBuilder()$version, ') with', Ncores, 'cores.\n')
 
 if(verbose) {
 	cat('Verbosity at maximum.\n')
@@ -89,7 +89,8 @@ system.time({
 		attr.table=attr.table,
 		clean=clean,
 		output.dir=output.dir,
-		write.cooc=write.cooc
+		write.cooc=write.cooc,
+		pathToClass=pathToGBclass
 	)
 	cat('\n')
 

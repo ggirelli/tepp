@@ -10,7 +10,8 @@ GraphBuilder <- function(
 	attr.table='',
 	clean=FALSE,
 	output.dir='.',
-	write.cooc=FALSE
+	write.cooc=FALSE,
+	pathToClass='.'
 ) {
 	library('igraph')
 	library('doParallel')
@@ -63,6 +64,9 @@ GraphBuilder <- function(
 
 		# Vertex attribute table
 		attr.table = attr.table,
+
+		# Absolute path to GB class
+		pathToClass = pathToClass,
 		
 		#-----------#
 		# FUNCTIONS #
@@ -212,7 +216,8 @@ GraphBuilder <- function(
 			clonal.val=gb$clonal.val,
 			subclonal.val=gb$subclonal.val,
 			sample.list=gb$sample.list,
-			output.dir=gb$output.dir
+			output.dir=gb$output.dir,
+			pathToClass=gb$pathToClass
 		) {
 			# Build SSMAs for final MSMA
 			#
@@ -226,7 +231,7 @@ GraphBuilder <- function(
 			#
 			# Returns:
 			#   None
-			
+
 			# Declare parallelism
 			par <- makeCluster(clusters)
 			registerDoParallel(par)
@@ -234,7 +239,7 @@ GraphBuilder <- function(
 			foreach(sample.id=sample.list) %dopar% {
 				library('doParallel')
 				library('igraph')
-				source('Graph_Builder.class.R')
+				source(file.path(pathToClass, 'Graph_Builder.class.R'))
 				# Read data
 				data <- list()
 				foreach(abe=abe.list) %do% {
@@ -312,7 +317,8 @@ GraphBuilder <- function(
 			subclonal.val=gb$subclonal.val,
 			sample.list=gb$sample.list,
 			v.list=list(),
-			output.dir=gb$output.dir
+			output.dir=gb$output.dir,
+			pathToClass=gb$pathToClass
 		) {
 			# Build SSMAs for clonality co-occurrency MSMAs
 			#
@@ -334,7 +340,7 @@ GraphBuilder <- function(
 			foreach(sample.id=sample.list) %dopar% {
 				library('doParallel')
 				library('igraph')
-				source('Graph_Builder.class.R')
+				source(file.path(pathToClass, 'Graph_Builder.class.R'))
 				
 				# Read data
 				data <- list()
