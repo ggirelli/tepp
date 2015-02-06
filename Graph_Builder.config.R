@@ -6,11 +6,12 @@ pathToGBclass <- "."
 # Gain = CN > 2
 # Loss = CN < 2
 # RR = Rearrangement
+# Give value NA when excluding a certain aberration type from the analysis
 file.list <- list(
 	PM="Tables/20140317.TCGA.246FreezeSamples.PM.txt",
 	Gain="Tables/20140317.TCGA.246FreezeSamples.Loss.txt",
 	Loss="Tables/20140317.TCGA.246FreezeSamples.Gain.txt",
-	RR=""
+	RR=NA
 )
 
 # Label of the column containing the gene IDs
