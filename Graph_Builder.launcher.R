@@ -19,11 +19,8 @@ source(file.path(pathToGBclass, 'Graph_Builder.class.R'))
 
 cat('\nExecuting script (v', GraphBuilder()$version, ') with', Ncores, ' cores.\n')
 
-if(verbose) cat('Verbosity at maximum.\n')
-else cat('Verbosity at minimum.\n')
-
-if(output.dir != '') cat('Output directory: ', output.dir, '\n\n')
-else cat('\n')
+ifelse(verbose, cat('Verbosity at maximum.\n'), cat('Verbosity at minimum.\n'))
+ifelse(output.dir != '', cat('Output directory: ', output.dir, '\n\n'), cat('\n'))
 
 cat('PM-data: ', file.list$PM, '\n')
 cat('Gain-data: ', file.list$Gain, '\n')
@@ -36,13 +33,17 @@ if(clean) cat('Running clean\n\n')
 if(length(white.list) != 0 && white.list != '') {
 	cat('White list from: ', toString(ff[which(ff[, 1] == 'white.list'), 2]), '\n')
 	print(as.character(white.list))
-} else cat('No white list specified\n')
+} else {
+	cat('No white list specified\n')
+}
 
 if(length(black.list) != 0 && black.list != '') {
 	cat('\nBlack list from: ', toString(ff[which(ff[, 1] == 'black.list'), 2]), '\n')
 	print(as.character(black.list))
 	cat('\n')
-} else cat('\nNo black list specified\n\n')
+} else {
+	cat('\nNo black list specified\n\n')
+}
 
 
 cat('Clonal ids:\n')
