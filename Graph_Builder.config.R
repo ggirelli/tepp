@@ -24,7 +24,7 @@ subclonal.val <- c('subclonal')
 output.dir <- 'output'
 
 # Tables with attribute to be added to the nodes [NOT YET IMPLEMENTED]
-#attr.table <- ''
+attr.table <- NULL
 
 # List of genes to keep (white) and to remove (black)
 white.list <- list()
