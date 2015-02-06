@@ -19,8 +19,16 @@ source(file.path(pathToGBclass, 'Graph_Builder.class.R'))
 
 cat('\nExecuting script (v', GraphBuilder()$version, ') with', Ncores, ' cores.\n')
 
-ifelse(verbose, cat('Verbosity at maximum.\n'), cat('Verbosity at minimum.\n'))
-ifelse(output.dir != '', cat('Output directory: ', output.dir, '\n\n'), cat('\n'))
+if(verbose) {
+	cat('Verbosity at maximum.\n')
+} else {
+	cat('Verbosity at minimum.\n')
+}
+if(output.dir != '') {
+	cat('Output directory: ', output.dir, '\n\n')
+} else {
+	cat('\n')
+}
 
 cat('PM-data: ', file.list$PM, '\n')
 cat('Gain-data: ', file.list$Gain, '\n')
