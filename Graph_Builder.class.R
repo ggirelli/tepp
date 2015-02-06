@@ -26,7 +26,7 @@ GraphBuilder <- function(
 		# ATTRIBUTES #
 		# ---------- #
 		
-		version = 11,
+		version = 12,
 
 		#------------------#
 		# INPUT PARAMETERS #
