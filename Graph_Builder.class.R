@@ -15,6 +15,7 @@ GraphBuilder <- function(
 ) {
 	library('igraph')
 	library('doParallel')
+	library('parallel')
 
 	if(output.dir != '.')
 		if(!file.exists(output.dir))
@@ -144,6 +145,47 @@ GraphBuilder <- function(
 
 			}
 		},
+
+		splitSingleSampleData=function(
+			i, data, sample.list,
+			sample.column, data.dir,
+			clean=gb$clean,
+			white.list=gb$white.list,
+			black.list=gb$black.list,
+			genes.label=gb$genes.label
+		) {
+			# Splits original data table for each sample in data.frames
+			# and save them in temporary directory
+			# 
+			# Args:
+			# 	i: sample index
+			# 	data:
+			# 	sample.list:
+			# 	sample.column:
+			# 	clean:
+			# 	white.list:
+			# 	black.list:
+			# 	genes.label:
+			# 	data.dir:
+			# 	
+			# Returns:
+			# 	NULL
+			# 
+			
+			# On which sample are we working?
+			sample.id <- sample.list[i]
+			# Get row_ids from original data table for the working_sample
+			row.ids <- which(data[,sample.column] == sample.id)
+			# Clean sample
+			if(clean && length(white.list) != 0)
+                row.ids <- intersect(row.ids, which(data[,genes.label] %in% white.list))
+			# Blacklisting
+			if(length(black.list) != 0)
+                row.ids <- intersect(row.ids, which(!(data[,genes.label] %in% black.list)))
+			# Write selected rows
+			if(length(row.ids) != 0)
+                write.table(data[row.ids,], file=file.path(data.dir, sample.id))
+		},
 		
 		# Splits data
 		splitData = function(
@@ -177,27 +219,14 @@ GraphBuilder <- function(
 				dir.create(file.path(data.dir))
 			}
 
-			# Declare parallelism
-			par <- makeCluster(clusters)
-			registerDoParallel(par)
-			# Split original data table for each sample in data.frames
-			# and save them in temporary directory
-			foreach(i=1:length(sample.list)) %dopar% {
-				# On which sample are we working?
-				sample.id <- sample.list[i]
-				# Get row_ids from original data table for the working_sample
-				row.ids <- which(data[,sample.column] == sample.id)
-				# Clean sample
-				if(clean && length(white.list) != 0)
-                    row.ids <- intersect(row.ids, which(data[,genes.label] %in% white.list))
-				# Blacklisting
-				if(length(black.list) != 0)
-                    row.ids <- intersect(row.ids, which(!(data[,genes.label] %in% black.list)))
-				# Write selected rows
-				if(length(row.ids) != 0)
-                    write.table(data[row.ids,], file=file.path(data.dir, sample.list[i]))
-			}
-			stopCluster(par)
+			mclapply(1:length(sample.list),
+				FUN=gb$splitSingleSampleData,
+				data, sample.list, sample.column, data.dir,
+				clean, white.list, black.list,
+				genes.label,
+				mc.cores=clusters,
+				mc.preschedule=FALSE
+			)
 
 			# Terminate
 			if(gb$verbose) cat('Splitted', abe.type, 'data\n')
@@ -228,21 +257,35 @@ GraphBuilder <- function(
 			#   clonal.val: value of clonality for clonal genes.
 			#   subclonal.val: value of clonality for subclonal genes.
 			#   sample.list: list of samples to analyze
+			#   output.dir:
+			#   pathToClass:
 			#
 			# Returns:
 			#   None
 
-			# Declare parallelism
-			par <- makeCluster(clusters)
-			registerDoParallel(par)
-			# Execute buildSSMA for each sample
-			foreach(sample.id=sample.list) %dopar% {
+			buildSSMA=function(sample.id,
+				pathToClass, output.dir, abe.list,
+				genes.label, clonality.label,
+				clonal.val, subclonal.val
+			) {
+				# Execute buildSSMA for each sample
+				# 
+				# Args:
+				# 	sample.id:
+				# 	
+				# Returns:
+				# 	NULL
+				# 	
+				
+				# Load library and classes
 				library('doParallel')
 				library('igraph')
 				source(file.path(pathToClass, 'Graph_Builder.class.R'))
+
 				# Read data
 				data <- list()
-				foreach(abe=abe.list) %do% {
+				for (i in 1:length(abe.list)) {
+					abe <- abe.list[i]
 					f.name <- eval(parse(text=paste0(
                         '"', output.dir, '/sample-data-', abe, '/', sample.id, '"'
                     )))
@@ -306,7 +349,15 @@ GraphBuilder <- function(
                         format='graphml')
 				}
 			}
-			stopCluster(par)
+			mclapply(sample.list,
+				FUN=buildSSMA,
+				pathToClass, output.dir, abe.list,
+				genes.label, clonality.label,
+				clonal.val, subclonal.val,
+				mc.cores=clusters,
+				mc.preschedule=FALSE
+			)
+
 		},
 
 		buildClonalSSMA = function(
@@ -329,22 +380,36 @@ GraphBuilder <- function(
 			#   clonal.val: value of clonality for clonal genes.
 			#   subclonal.val: value of clonality for subclonal genes.
 			#   sample.list: list of samples to analyze
+			#   v.list:
+			#   output.dir:
+			#   pathToClass:
 			#
 			# Returns:
 			#   None
-
-			# Declare parallelism
-			par <- makeCluster(clusters)
-			registerDoParallel(par)
-			# Execute buildSSMA for each sample
-			foreach(sample.id=sample.list) %dopar% {
+			
+			buildSSMA=function(sample.id,
+				pathToClass, output.dir,
+				abe.list, v.list,
+				genes.label, clonality.label,
+				clonal.val, subclonal.val
+			) {
+				# Execute buildSSMA for each sample
+				# 
+				# Args:
+				# 	sample.id:
+				# 
+				# Returns:
+				# 	NULL
+				# 
+				
 				library('doParallel')
 				library('igraph')
 				source(file.path(pathToClass, 'Graph_Builder.class.R'))
 				
 				# Read data
 				data <- list()
-				foreach(abe=abe.list) %do% {
+				for (i in 1:length(abe.list)) {
+					abe <- abe.list[i]
 					f.name <- eval(parse(text=paste0(
                         '"', output.dir, '/sample-data-', abe, '/', sample.id, '"'
                     )))
@@ -457,7 +522,16 @@ GraphBuilder <- function(
                     )
 				}
 			}
-			stopCluster(par)
+			mclapply(sample.list,
+				FUN=buildSSMA,
+				pathToClass, output.dir,
+				abe.list, v.list,
+				genes.label, clonality.label,
+				clonal.val, subclonal.val,
+				mc.cores=clusters,
+				mc.preschedule=FALSE
+			)
+
 		},
 
 		# Build MSMA
