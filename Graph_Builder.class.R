@@ -862,9 +862,6 @@ GraphBuilder <- function(
 			e.in.clo <- (el.tot[,1] %in% V(g.clonal)$name & el.tot[,2] %in% V(g.clonal)$name)
 			e.in.sub <- (el.tot[,1] %in% V(g.subclonal)$name & el.tot[,2] %in% V(g.subclonal)$name)
 			e.in.non <- (el.tot[,1] %in% V(g.nonclonal)$name & el.tot[,2] %in% V(g.nonclonal)$name)
-			print(e.in.clo)
-			print(e.in.sub)
-			print(e.in.non)
 			# Retrieve correct clonal co-occurrency data
 			if(length(V(g.clonal)) != 0) {
 				if(gb$verbose) cat(" · Retrieving clonal co-occurrency data\n")
