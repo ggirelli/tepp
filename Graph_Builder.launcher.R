@@ -12,19 +12,18 @@ if ( file.exists(args[1]) ) {
 	cat('\nNo param file detected.')
 }
 
+
 # Write log
 ##############################
 source(file.path(pathToGBclass, 'Graph_Builder.class.R'))
 
 cat('\nExecuting script (v', GraphBuilder$version, ') with', Ncores, ' cores.\n')
 
-if(verbose) {
-	cat('Verbosity at maximum.\n')
-} else {
-	cat('Verbosity at minimum.\n')
-}
-if(output.dir != '') cat('Output directory: ', output.dir, '\n')
-cat('\n')
+if(verbose) cat('Verbosity at maximum.\n')
+else cat('Verbosity at minimum.\n')
+
+if(output.dir != '') cat('Output directory: ', output.dir, '\n\n')
+else cat('\n')
 
 cat('PM-data: ', file.list$PM, '\n')
 cat('Gain-data: ', file.list$Gain, '\n')
@@ -32,23 +31,19 @@ cat('Loss-data: ', file.list$Loss, '\n')
 cat('RR-data: ', file.list$RR, '\n\n')
 
 cat('Gene label: \'', genes.label, '\'\n\n')
-if(clean) {
-	cat('Running clean\n\n')
-}
+if(clean) cat('Running clean\n\n')
 
 if(length(white.list) != 0 && white.list != '') {
 	cat('White list from: ', toString(ff[which(ff[, 1] == 'white.list'), 2]), '\n')
 	print(as.character(white.list))
-} else {
-	cat('No white list specified\n')
-}
+} else cat('No white list specified\n')
+
 if(length(black.list) != 0 && black.list != '') {
 	cat('\nBlack list from: ', toString(ff[which(ff[, 1] == 'black.list'), 2]), '\n')
 	print(as.character(black.list))
 	cat('\n')
-} else {
-	cat('\nNo black list specified\n\n')
-}
+} else cat('\nNo black list specified\n\n')
+
 
 cat('Clonal ids:\n')
 print(clonal.val)
@@ -62,13 +57,18 @@ if(length(attr.table) != 0 && attr.table != '') {
 	cat('\n')
 }
 
-#---------#
-# Execute #
-#---------#
 
+
+
+
+
+# Execute
+##############################
 system.time({
 
-	# Declare GraphManager instance
+	# GRAPH BUILDER instance
+	######################################
+	
 	gb <- GraphBuilder(
 		clusters=Ncores,
 		verbose=verbose,
@@ -84,9 +84,10 @@ system.time({
 	)
 	cat('\n')
 
-	#-------------------#
-	# From MSSA to SSSA #
-	#-------------------#
+
+
+	# MSSA -> SSSA
+	######################################
 
 	# PM #
 	if(length(file.list$PM) != 0 & !is.na(file.list$PM)) {
@@ -132,9 +133,10 @@ system.time({
 		cat('\n')
 	}
 
-	#---------------------#
-	# Prepare SSMA Graphs #
-	#---------------------#
+
+
+	# SSSA -> SSMA -> MSMA
+	######################################
 
 	gb$build(
 		c('PM', 'Gain', 'Loss'),

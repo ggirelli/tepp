@@ -589,8 +589,19 @@ GraphBuilder <- function(
 			clonal.val=gb$clonal.val,
 			subclonal.val=gb$subclonal.val
 		) {
+			# Removes duplicated genes from the SCNA table
 			#
-			#
+            # Args:
+            #   data: multi-table
+            #   abe: aberration type [SCNA]
+            #   clonality.label: label of clonality status column
+            #   genes.label: label of gene ID column
+            #   clonal.val: clonality status value(s) for 'clonal'
+            #   subclonal.val: clonality status value(s) for 'subclonal'
+            # 
+            # Returns:
+            #   The multi-table w/o duplicated genes in the SCNA tables
+            #
 			
 			dups <- which(duplicated(eval(parse(text=paste0('data$', abe, '$', genes.label)))))
 			while(length(dups) != 0) {
@@ -651,8 +662,19 @@ GraphBuilder <- function(
 			clonal.val=gb$clonal.val,
 			subclonal.val=gb$subclonal.val
 		) {
-			#
-			#
+            # Removes duplicated genes from the PM table
+            #
+            # Args:
+            #   data: multi-table
+            #   abe: aberration type [PM]
+            #   clonality.label: label of clonality status column
+            #   genes.label: label of gene ID column
+            #   clonal.val: clonality status value(s) for 'clonal'
+            #   subclonal.val: clonality status value(s) for 'subclonal'
+            # 
+            # Returns:
+            #   The multi-table w/o duplicated genes in the PM table
+            #
 			
 			dups <- which(duplicated(as.character(eval(parse(text=paste0(
                 'data$', abe, '$', genes.label
@@ -707,8 +729,22 @@ GraphBuilder <- function(
 			clonal.val=gb$clonal.val,
 			subclonal.val=gb$subclonal.val
 		) {
-			#
-			#
+            # Removes duplicated genes from the [SCNA|PM] table
+            #
+            # Args:
+            #   data: multi-table
+            #   abe: aberration type [SCNA|PM]
+            #   clonality.label: label of clonality status column
+            #   genes.label: label of gene ID column
+            #   clonal.val: clonality status value(s) for 'clonal'
+            #   subclonal.val: clonality status value(s) for 'subclonal'
+            # 
+            # Returns:
+            #   The multi-table w/o duplicated genes
+            #   
+            # @TODO:
+            #   Implement rmDuplicated for RR
+            # 
 			
 			gb <- GraphBuilder(
                 genes.label=gb$genes.label,
