@@ -14,7 +14,6 @@ GraphBuilder <- function(
 	pathToClass='.'
 ) {
 	library('igraph')
-	library('doParallel')
 	library('parallel')
 
 	if(output.dir != '.')
@@ -278,7 +277,6 @@ GraphBuilder <- function(
 				# 	
 				
 				# Load library and classes
-				library('doParallel')
 				library('igraph')
 				source(file.path(pathToClass, 'Graph_Builder.class.R'))
 
@@ -402,7 +400,6 @@ GraphBuilder <- function(
 				# 	NULL
 				# 
 				
-				library('doParallel')
 				library('igraph')
 				source(file.path(pathToClass, 'Graph_Builder.class.R'))
 				
@@ -539,7 +536,8 @@ GraphBuilder <- function(
 			graph.list,
 			directed=TRUE,
 			output.dir=gb$output.dir,
-			doOcc=FALSE
+			doOcc=FALSE,
+			clusters=gb$clusters
 		) {
 			# Merges SSMAs into a single MSMA summing the edge's weight
 			#
@@ -548,12 +546,20 @@ GraphBuilder <- function(
 			#
 			# Return:
 			#
-
-			# Declare parallelism
-			cores <- makeCluster(gb$clusters)
-			registerDoParallel(cores)
-			# Get edges
-			edges <- foreach(i=1:length(graph.list), .combine=rbind) %dopar% {
+			
+			getEdges=function(i,
+				graph.list, output.dir
+			) {
+				# Gets the edges
+				# 
+				# Args:
+				# 	i:
+				# 	graph.list:
+				# 	output.dir:
+				# 
+				# Returns:
+				# 	NULL
+				
 				library('igraph')
 
 				file.name <- graph.list[i]
@@ -575,7 +581,13 @@ GraphBuilder <- function(
 					}
 				}
 			}
-			stopCluster(cores)
+			e.list <- mclapply(1:length(graph.list),
+				FUN=getEdges,
+				graph.list, output.dir,
+				mc.cores=clusters,
+				mc.preschedule=FALSE
+			)
+			edges <- matrix(unlist(e.list), ncol=6, byrow=T)
 			colnames(edges) <- c(
                 'source', 'target', 'weight',
                 'source.abe.type', 'target.abe.type', 'sample'
@@ -608,14 +620,11 @@ GraphBuilder <- function(
 				g <- add.vertices(g, nv=length(vertices.table), attr=attr.list)
 
 				if(doOcc) {
-					if(gb$verbose) cat("Adding vertices occurrencies\n")
+					if(gb$verbose) cat("Retrieving vertices occurrencies\n")
 
-					# Declare parallelism
-					cores <- makeCluster(gb$clusters)
-					registerDoParallel(cores)
-
-					# Get vertices occurrencies
-					v.occs <- foreach(i=1:length(V(g)), .combine=rbind) %dopar% {
+					getVoccurrency=function(i,
+						edges, source.table, target.table, g
+					) {
 						library('igraph')
 						return(c(
                             V(g)[i]$name,
@@ -623,14 +632,21 @@ GraphBuilder <- function(
                             length(unique(edges[which(target.table == V(g)$name[i]),6]))
                         ))
 					}
+					v.list <- mclapply(1:length(V(g)),
+						FUN=getVoccurrency,
+						edges, source.table, target.table, g,
+						mc.cores=clusters,
+						mc.preschedule=FALSE
+					)
+					if(gb$verbose) cat("Assembling vertices occurrencies\n")
+					v.occs <- matrix(unlist(v.list), ncol=3, byrow=T)
 
-					stopCluster(cores)
+					if(gb$verbose) cat("Adding vertices occurrencies\n")
 
-					for(i in 1:length(V(g))) {
-						j <- which(v.occs[,1] == V(g)$name[i])
-						V(g)$clonal.occ[i] <- v.occs[j,2]
-						V(g)$subclonal.occ[i] <- v.occs[j,3]
-					}
+					v.occs <- v.occs[order(v.occs[,1]),]
+					# V(g) are order based on $name
+					V(g)$clonal.occ <- v.occs[,2]
+					V(g)$subclonal.occ <- v.occs[,3]
 				}
 
 				# Edges
