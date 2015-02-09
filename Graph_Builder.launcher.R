@@ -17,7 +17,7 @@ if ( file.exists(args[1]) ) {
 ##############################
 source(file.path(pathToGBclass, 'Graph_Builder.class.R'))
 
-cat(paste0('\nExecuting script (v', GraphBuilder()$version, ') with', Ncores, 'cores.\n'))
+cat(paste0('\nExecuting script (v', GraphBuilder()$version, ') with ', Ncores, ' cores.\n'))
 
 if(verbose) {
 	cat('Verbosity at maximum.\n')
