@@ -67,6 +67,9 @@ GraphBuilder <- function(
 
 		# Absolute path to GB class
 		pathToClass = pathToClass,
+
+		#
+		nodeInNameSep = '~',
 		
 		#-----------#
 		# FUNCTIONS #
@@ -224,7 +227,7 @@ GraphBuilder <- function(
 				clean, white.list, black.list,
 				genes.label,
 				mc.cores=clusters,
-				mc.preschedule=FALSE
+				mc.preschedule=TRUE
 			)
 
 			# Terminate
@@ -353,7 +356,7 @@ GraphBuilder <- function(
 				genes.label, clonality.label,
 				clonal.val, subclonal.val,
 				mc.cores=clusters,
-				mc.preschedule=FALSE
+				mc.preschedule=TRUE
 			)
 
 		},
@@ -526,7 +529,7 @@ GraphBuilder <- function(
 				genes.label, clonality.label,
 				clonal.val, subclonal.val,
 				mc.cores=clusters,
-				mc.preschedule=FALSE
+				mc.preschedule=TRUE
 			)
 
 		},
@@ -585,9 +588,9 @@ GraphBuilder <- function(
 				FUN=getEdges,
 				graph.list, output.dir,
 				mc.cores=clusters,
-				mc.preschedule=FALSE
+				mc.preschedule=TRUE
 			)
-			edges <- matrix(unlist(e.list), ncol=6, byrow=T)
+			edges <- do.call(rbind, e.list)
 			colnames(edges) <- c(
                 'source', 'target', 'weight',
                 'source.abe.type', 'target.abe.type', 'sample'
@@ -603,10 +606,10 @@ GraphBuilder <- function(
 				#(2) Then scroll the table (tricky) to get each node
                 # and its attributes and add them to the MSMA.
 				if(gb$verbose) cat("Preparing sources\n")
-				source.table <- paste(edges[,1], edges[,4], sep='~')
+				source.table <- paste0(edges[,1], '~', edges[,4])
 
 				if(gb$verbose) cat("Preparing targets\n")
-				target.table <- paste(edges[,2], edges[,5], sep='~')
+				target.table <- paste0(edges[,2], '~', edges[,5])
 
 				if(gb$verbose) cat("Preparing vertices\n")
 				vertices.table <- unique(c(source.table, target.table))
@@ -622,31 +625,23 @@ GraphBuilder <- function(
 				if(doOcc) {
 					if(gb$verbose) cat("Retrieving vertices occurrencies\n")
 
-					getVoccurrency=function(i,
-						edges, source.table, target.table, g
-					) {
-						library('igraph')
-						return(c(
-                            V(g)[i]$name,
-                            length(unique(edges[which(source.table == V(g)$name[i]),6])),
-                            length(unique(edges[which(target.table == V(g)$name[i]),6]))
-                        ))
+					countNodePerSample=function(n.list, edges, sep) {
+						# Assembles the edges table and the list of source/target
+						nlist <- lapply(unique(paste0(n.list, sep, edges[,6])), FUN=function(x) {
+							paste(unlist(strsplit(x, '~', fixed=T))[1:2], sep='~')
+						})
+						return(table(unlist(nlist)))
 					}
-					v.list <- mclapply(1:length(V(g)),
-						FUN=getVoccurrency,
-						edges, source.table, target.table, g,
-						mc.cores=clusters,
-						mc.preschedule=FALSE
-					)
-					if(gb$verbose) cat("Assembling vertices occurrencies\n")
-					v.occs <- matrix(unlist(v.list), ncol=3, byrow=T)
+					# Retrieve clonal occurrencies
+					source.counts <- countNodePerSample(source.table, edges, gb$nodeInNameSep)
+					# Retrieve subclonal occurrencies
+					target.counts <- countNodePerSample(target.table, edges, gb$nodeInNameSep)
 
 					if(gb$verbose) cat("Adding vertices occurrencies\n")
-
-					v.occs <- v.occs[order(v.occs[,1]),]
-					# V(g) are order based on $name
-					V(g)$clonal.occ <- v.occs[,2]
-					V(g)$subclonal.occ <- v.occs[,3]
+					for(i in 1:length(V(g))) {
+						V(g)$clonal.occ[i] <- source.counts[V(g)$name[i]]
+						V(g)$subclonal.occ[i] <- target.counts[V(g)$name[i]]
+					}
 				}
 
 				# Edges
