@@ -625,11 +625,26 @@ GraphBuilder <- function(
 				if(doOcc) {
 					if(gb$verbose) cat("Retrieving vertices occurrencies\n")
 
-					countNodePerSample=function(n.list, edges, sep) {
+					countNodePerSample=function(n.list,
+						edges, sep, Ncores=clusters
+					) {
 						# Assembles the edges table and the list of source/target
-						nlist <- lapply(unique(paste0(n.list, sep, edges[,6])), FUN=function(x) {
-							paste(unlist(strsplit(x, '~', fixed=T))[1:2], sep='~')
-						})
+						# 
+						# Args:
+						# 	n.list:
+						# 	edges:
+						# 	sep:
+						# 	Ncores:
+						# 	
+						# Returns:
+						# 	
+						# 
+						
+						nlist <- mclapply(unique(paste0(n.list, sep, edges[,6])),
+							FUN=function(x) {
+								paste(unlist(strsplit(x, '~', fixed=T))[1:2], collapse='~')
+							}, mc.preschedule=T,
+							mc.cores=Ncores)
 						return(table(unlist(nlist)))
 					}
 					# Retrieve clonal occurrencies
@@ -638,10 +653,40 @@ GraphBuilder <- function(
 					target.counts <- countNodePerSample(target.table, edges, gb$nodeInNameSep)
 
 					if(gb$verbose) cat("Adding vertices occurrencies\n")
-					for(i in 1:length(V(g))) {
-						V(g)$clonal.occ[i] <- source.counts[V(g)$name[i]]
-						V(g)$subclonal.occ[i] <- target.counts[V(g)$name[i]]
+					orderOccurrencies=function(name,
+						source.counts, target.counts
+					) {
+						# Orders the occurrency data previously retrieved
+						# 
+						# Args:
+						# 	name:
+						# 	source.counts:
+						# 	target.counts:
+						# 
+						# Returns:
+						# 	
+						# 
+						
+						if (!name %in% names(source.counts)) {
+							clonal.occ <- 0
+						} else {
+							clonal.occ <- source.counts[name]
+						}
+						if (!name %in% names(target.counts)) {
+							subclonal.occ <- 0
+						} else {
+							subclonal.occ <- target.counts[name]
+						}
+						return(c(clonal.occ, subclonal.occ))
 					}
+					occList <- mclapply(V(g)$name,
+						FUN=orderOccurrencies, source.counts, target.counts,
+						mc.preschedule=TRUE,
+						mc.cores=clusters
+					)
+					occTab <- do.call(rbind, occList)
+					V(g)$clonal.occ <- occTab[,1]
+					V(g)$subclonal.occ <- occTab[,2]
 				}
 
 				# Edges
