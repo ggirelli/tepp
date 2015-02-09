@@ -319,7 +319,8 @@ GraphBuilder <- function(
 
 						# Add to graph
                         attr.list <- list(
-                            name=as.character(genes),
+                        	name=paste0(as.character(genes), '~', aberration),
+                            HUGO=as.character(genes),
                             clonality.status=as.character(clonality),
                             abe.type=aberration
                         )
@@ -410,9 +411,8 @@ GraphBuilder <- function(
 				data <- list()
 				for (i in 1:length(abe.list)) {
 					abe <- abe.list[i]
-					f.name <- eval(parse(text=paste0(
-                        '"', output.dir, '/sample-data-', abe, '/', sample.id, '"'
-                    )))
+					# For eacha berration type
+					f.name <- paste0(output.dir, '/sample-data-', abe, '/', sample.id)
 					if(file.exists(f.name)) {
 						temp.data <- read.table(f.name)
 						temp.data <- temp.data[which(
@@ -450,7 +450,9 @@ GraphBuilder <- function(
 
 						# Add to graph
                         attr.list <- list(
-                            name=as.character(genes[which(clonality %in% clonal.val)]),
+                            name=paste0(as.character(genes[which(clonality %in% clonal.val)]),
+                            	'~', aberration[which(clonality %in% clonal.val)]),
+                            HUGO=as.character(genes[which(clonality %in% clonal.val)]),
                             abe.type=aberration[which(clonality %in% clonal.val)]
                         )
 						g.clonal <- add.vertices(
@@ -459,7 +461,9 @@ GraphBuilder <- function(
                             attr=attr.list
                         )
                         attr.list <- list(
-                            name=as.character(genes[which(clonality %in% subclonal.val)]),
+                            name=paste0(as.character(genes[which(clonality %in% subclonal.val)]),
+                            	'~', aberration[which(clonality %in% subclonal.val)]),
+                            HUGO=as.character(genes[which(clonality %in% subclonal.val)]),
                             abe.type=aberration[which(clonality %in% subclonal.val)]
                         )
 						g.subclonal <- add.vertices(
@@ -468,7 +472,8 @@ GraphBuilder <- function(
                             attr=attr.list
                         )
                         attr.list <- list(
-                            name=as.character(genes),
+                            name=paste0(as.character(genes), '~', aberration),
+                            HUGO=as.character(genes),
                             abe.type=aberration,
                             clonality=clonality
                         )
@@ -540,6 +545,7 @@ GraphBuilder <- function(
 			directed=TRUE,
 			output.dir=gb$output.dir,
 			doOcc=FALSE,
+			remove.loops=FALSE,
 			clusters=gb$clusters
 		) {
 			# Merges SSMAs into a single MSMA summing the edge's weight
@@ -575,7 +581,8 @@ GraphBuilder <- function(
 					if(length(edgelist) != 0) {
 						edgelist.n <- get.edgelist(g, name=FALSE)
 						cbind(
-                            edgelist,
+                            V(g)[edgelist.n[,1]]$HUGO,
+                            V(g)[edgelist.n[,2]]$HUGO,
                             E(g)$weight,
                             V(g)[edgelist.n[,1]]$abe.type,
                             V(g)[edgelist.n[,2]]$abe.type,
@@ -615,10 +622,11 @@ GraphBuilder <- function(
 				vertices.table <- unique(c(source.table, target.table))
 
 				if(gb$verbose) cat("Adding vertices with attributes\n")
+				tmpMat <- matrix(unlist(strsplit(vertices.table, '~')), nrow=2)
                 attr.list <- list(
                     name=vertices.table,
-                    aberration=matrix(unlist(strsplit(vertices.table, '~')), nrow=2)[2,],
-                    HUGO=matrix(unlist(strsplit(vertices.table, '~')), nrow=2)[1,]
+                    aberration=tmpMat[2,],
+                    HUGO=tmpMat[1,]
                 )
 				g <- add.vertices(g, nv=length(vertices.table), attr=attr.list)
 
@@ -700,7 +708,7 @@ GraphBuilder <- function(
 				if(gb$verbose) cat("Simplifying\n")
 				g <- simplify(
                     g, remove.multiple=TRUE,
-                    remove.loops=FALSE,
+                    remove.loops=remove.loops,
                     edge.attr.comb=list(weight="sum", "ignore")
                 )
 
@@ -980,11 +988,11 @@ GraphBuilder <- function(
 			if(gb$verbose) cat('SSMAs prepared.\n')
 
 			if(gb$verbose) cat("\n# Merging SSMAs into MSMA · Clonal co-occurrency\n")
-			g.clonal <- gb$buildMSMA(paste0('clonal_', sample.list, '.graphml'))
+			g.clonal <- gb$buildMSMA(paste0('clonal_', sample.list, '.graphml'), remove.loops=TRUE)
 			if(gb$verbose) cat("\n# Merging SSMAs into MSMA · Subclonal co-occurrency\n")
-			g.subclonal <- gb$buildMSMA(paste0('subclonal_', sample.list, '.graphml'))
+			g.subclonal <- gb$buildMSMA(paste0('subclonal_', sample.list, '.graphml'), remove.loops=TRUE)
 			if(gb$verbose) cat("\n# Merging SSMAs into MSMA · Uncertain_clonality co-occurrency\n")
-			g.nonclonal <- gb$buildMSMA(paste0('nonclonal_', sample.list, '.graphml'))
+			g.nonclonal <- gb$buildMSMA(paste0('nonclonal_', sample.list, '.graphml'), remove.loops=TRUE)
 
 			if(gb$verbose) cat("\n# Retrieving co-occurrency data\n")
 			# Get which edges can be present in the co-occurrency graphs
