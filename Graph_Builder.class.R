@@ -493,14 +493,15 @@ GraphBuilder <- function(
 					E(g.subclonal)$weight <- 1
 
 					# Prepare edges list for nonclonals
-					g.nonclonal <- g.nonclonal + edges(c(t(expand.grid(
-                        V(g.nonclonal)[!(clonality %in% append(clonal.val, subclonal.val))]$name,
-                        V(g.nonclonal)$name
-                    ))))
-					g.nonclonal <- g.nonclonal + edges(c(t(expand.grid(
-                        V(g.nonclonal)$name,
-                        V(g.nonclonal)[!(clonality %in% append(clonal.val, subclonal.val))]$name
-                    ))))
+					v.nonclonal <- V(g.nonclonal)[!(
+						clonality %in% append(clonal.val, subclonal.val))
+					]$name
+					v.clonality <- V(g.nonclonal)[
+						clonality %in% append(clonal.val, subclonal.val)
+					]$name
+					g.nonclonal <- g.nonclonal + edges(c(t(expand.grid(v.nonclonal, v.clonality))))
+					g.nonclonal <- g.nonclonal + edges(c(t(expand.grid(v.clonality, v.nonclonal))))
+					g.nonclonal <- g.nonclonal + edges(c(t(expand.grid(v.nonclonal, v.nonclonal))))
 					E(g.nonclonal)$weight <- 1
 
 					# If needed, create $output directory

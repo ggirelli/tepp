@@ -23,9 +23,10 @@ library(parallel)
 # 	2: subclonal
 # 	3: nonclonal
 # 	4: dependency
-doSingle=c(3,4)
+doSingle=F
+#doSingle=1:5
 # Whether to check total clonal co-occurrency graph
-doClonal=T
+doClonal=F
 # Whether to check total dependency graph
 doTotal=T
 
@@ -348,7 +349,7 @@ if(doSingle != FALSE) {
 				mc.cores=Ncores
 			)
 			v.nonclonal <- V(g)[!V(g)$clonality %in% append(clonal.val, subclonal.val)]
-			if(length(which(degree(g, v.nonclonal, mode='out') != vcount(g)-length(v.nonclonal))) != 0) {
+			if(length(which(degree(g, v.nonclonal, mode='out') != vcount(g))) != 0) {
 				message('    * ', length(which(degree(g, mode='out') != vcount(g))), ' vertices have wrong degree.')
 				print(degree(g, v.nonclonal, mode='out'))
 				print(g)
@@ -365,6 +366,9 @@ if(doSingle != FALSE) {
 	if(4 %in% doSingle) {
 		message('\n# SS DEPENDENCY GRAPHS #')
 		flist <- list.files(paste0(output.dir, '/sample-graphs/'))
+		flist <- flist[!grepl('^clonal_', flist)]
+		flist <- flist[!grepl('^subclonal_', flist)]
+		flist <- flist[!grepl('^nonclonal_', flist)]
 		for (file in flist) {
 			message('> Checking graph ', file)
 
@@ -372,8 +376,6 @@ if(doSingle != FALSE) {
 			
 			sample <- unlist(strsplit(file, '.', fixed=T))
 			sample <- paste(sample[1:length(sample)-1], collapse='.')
-			sample <- unlist(strsplit(sample, '_', fixed=T))
-			sample <- paste(sample[2:length(sample)], collapse='_')
 			
 			table <- c()
 			if (do$pm) {
