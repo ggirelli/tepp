@@ -26,9 +26,9 @@ library(parallel)
 doSingle=F
 #doSingle=1:5
 # Whether to check total clonal co-occurrency graph
-doClonal=F
+doClonal=T
 # Whether to check total dependency graph
-doTotal=T
+doTotal=F
 
 
 
@@ -489,7 +489,7 @@ if(doClonal) {
 	checkClonalEdges=function(i, gc, el) {
 		#
 
-		e <- E(gt)[i]
+		e <- E(gc)[i]
 
 		e.source <- el[i,1]
 		e.source.split <- unlist(strsplit(e.source, '~', fixed=T))

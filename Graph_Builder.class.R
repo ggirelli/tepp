@@ -359,7 +359,6 @@ GraphBuilder <- function(
 				mc.cores=clusters,
 				mc.preschedule=TRUE
 			)
-
 		},
 
 		buildClonalSSMA = function(
@@ -537,7 +536,6 @@ GraphBuilder <- function(
 				mc.cores=clusters,
 				mc.preschedule=TRUE
 			)
-
 		},
 
 		# Build MSMA
@@ -547,7 +545,8 @@ GraphBuilder <- function(
 			output.dir=gb$output.dir,
 			doOcc=FALSE,
 			remove.loops=FALSE,
-			clusters=gb$clusters
+			clusters=gb$clusters,
+			doPreSimplify=FALSE
 		) {
 			# Merges SSMAs into a single MSMA summing the edge's weight
 			#
@@ -603,6 +602,8 @@ GraphBuilder <- function(
                 'source', 'target', 'weight',
                 'source.abe.type', 'target.abe.type', 'sample'
             )
+
+            print(edges[1:10,])
 
 			if(length(edges) != 0) {
 
@@ -705,6 +706,8 @@ GraphBuilder <- function(
 				if(gb$verbose) cat("Adding edges' weight\n")
 				E(g)$weight <- as.numeric(edges[,3])
 
+				if(doPreSimplify != FALSE) write.graph(g, paste0(gb$output.dir, '/', doPreSimplify), format='graphml')
+
 				#(4) Finally apply 'simplify' to remove multiple edges and sum their weights.
 				if(gb$verbose) cat("Simplifying\n")
 				g <- simplify(
@@ -769,6 +772,8 @@ GraphBuilder <- function(
 					rm.ids <- rm.ids[-which.max(eval(parse(text=paste0(
                         'data$', abe, '$perc.overlap[rm.ids]'
                     ))))]
+                    print('Removing following row:')
+                    print(eval(parse(text=paste0('data$', abe, '[rm.ids,]'))))
 					eval(parse(text=paste0(
                         'data$', abe, ' <- data$', abe, '[-rm.ids,]'
                     )))
@@ -779,6 +784,8 @@ GraphBuilder <- function(
 					rm.ids <- rm.ids[-which.max(eval(parse(text=paste0(
                         'data$', abe, '$perc.overlap[rm.ids]'
                     ))))]
+                    print('Removing following row:')
+                    print(eval(parse(text=paste0('data$', abe, '[rm.ids,]'))))
 					eval(parse(text=paste0('data$', abe, ' <- data$', abe, '[-rm.ids,]')))
 				}
 				if (length(sub.ids) != 0 & length(clo.ids) != 0) {
@@ -787,12 +794,16 @@ GraphBuilder <- function(
                         'data$', abe, '$perc.overlap[sub.ids]'
                     ))))]
 					eval(parse(text=paste0('data$', abe, ' <- data$', abe, '[-clo.ids,]')))
+					print('Removing following row:')
+                    print(eval(parse(text=paste0('data$', abe, '[clo.ids,]'))))
 					if(length(sub.ids) != 0) eval(parse(text=paste0(
                         'data$', abe, ' <- data$', abe, '[-sub.ids,]'
                     )))
 				}
 				if(length(sub.ids) == 0 & length(clo.ids) == 0) {
 					# Remove non-clonals
+					print('Removing following row:')
+                    print(eval(parse(text=paste0('data$', abe, '[non.ids,]'))))
 					eval(parse(text=paste0('data$', abe, ' <- data$', abe, '[-non.ids,]')))
 				}
 				# Change counter
@@ -989,7 +1000,7 @@ GraphBuilder <- function(
 			if(gb$verbose) cat('SSMAs prepared.\n')
 
 			if(gb$verbose) cat("\n# Merging SSMAs into MSMA · Clonal co-occurrency\n")
-			g.clonal <- gb$buildMSMA(paste0('clonal_', sample.list, '.graphml'), remove.loops=TRUE)
+			g.clonal <- gb$buildMSMA(paste0('clonal_', sample.list, '.graphml'), remove.loops=TRUE, doPreSimplify='preSimplify.clonal.graphml')
 			if(gb$verbose) cat("\n# Merging SSMAs into MSMA · Subclonal co-occurrency\n")
 			g.subclonal <- gb$buildMSMA(paste0('subclonal_', sample.list, '.graphml'), remove.loops=TRUE)
 			if(gb$verbose) cat("\n# Merging SSMAs into MSMA · Uncertain_clonality co-occurrency\n")
