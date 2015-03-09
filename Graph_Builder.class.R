@@ -787,21 +787,21 @@ GraphBuilder <- function(
 						if ( 0 == length(dup.non.ids) ) {
 							# ERROR
 						} else {
-							max.id <- dup.non.ids[which.max(perc.overlap[dup.non.ids]]
+							max.id <- dup.non.ids[which.max(perc.overlap[dup.non.ids])]
 
 							rm.ids <- dup.ids
 							rm.ids <- rm.ids[-which(rm.ids == max.id)]
 							return(rm.ids)
 						}
 					} else {
-						max.id <- dup.clo.ids[which.max(perc.overlap[dup.clo.ids]]
+						max.id <- dup.clo.ids[which.max(perc.overlap[dup.clo.ids])]
 
 						rm.ids <- dup.ids
 						rm.ids <- rm.ids[-which(rm.ids == max.id)]
 						return(rm.ids)
 					}
 				} else {
-					max.id <- dup.sub.ids[which.max(perc.overlap[dup.sub.ids]]
+					max.id <- dup.sub.ids[which.max(perc.overlap[dup.sub.ids])]
 
 					rm.ids <- dup.ids
 					rm.ids <- rm.ids[-which(rm.ids == max.id)]
