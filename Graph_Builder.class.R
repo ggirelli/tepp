@@ -751,64 +751,66 @@ GraphBuilder <- function(
             #   The multi-table w/o duplicated genes in the SCNA tables
             #
 			
-			dups <- which(duplicated(eval(parse(text=paste0('data$', abe, '$', genes.label)))))
-			while(length(dups) != 0) {
-				i <- dups[1]
-				dup.ids <- which(eval(parse(text=paste0(
-                    'data$', abe, '$', genes.label, ' == data$', abe, '$', genes.label, '[i]'
-                ))))
-				sub.ids <- dup.ids[which(eval(parse(text=paste0(
-                    'data$', abe, '$', clonality.label
-                )))[dup.ids] %in% subclonal.val)]
-				clo.ids <- dup.ids[which(eval(parse(text=paste0(
-                    'data$', abe, '$', clonality.label
-                )))[dup.ids] %in% clonal.val)]
-				non.ids <- dup.ids[which(!eval(parse(text=paste0(
-                    'data$', abe, '$', clonality.label
-                )))[dup.ids] %in% union(clonal.val, subclonal.val))]
-				if (length(sub.ids) != 0 & length(clo.ids) == 0) {
-					# Keep one of the duplicates
-					rm.ids <- dup.ids 
-					rm.ids <- rm.ids[-which.max(eval(parse(text=paste0(
-                        'data$', abe, '$perc.overlap[rm.ids]'
-                    ))))]
-                    print('Removing following row:')
-                    print(eval(parse(text=paste0('data$', abe, '[rm.ids,]'))))
-					eval(parse(text=paste0(
-                        'data$', abe, ' <- data$', abe, '[-rm.ids,]'
-                    )))
-				}
-				if (length(sub.ids) == 0 & length(clo.ids) != 0) {
-					# Keep one of the duplicates
+			gene.list <- as.character(eval(parse(text=paste0('data$', abe, '$', genes.label))))
+			gene.dups <- unique(genes[which(duplicated(genes))])
+
+			findDupIDs.SCNA = function(gene, data,
+				abe=abe,
+				clonality.label=clonality.label,
+				genes.label=genes.label,
+				clonal.val=clonal.val,
+				subclonal.val=subclonal.val,
+				perc.overlap.label='perc.overlap'
+				) {
+				# 
+				# Args:
+				# 	gene: a gene to check for duplicates
+				# 	data: the data table
+				# 
+				# Return:
+				# 	A list of IDs to be removed
+				# 	
+				
+				all.val <- union(clonal.val, subclonal.val)
+
+				genes <- as.character(eval(parse(text=paste0('data$', abe, '$', genes.label))))
+				clonality.status <- eval(parse(text=paste0('data$', abe, '$', clonality.label)))
+				perc.overlap <- eval(parse(text=paste0('data$', abe, '$', perc.overlap.label)))
+
+				dup.ids <- which(genes == gene)
+				dup.sub.ids <- dup.ids[which(clonality.status[dup.ids] %in% subclonal.val)]
+				dup.clo.ids <- dup.ids[which(clonality.status[dup.ids] %in% clonal.val)]
+				dup.non.ids <- dup.ids[which(!clonality.status[dup.ids] %in% all.val)]
+
+				if (0 == length(dup.sub.ids) ) {
+					if ( 0 == length(dup.clo.ids) ) {
+						if ( 0 == length(dup.non.ids) ) {
+							# ERROR
+						} else {
+							max.id <- dup.non.ids[which.max(perc.overlap[dup.non.ids]]
+
+							rm.ids <- dup.ids
+							rm.ids <- rm.ids[-which(rm.ids == max.id)]
+							return(rm.ids)
+						}
+					} else {
+						max.id <- dup.clo.ids[which.max(perc.overlap[dup.clo.ids]]
+
+						rm.ids <- dup.ids
+						rm.ids <- rm.ids[-which(rm.ids == max.id)]
+						return(rm.ids)
+					}
+				} else {
+					max.id <- dup.sub.ids[which.max(perc.overlap[dup.sub.ids]]
+
 					rm.ids <- dup.ids
-					rm.ids <- rm.ids[-which.max(eval(parse(text=paste0(
-                        'data$', abe, '$perc.overlap[rm.ids]'
-                    ))))]
-                    print('Removing following row:')
-                    print(eval(parse(text=paste0('data$', abe, '[rm.ids,]'))))
-					eval(parse(text=paste0('data$', abe, ' <- data$', abe, '[-rm.ids,]')))
+					rm.ids <- rm.ids[-which(rm.ids == max.id)]
+					return(rm.ids)
 				}
-				if (length(sub.ids) != 0 & length(clo.ids) != 0) {
-					# Keep one of the subclonals
-					sub.ids <- sub.ids[-which.max(eval(parse(text=paste0(
-                        'data$', abe, '$perc.overlap[sub.ids]'
-                    ))))]
-					eval(parse(text=paste0('data$', abe, ' <- data$', abe, '[-clo.ids,]')))
-					print('Removing following row:')
-                    print(eval(parse(text=paste0('data$', abe, '[clo.ids,]'))))
-					if(length(sub.ids) != 0) eval(parse(text=paste0(
-                        'data$', abe, ' <- data$', abe, '[-sub.ids,]'
-                    )))
-				}
-				if(length(sub.ids) == 0 & length(clo.ids) == 0) {
-					# Remove non-clonals
-					print('Removing following row:')
-                    print(eval(parse(text=paste0('data$', abe, '[non.ids,]'))))
-					eval(parse(text=paste0('data$', abe, ' <- data$', abe, '[-non.ids,]')))
-				}
-				# Change counter
-				dups <- which(duplicated(eval(parse(text=paste0('data$', abe, '$', genes.label)))))
 			}
+
+			rm.ids <- unlist(mclapply(gene.dups, FUN=findDupIDs.SCNA, data=data, mc.cores=1))
+			data <- data[-rm.ids,]
 			return(data)
 		},
 
@@ -832,50 +834,58 @@ GraphBuilder <- function(
             #   The multi-table w/o duplicated genes in the PM table
             #
 			
-			dups <- which(duplicated(as.character(eval(parse(text=paste0(
-                'data$', abe, '$', genes.label
-            ))))))
-			while(length(dups) != 0) {
-				i <- dups[1]
-				dup.ids <- which(eval(parse(text=paste0(
-                    'data$', abe, '$', genes.label, ' == data$', abe, '$', genes.label, '[i]'
-                ))))
-				sub.ids <- dup.ids[which(eval(parse(text=paste0(
-                    'data$', abe, '$', clonality.label
-                )))[dup.ids] %in% subclonal.val)]
-				clo.ids <- dup.ids[which(eval(parse(text=paste0(
-                    'data$', abe, '$', clonality.label
-                )))[dup.ids] %in% clonal.val)]
-				non.ids <- dup.ids[which(!eval(parse(text=paste0(
-                    'data$', abe, '$', clonality.label
-                )))[dup.ids] %in% union(clonal.val, subclonal.val))]
-				if (length(sub.ids) != 0 & length(clo.ids) == 0) {
-					# Keep one of the duplicates
-					rm.ids <- dup.ids 
-					rm.ids <- rm.ids[-1]
-					eval(parse(text=paste0('data$', abe, ' <- data$', abe, '[-rm.ids,]')))
-				}
-				if (length(sub.ids) == 0 & length(clo.ids) != 0) {
-					# Keep one of the duplicates
+			gene.list <- as.character(eval(parse(text=paste0('data$', abe, '$', genes.label))))
+			gene.dups <- unique(genes[which(duplicated(genes))])
+
+			findDupIDs.PM = function(gene, data,
+				abe=abe,
+				clonality.label=clonality.label,
+				genes.label=genes.label,
+				clonal.val=clonal.val,
+				subclonal.val=subclonal.val
+				) {
+				# 
+				# Args:
+				# 	gene: a gene to check for duplicates
+				# 	data: the data table
+				# 
+				# Return:
+				# 	A list of IDs to be removed
+				# 	
+				
+				all.val <- union(clonal.val, subclonal.val)
+
+				genes <- as.character(eval(parse(text=paste0('data$', abe, '$', genes.label))))
+				clonality.status <- eval(parse(text=paste0('data$', abe, '$', clonality.label)))
+
+				dup.ids <- which(genes == gene)
+				dup.sub.ids <- dup.ids[which(clonality.status[dup.ids] %in% subclonal.val)]
+				dup.clo.ids <- dup.ids[which(clonality.status[dup.ids] %in% clonal.val)]
+				dup.non.ids <- dup.ids[which(!clonality.status[dup.ids] %in% all.val)]
+
+				if (0 == length(dup.sub.ids) ) {
+					if ( 0 == length(dup.clo.ids) ) {
+						if ( 0 == length(dup.non.ids) ) {
+							# ERROR
+						} else {
+							rm.ids <- dup.ids
+							rm.ids <- rm.ids[-which(rm.ids == dup.non.ids[1])]
+							return(rm.ids)
+						}
+					} else {
+						rm.ids <- dup.ids
+						rm.ids <- rm.ids[-which(rm.ids == dup.clo.ids[1])]
+						return(rm.ids)
+					}
+				} else {
 					rm.ids <- dup.ids
-					rm.ids <- rm.ids[-1]
-					eval(parse(text=paste0('data$', abe, ' <- data$', abe, '[-rm.ids,]')))
+					rm.ids <- rm.ids[-which(rm.ids == dup.sub.ids[1])]
+					return(rm.ids)
 				}
-				if (length(sub.ids) != 0 & length(clo.ids) != 0) {
-					# Keep one of the subclonals
-					sub.ids <- sub.ids[-1]
-					eval(parse(text=paste0('data$', abe, ' <- data$', abe, '[-clo.ids,]')))
-					if(length(sub.ids) != 0) eval(parse(text=paste0(
-                        'data$', abe, ' <- data$', abe, '[-sub.ids,]'
-                    )))
-				}
-				if(length(sub.ids) == 0 & length(clo.ids) == 0) {
-					# Remove non-clonals
-					eval(parse(text=paste0('data$', abe, ' <- data$', abe, '[-non.ids,]')))
-				}
-				# Change counter
-				dups <- which(duplicated(eval(parse(text=paste0('data$', abe, '$', genes.label)))))
 			}
+
+			rm.ids <- unlist(mclapply(gene.dups, FUN=findDupIDs.PM, data=data, mc.cores=1))
+			data <- data[-rm.ids,]
 			return(data)
 		},
 
