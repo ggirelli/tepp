@@ -248,7 +248,8 @@ GraphBuilder <- function(
 			subclonal.val=gb$subclonal.val,
 			sample.list=gb$sample.list,
 			output.dir=gb$output.dir,
-			pathToClass=gb$pathToClass
+			pathToClass=gb$pathToClass,
+			clusters=gb$clusters
 		) {
 			# Build SSMAs for final MSMA
 			#
@@ -268,7 +269,8 @@ GraphBuilder <- function(
 			buildSSMA=function(sample.id,
 				pathToClass, output.dir, abe.list,
 				genes.label, clonality.label,
-				clonal.val, subclonal.val
+				clonal.val, subclonal.val,
+				clusters
 			) {
 				# Execute buildSSMA for each sample
 				# 
@@ -287,9 +289,7 @@ GraphBuilder <- function(
 				data <- list()
 				for (i in 1:length(abe.list)) {
 					abe <- abe.list[i]
-					f.name <- eval(parse(text=paste0(
-                        '"', output.dir, '/sample-data-', abe, '/', sample.id, '"'
-                    )))
+					f.name <- paste0(output.dir, '/sample-data-', abe, '/', sample.id)
 					if(file.exists(f.name)) eval(parse(text=paste0(
                         'data$', abe, ' <- read.table(f.name , header=TRUE, sep=" ")'
                     )))
@@ -299,7 +299,8 @@ GraphBuilder <- function(
                         data, abe, clonality.label,
                         genes.label=genes.label,
                         clonal.val=clonal.val,
-                        subclonal.val=subclonal.val
+                        subclonal.val=subclonal.val,
+                        clusters=clusters
                     )
 				}
 
@@ -356,6 +357,7 @@ GraphBuilder <- function(
 				pathToClass, output.dir, abe.list,
 				genes.label, clonality.label,
 				clonal.val, subclonal.val,
+				clusters,
 				mc.cores=clusters,
 				mc.preschedule=TRUE
 			)
@@ -370,7 +372,8 @@ GraphBuilder <- function(
 			sample.list=gb$sample.list,
 			v.list=list(),
 			output.dir=gb$output.dir,
-			pathToClass=gb$pathToClass
+			pathToClass=gb$pathToClass,
+			clusters=gb$clusters
 		) {
 			# Build SSMAs for clonality co-occurrency MSMAs
 			#
@@ -427,7 +430,8 @@ GraphBuilder <- function(
                         data, abe, clonality.label,
                         genes.label=genes.label,
                         clonal.val=clonal.val,
-                        subclonal.val=subclonal.val
+                        subclonal.val=subclonal.val,
+                        clusters=clusters
                     )
 				}
 
@@ -597,13 +601,14 @@ GraphBuilder <- function(
 				mc.cores=clusters,
 				mc.preschedule=TRUE
 			)
+			
 			edges <- do.call(rbind, e.list)
+			if ( 0 == length(edges) ) return(graph.empty())
+
 			colnames(edges) <- c(
                 'source', 'target', 'weight',
                 'source.abe.type', 'target.abe.type', 'sample'
             )
-
-            print(edges[1:10,])
 
 			if(length(edges) != 0) {
 
@@ -735,7 +740,8 @@ GraphBuilder <- function(
 			data, abe, clonality.label,
 			genes.label=gb$genes.label,
 			clonal.val=gb$clonal.val,
-			subclonal.val=gb$subclonal.val
+			subclonal.val=gb$subclonal.val,
+			clusters=gb$clusters
 		) {
 			# Removes duplicated genes from the SCNA table
 			#
@@ -752,16 +758,15 @@ GraphBuilder <- function(
             #
 			
 			gene.list <- as.character(eval(parse(text=paste0('data$', abe, '$', genes.label))))
-			gene.dups <- unique(genes[which(duplicated(genes))])
+			gene.dups <- unique(gene.list[which(duplicated(gene.list))])
 
-			findDupIDs.SCNA = function(gene, data,
-				abe=abe,
-				clonality.label=clonality.label,
-				genes.label=genes.label,
-				clonal.val=clonal.val,
-				subclonal.val=subclonal.val,
+			findDupIDs.SCNA = function(gene, data, abe,
+				clonality.label=gb$clonality.label,
+				genes.label=gb$genes.label,
+				clonal.val=gb$clonal.val,
+				subclonal.val=gb$subclonal.val,
 				perc.overlap.label='perc.overlap'
-				) {
+			) {
 				# 
 				# Args:
 				# 	gene: a gene to check for duplicates
@@ -809,8 +814,21 @@ GraphBuilder <- function(
 				}
 			}
 
-			rm.ids <- unlist(mclapply(gene.dups, FUN=findDupIDs.SCNA, data=data, mc.cores=1))
-			data <- data[-rm.ids,]
+			rm.ids <- unlist(mclapply(gene.dups,
+				FUN=findDupIDs.SCNA,
+				data=data,
+				abe=abe,
+				clonality.label=clonality.label,
+				genes.label=genes.label,
+				clonal.val=clonal.val,
+				subclonal.val=subclonal.val,
+				mc.cores=clusters
+			))
+
+			if ( 0 != length(rm.ids) ) {
+				eval(parse(text=paste0('data$', abe, ' <- data$', abe, '[-rm.ids,]')))
+			}
+
 			return(data)
 		},
 
@@ -818,7 +836,8 @@ GraphBuilder <- function(
 			data, abe, clonality.label,
 			genes.label=gb$genes.label,
 			clonal.val=gb$clonal.val,
-			subclonal.val=gb$subclonal.val
+			subclonal.val=gb$subclonal.val,
+			clusters=gb$clusters
 		) {
             # Removes duplicated genes from the PM table
             #
@@ -833,17 +852,16 @@ GraphBuilder <- function(
             # Returns:
             #   The multi-table w/o duplicated genes in the PM table
             #
-			
-			gene.list <- as.character(eval(parse(text=paste0('data$', abe, '$', genes.label))))
-			gene.dups <- unique(genes[which(duplicated(genes))])
 
-			findDupIDs.PM = function(gene, data,
-				abe=abe,
-				clonality.label=clonality.label,
-				genes.label=genes.label,
-				clonal.val=clonal.val,
-				subclonal.val=subclonal.val
-				) {
+			gene.list <- as.character(eval(parse(text=paste0('data$', abe, '$', genes.label))))
+			gene.dups <- unique(gene.list[which(duplicated(gene.list))])
+
+			findDupIDs.PM = function(gene, data, abe,
+				genes.label=gb$genes.label,
+				clonality.label=gb$clonality.label,
+				clonal.val=gb$clonal.val,
+				subclonal.val=gb$subclonal.val
+			) {
 				# 
 				# Args:
 				# 	gene: a gene to check for duplicates
@@ -883,9 +901,21 @@ GraphBuilder <- function(
 					return(rm.ids)
 				}
 			}
+			rm.ids <- unlist(mclapply(gene.dups,
+				FUN=findDupIDs.PM,
+				data=data,
+				abe=abe,
+				genes.label=genes.label,
+				clonality.label=clonality.label,
+				clonal.val=clonal.val,
+				subclonal.val=subclonal.val,
+				mc.cores=clusters
+			))
 
-			rm.ids <- unlist(mclapply(gene.dups, FUN=findDupIDs.PM, data=data, mc.cores=1))
-			data <- data[-rm.ids,]
+			if ( 0 != length(rm.ids) ) {
+				eval(parse(text=paste0('data$', abe, ' <- data$', abe, '[-rm.ids,]')))
+			}
+
 			return(data)
 		},
 
@@ -893,7 +923,8 @@ GraphBuilder <- function(
 			data, abe, clonality.label,
 			genes.label=gb$genes.label,
 			clonal.val=gb$clonal.val,
-			subclonal.val=gb$subclonal.val
+			subclonal.val=gb$subclonal.val,
+			clusters=gb$clusters
 		) {
             # Removes duplicated genes from the [SCNA|PM] table
             #
@@ -918,9 +949,9 @@ GraphBuilder <- function(
                 subclonal.val=gb$subclonal.val
             )
 			if(abe == 'PM') {
-				return(gb$rmDuplicatedGenes.PM(data, abe, clonality.label))
+				return(gb$rmDuplicatedGenes.PM(data, abe, clonality.label, clusters=clusters))
 			} else if(abe == 'Loss' | abe == 'Gain') {
-				return(gb$rmDuplicatedGenes.SCNA(data, abe, clonality.label))
+				return(gb$rmDuplicatedGenes.SCNA(data, abe, clonality.label, clusters=clusters))
 			} else {
 				return(data)
 			}
@@ -1010,7 +1041,7 @@ GraphBuilder <- function(
 			if(gb$verbose) cat('SSMAs prepared.\n')
 
 			if(gb$verbose) cat("\n# Merging SSMAs into MSMA · Clonal co-occurrency\n")
-			g.clonal <- gb$buildMSMA(paste0('clonal_', sample.list, '.graphml'), remove.loops=TRUE, doPreSimplify='preSimplify.clonal.graphml')
+			g.clonal <- gb$buildMSMA(paste0('clonal_', sample.list, '.graphml'), remove.loops=TRUE)
 			if(gb$verbose) cat("\n# Merging SSMAs into MSMA · Subclonal co-occurrency\n")
 			g.subclonal <- gb$buildMSMA(paste0('subclonal_', sample.list, '.graphml'), remove.loops=TRUE)
 			if(gb$verbose) cat("\n# Merging SSMAs into MSMA · Uncertain_clonality co-occurrency\n")

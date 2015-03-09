@@ -102,7 +102,7 @@ system.time({
 	if(length(file.list$PM) != 0 & !is.na(file.list$PM)) {
 		gb <- gb$readData(
 			file.path=file.list$PM,
-			sample.column='sample',
+			sample.column=sample.column,
 			abe.type='PM',
 			temp.sample.list=gb$sample.list
 		)
@@ -113,7 +113,7 @@ system.time({
 	if(length(file.list$Gain) != 0 & !is.na(file.list$Gain)) {
 		gb <- gb$readData(
 			file.path=file.list$Gain,
-			sample.column='sample',
+			sample.column=sample.column,
 			abe.type='Gain',
 			temp.sample.list=gb$sample.list
 		)
@@ -124,7 +124,7 @@ system.time({
 	if(length(file.list$Loss) != 0 & !is.na(file.list$Loss)) {
 		gb <- gb$readData(
 			file.path=file.list$Loss,
-			sample.column='sample',
+			sample.column=sample.column,
 			abe.type='Loss',
 			temp.sample.list=gb$sample.list
 		)
@@ -135,7 +135,7 @@ system.time({
 	if(length(file.list$RR) != 0 & !is.na(file.list$RR)) {
 		gb <- gb$readData(
 			file.path=file.list$RR,
-			sample.column='sample',
+			sample.column=sample.column,
 			abe.type='RR',
 			temp.sample.list=gb$sample.list
 		)
@@ -150,7 +150,7 @@ system.time({
 	gb$build(
 		c('PM', 'Gain', 'Loss'),
 		genes.label="Gene.id",
-		clonality.label="clonality.status",
+		clonality.label=clonality.label,
 		sample.list=gb$sample.list
 	)
 
