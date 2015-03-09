@@ -1,6 +1,12 @@
 # Changelog
 # -----------------------------------------
 
+v. 12
+* Moved from foreach (doParallel package) to mclapply (parallel package)
+* Implemented tester.R script
+* GB now uses the standard input R file format
+* Optimized performances
+
 v. 11
 
 * Added output of co-occurrency networks in LGL or GraphML format.
