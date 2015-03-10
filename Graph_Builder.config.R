@@ -60,7 +60,7 @@ Ncores=40
 # 	3: nonclonal
 # 	4: dependency
 doSingle=F
-#doSingle=1:5
+#doSingle=1:4
 
 # Whether to check total clonal co-occurrency graph
 doClonal=T
