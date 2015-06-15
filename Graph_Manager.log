@@ -1,6 +1,12 @@
 # Changelog
 # -----------------------------------------
 
+v 2.3
+
+* Optimized some functions by implementing parallel computing option.
+* Added a high-level function for network merging.
+* Now requires the 'parallel' R package.
+
 v. 2.2
 
 * Added attribute table managemente and format conversion.

@@ -1,4 +1,5 @@
-library('igraph')
+library(igraph)
+library(parallel)
 
 # Class to manage graphml graphs and perform graph operations
 GraphManager <- function() {
@@ -10,7 +11,7 @@ GraphManager <- function() {
 		# ATTRIBUTES #
 		# ---------- #
 
-		version = 2.2,
+		version = 2.3,
 
 		# --------- #
 		# FUNCTIONS #
@@ -19,7 +20,7 @@ GraphManager <- function() {
 		# Conversions
 		#-----------------------------------
 		
-		graph.to.attr.table = function (graph) {
+		graph.to.attr.table = function (graph, cores=1) {
 			# Converts a graph into vertex/edge attribute tables
 			# 
 			# Args:
@@ -41,21 +42,23 @@ GraphManager <- function() {
 			} else if ( 1 == v.count ) {
 				
 				# Single vertex network
-				v.attr.table <- c()
-				for (attr in v.attr.list) {
-					v.attr.table <- append(v.attr.table,
-						eval(parse(text=paste0('V(graph)[1]$', attr))))
-				}
+				v.attr.table <- unlist(mclapply(v.attr.list,
+					FUN=function(attr) {
+						eval(parse(text=paste0('V(graph)[1]$', attr)))
+					},
+					mc.cores=cores
+				))
 				names(v.attr.table) <- v.attr.list
 
 			} else {
 				
 				# 'normal' network
-				v.attr.table <- c()
-				for (attr in v.attr.list) {
-					v.attr.table <- cbind(v.attr.table,
-						eval(parse(text=paste0('V(graph)$', attr))))
-				}
+				v.attr.table <- do.call(cbind, mclapply(v.attr.list,
+					FUN=function(attr) {
+						eval(parse(text=paste0('V(graph)$', attr)))
+					},
+					mc.cores=cores
+				))
 				colnames(v.attr.table) <- v.attr.list
 
 			}
@@ -73,11 +76,12 @@ GraphManager <- function() {
 			} else if ( 1 == e.count ) {
 				
 				# Single edge network
-				e.attr.table <- c()
-				for (attr in e.attr.list) {
-					e.attr.table <- append(e.attr.table,
-						eval(parse(text=paste0('E(graph)[1]$', attr))))
-				}
+				e.attr.table <- unlist(mclapply(e.attr.list,
+					FUN=function(attr) {
+						eval(parse(text=paste0('E(graph)[1]$', attr)))
+					},
+					mc.cores=cores
+				))
 				if ( !is.null(e.attr.table) ) names(e.attr.table) <- e.attr.list
 
 				# Add source/target columns
@@ -86,11 +90,12 @@ GraphManager <- function() {
 			} else {
 
 				# 'normal' network
-				e.attr.table <- c()
-				for (attr in e.attr.list) {
-					e.attr.table <- cbind(e.attr.table,
-						eval(parse(text=paste0('E(graph)$', attr))))
-				}
+				e.attr.table <- do.call(cbind, mclapply(e.attr.list,
+					FUN=function(attr) {
+						eval(parse(text=paste0('E(graph)$', attr)))
+					},
+					mc.cores=cores
+				))
 				if ( !is.null(e.attr.table) ) colnames(e.attr.table) <- e.attr.list
 				
 				# Add source/target columns
@@ -1415,7 +1420,7 @@ GraphManager <- function() {
 			return(table.list)
 		},
 
-		get.colnames.from.table.list = function (table.list) {
+		get.colnames.from.table.list = function (table.list, cores=1) {
 			# Returns the colnames of the tables in a table.list
 			# 
 			# Args:
@@ -1424,28 +1429,30 @@ GraphManager <- function() {
 			# Returns:
 			# 	The colnames of the tables in a table.list	
 
-			colnames <- c()
-			for (table in table.list) {
+			colnames <- unlist(mclapply(table.list,
+				FUN=function(table) {
 
-				if ( !is.null(nrow(table)) ) {
+					if ( !is.null(nrow(table)) ) {
 
-					# Non-empty table
-					colnames <- append(colnames, colnames(table))
+						# Non-empty table
+						return(colnames(table))
 
-				} else if ( 0 != length(table) ) {
+					} else if ( 0 != length(table) ) {
 
-					# Single-row table
-					colnames <- append(colnames, names(table))
+						# Single-row table
+						return(names(table))
 
-				}
+					}
 
-			}
+				},
+				mc.cores=cores
+			))
 
 			# END #
 			return(unique(colnames))
 		},
 
-		merge.tables.from.table.list = function (table.list) {
+		merge.tables.from.table.list = function (table.list, cores=1) {
 			# Executes the rbind of the tables in a table.list
 			# 
 			# Args:
@@ -1458,29 +1465,30 @@ GraphManager <- function() {
 			colnames <- GraphManager()$get.colnames.from.table.list(table.list)
 
 			# RBIND TABLES #
-			for (table in table.list) {
+			end.table <- do.call(rbind, mclapply(table.list,
+				FUN=function(table) {
+					if ( !is.null(nrow(table)) ) {
 
-				if ( !is.null(nrow(table)) ) {
+						# Non-empty table
+						if ( 0 != length(which(!colnames(table) %in% colnames)) ) {
+							table <- expand.attr.table(table, colnames)
+							table <- sort.table.cols(table)
+						}
+						return(table)
 
-					# Non-empty table
-					if ( 0 != length(which(!colnames(table) %in% colnames)) ) {
-						table <- GraphManager()$expand.attr.table(table, colnames)
-						table <- sort.table.cols(table)
+					} else if ( 0 != length(table) ) {
+
+						# Single-row table
+						if ( 0 != length(which(!names(table) %in% colnames)) ) {
+							table <- expand.attr.table(table, colnames)
+							table <- sort.table.cols(table)
+						}
+						return(table)
+
 					}
-					end.table <- rbind(end.table, table)
-
-				} else if ( 0 != length(table) ) {
-
-					# Single-row table
-					if ( 0 != length(which(!names(table) %in% colnames)) ) {
-						table <- GraphManager()$expand.attr.table(table, colnames)
-						table <- sort.table.cols(table)
-					}
-					end.table <- rbind(end.table, table)
-
-				}
-
-			}
+				},
+				mc.cores=cores
+			))
 
 			# ADD COLNAMES #
 			if ( !is.null(nrow(end.table)) ) {
@@ -1540,7 +1548,7 @@ GraphManager <- function() {
 		},
 
 		apply.fun.based.on.identity = function (table, identity.col, behaviors,
-			add.count, add.count.label) {
+			add.count, add.count.label, cores=1) {
 			# Applies preset function to table columns based on identity
 			# 
 			# Args:
@@ -1563,135 +1571,139 @@ GraphManager <- function() {
 				identity.list <- table[, which(colnames(table) == identity.col)]
 				identity.list.unique <- unique(identity.list)
 
-				for (id in identity.list.unique) {
-					subtable <- GraphManager()$extract.subtable.based.on.identity(
-						table, identity.col, id)
+				end.table <- do.call(rbind, mclapply(identity.list.unique,
+					FUN=function(id, table, identity.col, behaviors) {
+						subtable <- extract.subtable.based.on.identity(
+							table, identity.col, id)
 
-					if ( !is.null(subtable) ) {
-						if ( !is.null(nrow(subtable)) ) {
+						if ( !is.null(subtable) ) {
+							if ( !is.null(nrow(subtable)) ) {
 
-							# Non-empty subtable
-							single.row <- c()
+								# Non-empty subtable
+								single.row <- c()
 
-							# Remove cols from behaviors
-							if ( 'id' %in% names(behaviors) ) {
-								behaviors['id'] <- NULL
-							}
-							if ( 'source' %in% names(behaviors) ) {
-								behaviors['source'] <- NULL
-							}
-							if ( 'target' %in% names(behaviors) ) {
-								behaviors['target'] <- NULL
-							}
+								# Remove cols from behaviors
+								if ( 'id' %in% names(behaviors) ) {
+									behaviors['id'] <- NULL
+								}
+								if ( 'source' %in% names(behaviors) ) {
+									behaviors['source'] <- NULL
+								}
+								if ( 'target' %in% names(behaviors) ) {
+									behaviors['target'] <- NULL
+								}
 
-							# Apply behaviors
-							for (col in names(behaviors)) {
-								if ( col %in% colnames(subtable) ) {
-									if ( 'sum' == behaviors[col] ) {
-										single.row <- append(single.row,
-											sum(as.numeric(subtable[,
-												which(colnames(subtable) == col)])))
-									} else if ( 'prod' == behaviors[col] ) {
-										single.row <- append(single.row,
-											prod(as.numeric(subtable[,
-												which(colnames(subtable) == col)])))
-									} else if ( 'min' == behaviors[col] ) {
-										single.row <- append(single.row,
-											min(as.numeric(subtable[,
-												which(colnames(subtable) == col)])))
-									} else if ( 'max' == behaviors[col] ) {
-										single.row <- append(single.row,
-											max(as.numeric(subtable[,
-												which(colnames(subtable) == col)])))
-									} else if ( 'random' == behaviors[col] ) {
-										single.row <- append(single.row,
-											subtable[round(runif(1, 0, 1) * nrow(subtable)),
-											which(colnames(subtable) == col)])
-									} else if ( 'mean' == behaviors[col] ) {
-										single.row <- append(single.row,
-											mean(as.numeric(subtable[,
-												which(colnames(subtable) == col)])))
-									} else if ( 'median' == behaviors[col] ) {
-										single.row <- append(single.row,
-											median(as.numeric(subtable[,
-												which(colnames(subtable) == col)])))
-									} else if ( 'concat' == behaviors[col] ) {
-										single.row <- append(single.row,
-											paste(subtable[,
-												which(colnames(subtable) == col)], collapse='_'))
-									} else if ( 'first' == behaviors[col] ) {
-										single.row <- append(single.row,
-											subtable[1, which(colnames(subtable) == col)])
-									} else if ( 'last' == behaviors[col] ) {
-										single.row <- append(single.row,
-											subtable[nrow(subtable),
-											which(colnames(subtable) == col)])
+								# Apply behaviors
+								for (col in names(behaviors)) {
+									if ( col %in% colnames(subtable) ) {
+										if ( 'sum' == behaviors[col] ) {
+											single.row <- append(single.row,
+												sum(as.numeric(subtable[,
+													which(colnames(subtable) == col)])))
+										} else if ( 'prod' == behaviors[col] ) {
+											single.row <- append(single.row,
+												prod(as.numeric(subtable[,
+													which(colnames(subtable) == col)])))
+										} else if ( 'min' == behaviors[col] ) {
+											single.row <- append(single.row,
+												min(as.numeric(subtable[,
+													which(colnames(subtable) == col)])))
+										} else if ( 'max' == behaviors[col] ) {
+											single.row <- append(single.row,
+												max(as.numeric(subtable[,
+													which(colnames(subtable) == col)])))
+										} else if ( 'random' == behaviors[col] ) {
+											single.row <- append(single.row,
+												subtable[round(runif(1, 0, 1) * nrow(subtable)),
+												which(colnames(subtable) == col)])
+										} else if ( 'mean' == behaviors[col] ) {
+											single.row <- append(single.row,
+												mean(as.numeric(subtable[,
+													which(colnames(subtable) == col)])))
+										} else if ( 'median' == behaviors[col] ) {
+											single.row <- append(single.row,
+												median(as.numeric(subtable[,
+													which(colnames(subtable) == col)])))
+										} else if ( 'concat' == behaviors[col] ) {
+											single.row <- append(single.row,
+												paste(subtable[,
+													which(colnames(subtable) == col)], collapse='_'))
+										} else if ( 'first' == behaviors[col] ) {
+											single.row <- append(single.row,
+												subtable[1, which(colnames(subtable) == col)])
+										} else if ( 'last' == behaviors[col] ) {
+											single.row <- append(single.row,
+												subtable[nrow(subtable),
+												which(colnames(subtable) == col)])
+										}
+										if ( 'ignore' != behaviors[col] ) {
+											names(single.row)[length(single.row)] <- col
+										}
 									}
-									if ( 'ignore' != behaviors[col] ) {
+								}
+
+								# Add row count column
+								if ( add.count ) {
+									single.row <- append(single.row, nrow(subtable))
+									names(single.row)[length(single.row)] <- add.count.label
+								}
+
+								# Add missing attributes
+								for (col in colnames(subtable)) {
+									if ( !col %in% names(behaviors) ) {
+										col.id <- which(col == colnames(subtable))
+										single.row <- append(single.row, subtable[1, col.id])
 										names(single.row)[length(single.row)] <- col
 									}
 								}
-							}
 
-							# Add row count column
-							if ( add.count ) {
-								single.row <- append(single.row, nrow(subtable))
-								names(single.row)[length(single.row)] <- add.count.label
-							}
+								# Re-order columns, just in case
+								single.row <- sort.table.cols(single.row)
 
-							# Add missing attributes
-							for (col in colnames(subtable)) {
-								if ( !col %in% names(behaviors) ) {
-									col.id <- which(col == colnames(subtable))
-									single.row <- append(single.row, subtable[1, col.id])
-									names(single.row)[length(single.row)] <- col
+							} else if ( 0 != length(subtable) ) {
+
+								# Single-row subtable
+								single.row <- subtable
+
+								# Remove cols from behaviors
+								if ( 'id' %in% names(behaviors) ) {
+									behaviors['id'] <- NULL
 								}
-							}
+								if ( 'source' %in% names(behaviors) ) {
+									behaviors['source'] <- NULL
+								}
+								if ( 'target' %in% names(behaviors) ) {
+									behaviors['target'] <- NULL
+								}
 
-							# Re-order columns, just in case
-							single.row <- GraphManager()$sort.table.cols(single.row)
-
-						} else if ( 0 != length(subtable) ) {
-
-							# Single-row subtable
-							single.row <- subtable
-
-							# Remove cols from behaviors
-							if ( 'id' %in% names(behaviors) ) {
-								behaviors['id'] <- NULL
-							}
-							if ( 'source' %in% names(behaviors) ) {
-								behaviors['source'] <- NULL
-							}
-							if ( 'target' %in% names(behaviors) ) {
-								behaviors['target'] <- NULL
-							}
-
-							# Remove ignored cols
-							cols.to.rm <- c()
-							for (col in names(single.row)) {
-								if ( col %in% names(behaviors) ) {
-									if ( 'ignore' == behaviors[col] ) {
-										cols.to.rm <- append(cols.to.rm, col)
+								# Remove ignored cols
+								cols.to.rm <- c()
+								for (col in names(single.row)) {
+									if ( col %in% names(behaviors) ) {
+										if ( 'ignore' == behaviors[col] ) {
+											cols.to.rm <- append(cols.to.rm, col)
+										}
 									}
 								}
-							}
-							single.row <- GraphManager()$rm.cols(single.row, cols.to.rm)
+								single.row <- rm.cols(single.row, cols.to.rm)
 
-							# Add row count column
-							if ( add.count ) {
-								single.row <- append(single.row, 1)
-								names(single.row)[length(single.row)] <- add.count.label
+								# Add row count column
+								if ( add.count ) {
+									single.row <- append(single.row, 1)
+									names(single.row)[length(single.row)] <- add.count.label
+								}
+
+								# Re-order columns, just in case
+								single.row <- sort.table.cols(single.row)
 							}
 
-							# Re-order columns, just in case
-							single.row <- GraphManager()$sort.table.cols(single.row)
+							return(single.row)
+
 						}
-						end.table <- rbind(end.table, single.row)
-
-					}
-
-				}
+					},
+					table, identity.col, behaviors,
+					mc.cores=cores
+				))
 
 			} else if ( 0 != length(table) ) {
 
@@ -2222,6 +2234,205 @@ GraphManager <- function() {
 			dJIM <- (1/sqrt(1+xi)) * sqrt(dJ**2 + xi * dIM**2)
 			dJIMS <- (1/sqrt(1+xi)) * sqrt(dJS**2 + xi * dIM**2)
 			return(c(dH, dJ, dJS, dIM, dHIM, dJIM, dJIMS))
+		},
+
+		# High-level network management
+		#-----------------------------------
+		
+		merge=function(
+			new_name,
+			networks=c(),
+			n_identity=list(
+				HUGO=T,
+				abe.type=T
+			),
+			n_behavior=list(
+				name='first',
+				id='ignore',
+				x='ignore',
+				y='ignore'
+			),
+			e_identity=list(),
+			e_behavior=list(
+				weight='sum'
+			),
+			n_count_attr=T,
+			e_count_attr=T,
+			default_layout='GRID',
+			cores=1
+		) {
+			# Perform network merge
+			# 
+			# Args:
+			# 	new_name: the output name of the merge operation result
+			# 	networks: a list of file paths to the networks to be merged
+			# 	n_identity: the attributes to be used to 'identify' nodes
+			# 	n_behavior: how to behave with attribute of nodes to be merged
+			# 	e_identity: the attributes to be used to 'identify' edges
+			# 	e_behavior: how to behave with attribute of edges to be merged
+			# 	n_count_attr: whether to count how many nodes were merged into one
+			# 	e_count_attr: whether to count how many edges were merged into one
+			# 	default_layout: either 'GRID' or 'CIRCLE'
+			# 	cores: number of cores for parallel computation
+			# 	
+			# Returns:
+			# 	Merges networks
+
+			graph.list <- list()
+			v.attr.table.list <- list()
+			e.attr.table.list <- list()
+
+			# For each selected network
+			for (network in networks) {
+				cat('> Work on graph "', network, '"\n')
+
+				if ( file.exists(network) ) {
+					# Read network
+					g <- read.graph(network, format='graphml')
+
+					# Build attribute tables
+					graph.list <- Graph_Manager()$graph.to.attr.table(g, cores)
+					v.attr.table <- graph.list$nodes
+					e.attr.table <- graph.list$edges
+
+					# VERTICES #
+
+					cat('\t- Vertices\n')
+
+					# Get attributes for vertex identity
+					v.identity.list <- c()
+					for (attr in names(n_identity)) {
+						if (as.logical(n_identity[attr])) {
+							v.identity.list <- append(v.identity.list, attr)
+						}
+					}
+
+					# Expand with missing attributes
+					v.attr.table <- Graph_Manager()$expand.attr.table(v.attr.table,
+						c(v.identity.list, names(n_behavior)))
+					
+					# Add vertex identity column
+					v.attr.table <- Graph_Manager()$add.collapsed.col(v.attr.table,
+						v.identity.list, 'tea_identity', '~')
+					
+					# Sort v.attr.table columns
+					v.attr.table <- Graph_Manager()$sort.table.cols(v.attr.table)
+
+					# EDGES #
+					
+					cat('\t- Edges\n')
+
+					# Add extremities
+					e.attr.table <- Graph_Manager()$add.edges.extremities(e.attr.table, g, F)
+
+					# Convert edge extremities to v.identity
+					e.attr.table <- Graph_Manager()$convert.extremities.to.v.identity(e.attr.table, v.attr.table,
+						'tea_identity', g)
+
+					# Get attributes for edge identity
+					e.identity.list <- c('source', 'target')
+					for (attr in names(e.identity)) {
+						if (as.logical(e.identity[attr])) {
+							e.identity.list <- append(e.identity.list, attr)
+						}
+					}
+
+					# Expand with missing attributes
+					e.attr.table <- Graph_Manager()$expand.attr.table(e.attr.table,
+						c(e.identity.list, names(e_behavior)))
+
+					# Add edge identity column
+					e.attr.table <- Graph_Manager()$add.collapsed.col(e.attr.table,
+						e.identity.list, 'tea_identity', '~')
+
+					# Sort edge attribute table
+					e.attr.table <- Graph_Manager()$sort.table.cols(e.attr.table)
+
+					# MAKE LISTS #
+					v.attr.table.list <- Graph_Manager()$append.to.table.list(v.attr.table.list, v.attr.table)
+					e.attr.table.list <- Graph_Manager()$append.to.table.list(e.attr.table.list, e.attr.table)
+					graph.list <- append(graph.list, g)
+				}
+			}
+
+			# VERTICES #
+
+			cat('> Merging Vertices\n')
+
+			# Merge tables from table.list
+			print('v.attr.table.merged')
+			v.attr.table.merged <- Graph_Manager()$merge.tables.from.table.list(v.attr.table.list, cores)
+
+			# Apply behavior
+			print('v.attr.table.shrink')
+			v.attr.table.shrink <- Graph_Manager()$apply.fun.based.on.identity(v.attr.table.merged,
+				'tea_identity', n_behavior, n_count_attr, 'merge_count', cores=cores)
+
+			# Update IDs
+			v.attr.table <- Graph_Manager()$update.row.ids(v.attr.table.shrink)
+			v.attr.table <- Graph_Manager()$add.prefix.to.col(v.attr.table, 'id', 'n')
+
+			# EDGES #
+
+			cat('> Merging Edges\n')
+			# Merge table from table.list
+			print('e.attr.table.merged')
+			e.attr.table.merged <- Graph_Manager()$merge.tables.from.table.list(e.attr.table.list, cores)
+
+			# Apply behavior
+			print('e.attr.table.shrink')
+			e.attr.table.shrink <- Graph_Manager()$apply.fun.based.on.identity(e.attr.table.merged,
+				'tea_identity', e_behavior, e_count_attr, 'merge_count', cores=cores)
+
+			# Convert extremities to IDs
+			print('convert.extremities.to.v.id.based.on.table')
+			e.attr.table <- Graph_Manager()$convert.extremities.to.v.id.based.on.table(e.attr.table.shrink,
+				v.attr.table, 'tea_identity')
+
+			# Updated IDs
+			e.attr.table <- Graph_Manager()$update.row.ids(e.attr.table)
+			e.attr.table <- Graph_Manager()$add.prefix.to.col(e.attr.table, 'id', 'e')
+
+			# CONCLUSION #
+
+			cat('> Output\n')
+
+			# Remove identity columns
+			if ( 'name' %in% Graph_Manager()$get.col.names(v.attr.table) ) {
+				v.attr.table <- Graph_Manager()$rename.col(v.attr.table, 'name', 'name.bak')
+				v.attr.table <- Graph_Manager()$rename.col(v.attr.table, 'tea_identity', 'name')
+			} else {
+				v.attr.table <- Graph_Manager()$rename.col(v.attr.table, 'tea_identity', 'name')
+			}
+			e.attr.table <- Graph_Manager()$rm.cols(e.attr.table, 'tea_identity')
+
+			# Write GraphML
+			print('attr.tables.to.graph')
+			g <- Graph_Manager()$attr.tables.to.graph(v.attr.table, e.attr.table)
+			if ( 'grid' == default_layout) {
+				coords <- layout.grid(g)*1000
+			} else if ( 'circle' == default_layout ) {
+				coords <- layout.circle(g)*1000
+			}
+			V(g)$x <- round(coords[,1], 0)
+			V(g)$y <- round(coords[,2], 0)
+			V(g)$name <- V(g)$name.bak
+			g <- remove.vertex.attribute(g, 'name.bak')
+
+			call.value = function(x, v) {
+				t <- unlist(strsplit(x, '_', fixed=T))
+				if ( !v %in% t ) return(0)
+				t <- table(t)
+				return(t[which(v == names(t))])
+			}
+			V(g)$clonal.occ <- unlist(lapply(V(g)$clonality.status, FUN=call.value, v='clonal'))
+			V(g)$subclonal.occ <- unlist(lapply(V(g)$clonality.status, FUN=call.value, v='subclonal'))
+
+			write.graph(g, paste0(new_name, '.graphml'), format='graphml')
+
+			return(g)
+
+			cat('~ END ~')
 		}
 
 	)
