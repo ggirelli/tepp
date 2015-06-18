@@ -2330,12 +2330,13 @@ GraphManager <- function() {
 						'tea_identity', g)
 
 					# Get attributes for edge identity
-					e.identity.list <- c('source', 'target')
-					for (attr in names(e.identity)) {
-						if (as.logical(e.identity[attr])) {
+					e.identity.list <- c('source', 'target', e_identity)
+					for (attr in names(e_identity)) {
+						if (as.logical(e_identity[attr])) {
 							e.identity.list <- append(e.identity.list, attr)
 						}
 					}
+					e.identity.list <- unique(e.identity.list)
 
 					# Expand with missing attributes
 					e.attr.table <- Graph_Manager()$expand.attr.table(e.attr.table,
@@ -2430,9 +2431,253 @@ GraphManager <- function() {
 
 			write.graph(g, paste0(new_name, '.graphml'), format='graphml')
 
+			cat('~ END ~')
+
 			return(g)
+		},
+
+		subtract = function(
+			new_name,
+			minuend,
+			subtrahends=c(),
+			n_identity=list(
+				HUGO=T,
+				abe.type=T
+			),
+			n_behavior=list(),
+			e_identity=list(
+				source=T,
+				target=T
+			),
+			e_behavior=list(),
+			default_layout='grid',
+			cores=1
+		) {
+			# Perform network subtraction
+			# 
+			# Args:
+			# 	new_name: the output name of the merge operation result
+			# 	minuend: file path to the network to be subtracted FROM
+			# 	subtrahends: a list of file paths to the networks to be subtracted
+			# 	n_identity: the attributes to be used to 'identify' nodes
+			# 	n_behavior: how to behave with attribute of nodes to be merged
+			# 	e_identity: the attributes to be used to 'identify' edges
+			# 	e_behavior: how to behave with attribute of edges to be merged
+			# 	default_layout: either 'grid' or 'circle'
+			# 	cores: number of cores for parallel computation
+			# 	
+			# Returns:
+			# 	Subtracts networks
+
+			graph.list <- list()
+			v.attr.table.list <- list()
+			e.attr.table.list <- list()
+
+			# SUBTRAHENDS #
+
+			# For each selected subtrahend network
+			for (network in subtrahends) {
+
+				cat('> Work on graph "', network, '"\n')
+
+				if ( file.exists(network) ) {
+					# Read network
+					g <- read.graph(network, format='graphml')
+
+					# Build attribute tables
+					graph.list <- GraphManager()$graph.to.attr.table(g, cores)
+					v.attr.table <- graph.list$nodes
+					e.attr.table <- graph.list$edges
+
+					# VERTICES #
+
+					cat('\t- Vertices\n')
+
+					# Get attributes for vertex identity
+					v.identity.list <- c()
+					for (attr in names(n_identity)) {
+						if (as.logical(n_identity[attr])) {
+							v.identity.list <- append(v.identity.list, attr)
+						}
+					}
+
+					# Expand with missing attributes
+					v.attr.table <- GraphManager()$expand.attr.table(v.attr.table,
+						c(v.identity.list, names(n_behavior)))
+
+					# Add vertex identity column
+					v.attr.table <- GraphManager()$add.collapsed.col(v.attr.table,
+						v.identity.list, 'tea_identity', '~')
+
+					# Sort v.attr.table columns
+					v.attr.table <- GraphManager()$sort.table.cols(v.attr.table)
+
+					# EDGES #
+					
+					cat('\t- Edges\n')
+
+					# Add extremities
+					e.attr.table <- GraphManager()$add.edges.extremities(e.attr.table, g, F)
+
+					# Convert edge extremities to v.identity
+					e.attr.table <- GraphManager()$convert.extremities.to.v.identity(e.attr.table, v.attr.table,
+						'tea_identity', g)
+
+					# Get attributes for edge identity
+					e.identity.list <- unique(c('source', 'target',e_identity))
+					for (attr in names(e.identity.list)) {
+						if (as.logical(e.identity.list[attr])) {
+							e.identity.list <- append(e.identity.list, attr)
+						}
+					}
+
+					# Expand with missing attributes
+					e.attr.table <- GraphManager()$expand.attr.table(e.attr.table,
+						c(e.identity.list, names(e_behavior)))
+
+					# Add edge identity column
+					e.attr.table <- GraphManager()$add.collapsed.col(e.attr.table,
+						e.identity.list, 'tea_identity', '~')
+
+					# Sort edge attribute table
+					e.attr.table <- GraphManager()$sort.table.cols(e.attr.table)
+
+					# MAKE LISTS #
+					v.attr.table.list <- GraphManager()$append.to.table.list(v.attr.table.list, v.attr.table)
+					e.attr.table.list <- GraphManager()$append.to.table.list(e.attr.table.list, e.attr.table)
+					graph.list <- append(graph.list, g)
+				}
+			}
+
+			# MINUEND #
+			cat('> Work on graph "', minuend, '"\n')
+
+			# Read network
+			g <- read.graph(minuend, format='graphml')
+			
+			# Build attribute tables
+			graph.list <- GraphManager()$graph.to.attr.table(g)
+			v.minuend.attr.table <- graph.list$nodes
+			e.minuend.attr.table <- graph.list$edges
+
+			# MINUEND VERTICES #
+
+			cat('\t- Vertices\n')
+
+			# Get attributes for vertex identity
+			v.identity.list <- c()
+			for (attr in names(n_identity)) {
+				if (as.logical(n_identity[attr])) {
+					v.identity.list <- append(v.identity.list, attr)
+				}
+			}
+
+			# Expand with missing attributes
+			v.minuend.attr.table <- GraphManager()$expand.attr.table(v.minuend.attr.table,
+				c(v.identity.list, names(n_behavior)))
+
+			# Add vertex identity column
+			v.minuend.attr.table <- GraphManager()$add.collapsed.col(v.minuend.attr.table,
+				v.identity.list, 'tea_identity', '~')
+
+			# Sort v.minuend.attr.table columns
+			v.minuend.attr.table <- GraphManager()$sort.table.cols(v.minuend.attr.table)
+
+			# MINUEND EDGES #
+
+			cat('\t- Edges\n')
+
+			# Add extremities
+			e.minuend.attr.table <- GraphManager()$add.edges.extremities(e.minuend.attr.table, g, F)
+
+			# Convert edge extremities to v.identity
+			e.minuend.attr.table <- GraphManager()$convert.extremities.to.v.identity(e.minuend.attr.table,
+				v.minuend.attr.table, 'tea_identity', g)
+
+			# Get attributes for edge identity
+			e.identity.list <- c('source', 'target')
+			for (attr in names(e_identity)) {
+				if (as.logical(e_identity[attr])) {
+					e.identity.list <- append(e.identity.list, attr)
+				}
+			}
+			e.identity.list <- unique(e.identity.list)
+
+			# Expand with missing attributes
+			e.minuend.attr.table <- GraphManager()$expand.attr.table(e.minuend.attr.table,
+				c(e.identity.list, names(e_behavior)))
+
+			# Add edge identity column
+			e.minuend.attr.table <- GraphManager()$add.collapsed.col(e.minuend.attr.table,
+				e.identity.list, 'tea_identity', '~')
+
+			# Sort edge attribute table
+			e.minuend.attr.table <- GraphManager()$sort.table.cols(e.minuend.attr.table)
+
+			# SUBTRACT VERTICES #
+
+			cat('> Merging subtrahend Vertices\n')
+
+			# Merge tables from table.list
+			v.attr.table.merged <- GraphManager()$merge.tables.from.table.list(v.attr.table.list, cores=cores)
+
+			# Retrieve subtrahend vertex identities
+			v.subtrahend.identity <- GraphManager()$get.col(v.attr.table.merged, 'tea_identity')
+			v.subtrahend.identity.unique <- unique(v.subtrahend.identity)
+
+			# Remove subtrahend vertex identities from minuend
+			v.minuend.attr.table <- GraphManager()$rm.rows.based.on.identity(v.minuend.attr.table,
+				'tea_identity', v.subtrahend.identity.unique)
+
+			# SUBTRACT EDGES #
+
+			cat('> Merging subtrahend Edges\n')
+
+			# Merge table from table.list
+			e.attr.table.merged <- GraphManager()$merge.tables.from.table.list(e.attr.table.list, cores=cores)
+
+			# Retrieve subtrahend edges identities
+			e.subtrahend.identity <- GraphManager()$get.col(e.attr.table.merged, 'tea_identity')
+			e.subtrahend.identity.unique <- unique(e.subtrahend.identity)
+
+			# Remove subtrahend edges identities from minuend
+			e.minuend.attr.table <- GraphManager()$rm.rows.based.on.identity(e.minuend.attr.table,
+				'tea_identity', e.subtrahend.identity.unique)
+
+			# Remove edges that lost one or both extremities
+			e.minuend.attr.table <- GraphManager()$check.extremities(e.minuend.attr.table,
+				v.minuend.attr.table, 'tea_identity')
+
+			# Convert extremities to id
+			e.minuend.attr.table <- GraphManager()$convert.extremities.to.v.id.based.on.table(e.minuend.attr.table,
+				v.minuend.attr.table, 'tea_identity')
+
+			# CONCLUSION #
+
+			cat('> Output\n')
+
+			# Update extremities and IDs
+			graph.list <- GraphManager()$update.row.ids.and.extremities(e.minuend.attr.table, 'e',
+				v.minuend.attr.table, 'n', 'tea_identity')
+
+			# Remove identity columns
+			v.minuend.attr.table <- GraphManager()$rm.cols(v.minuend.attr.table, c('tea_identity'))
+			e.minuend.attr.table <- GraphManager()$rm.cols(e.minuend.attr.table, c('tea_identity'))
+
+			# Write GraphML
+			g <- GraphManager()$attr.tables.to.graph(v.minuend.attr.table, e.minuend.attr.table)
+			if ( 'grid' == default_layout) {
+				coords <- layout.grid(g)*1000
+			} else if ( 'circle' == default_layout ) {
+				coords <- layout.circle(g)*1000
+			}
+			V(g)$x <- round(coords[,1], 0)
+			V(g)$y <- round(coords[,2], 0)
+			write.graph(g, new_name, format='graphml')
 
 			cat('~ END ~')
+
+			return(g)
 		}
 
 	)
