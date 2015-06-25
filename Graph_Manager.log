@@ -5,6 +5,7 @@ v 2.3
 
 * Optimized some functions by implementing parallel computing option.
 * Added a high-level function for network merging.
+* Added a high-level function for network subtraction and edge subtraction.
 * Now requires the 'parallel' R package.
 
 v. 2.2
