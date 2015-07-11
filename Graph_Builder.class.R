@@ -11,6 +11,7 @@ GraphBuilder <- function(
 	clean=FALSE,
 	output.dir='.',
 	write.cooc=FALSE,
+	cleanVertices=T,
 	pathToClass='.'
 ) {
 	library('igraph')
@@ -64,6 +65,9 @@ GraphBuilder <- function(
 
 		# Vertex attribute table
 		attr.table = attr.table,
+
+		# Whether to build co-occurrency only for vertices in the dependency graph
+		cleanVertices = cleanVertices,
 
 		# Absolute path to GB class
 		pathToClass = pathToClass,
@@ -373,7 +377,8 @@ GraphBuilder <- function(
 			v.list=list(),
 			output.dir=gb$output.dir,
 			pathToClass=gb$pathToClass,
-			clusters=gb$clusters
+			clusters=gb$clusters,
+			cleanVertices=T
 		) {
 			# Build SSMAs for clonality co-occurrency MSMAs
 			#
@@ -395,7 +400,8 @@ GraphBuilder <- function(
 				pathToClass, output.dir,
 				abe.list, v.list,
 				genes.label, clonality.label,
-				clonal.val, subclonal.val
+				clonal.val, subclonal.val,
+				cleanVertices
 			) {
 				# Execute buildSSMA for each sample
 				# 
@@ -417,11 +423,13 @@ GraphBuilder <- function(
 					f.name <- paste0(output.dir, '/sample-data-', abe, '/', sample.id)
 					if(file.exists(f.name)) {
 						temp.data <- read.table(f.name)
-						temp.data <- temp.data[which(
-                            paste(as.character(eval(parse(text=paste0(
-                                'temp.data$', genes.label
-                            )))), tolower(abe), sep='~') %in% v.list
-                        ),]
+						if (cleanVertices) {
+							temp.data <- temp.data[which(
+	                            paste(as.character(eval(parse(text=paste0(
+	                                'temp.data$', genes.label
+	                            )))), tolower(abe), sep='~') %in% v.list
+	                        ),]
+						}
 						eval(parse(text=paste0('data$', abe, ' <- temp.data')))
 					}
 
@@ -537,6 +545,7 @@ GraphBuilder <- function(
 				abe.list, v.list,
 				genes.label, clonality.label,
 				clonal.val, subclonal.val,
+				cleanVertices=cleanVertices,
 				mc.cores=clusters,
 				mc.preschedule=TRUE
 			)
@@ -999,7 +1008,8 @@ GraphBuilder <- function(
 			sample.list=gb$sample.list,
 			attr.table=gb$attr.table,
 			output.dir=gb$output.dir,
-			write.cooc=gb$write.cooc
+			write.cooc=gb$write.cooc,
+			cleanVertices=gb$cleanVertices
 		) {
 			# Builds graphs after data read/split
 			#
@@ -1036,7 +1046,8 @@ GraphBuilder <- function(
 				clonal.val=clonal.val,
 				subclonal.val=subclonal.val,
 				sample.list=sample.list,
-				v.list=V(g.total)$name
+				v.list=V(g.total)$name,
+				cleanVertices=cleanVertices
 			)
 			if(gb$verbose) cat('SSMAs prepared.\n')
 

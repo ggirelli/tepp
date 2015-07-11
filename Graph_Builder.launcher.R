@@ -66,6 +66,11 @@ if(length(attr.table) != 0 && attr.table != '') {
 	cat('\n')
 }
 
+if(!cleanVertices) {
+	cat('Computing co-occurrency for EVERY aberration couple.\n')
+} else {
+	cat('Computing co-occurrency for every aberration couple in the dependency graph.\n')
+}
 
 
 
@@ -151,7 +156,10 @@ system.time({
 		c('PM', 'Gain', 'Loss'),
 		genes.label="Gene.id",
 		clonality.label=clonality.label,
-		sample.list=gb$sample.list
+		sample.list=gb$sample.list,
+		clonal.val=clonal.val,
+		subclonal.val=subclonal.val,
+		cleanVertices=cleanVertices
 	)
 
 })
