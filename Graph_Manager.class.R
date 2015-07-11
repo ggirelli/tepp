@@ -1226,7 +1226,7 @@ GraphManager <- function() {
 			# END #
 			return(e.attr.table)
 		},
-
+		
 		convert.extremities.to.v.id.based.on.table = function (e.attr.table, v.attr.table,
 			v.identity.col) {
 			# Converts edge extremities in numerical v.id based on the v.attr.table
@@ -1260,7 +1260,7 @@ GraphManager <- function() {
 					# Non-empty table
 					v.identity.col.id <- which(v.identity.col == colnames(v.attr.table))
 					v.id.col.id <- which('id' == colnames(v.attr.table))
-					
+
 					e.attr.table[, source.col.id] <- unlist(lapply(e.attr.table[, source.col.id],
 						FUN=function(x, v.id.col.id) {
 							return(v.attr.table[which(
@@ -1573,7 +1573,7 @@ GraphManager <- function() {
 
 				end.table <- do.call(rbind, mclapply(identity.list.unique,
 					FUN=function(id, table, identity.col, behaviors) {
-						subtable <- extract.subtable.based.on.identity(
+						subtable <- GraphManager()$extract.subtable.based.on.identity(
 							table, identity.col, id)
 
 						if ( !is.null(subtable) ) {
@@ -1658,7 +1658,7 @@ GraphManager <- function() {
 								}
 
 								# Re-order columns, just in case
-								single.row <- sort.table.cols(single.row)
+								single.row <- GraphManager()$sort.table.cols(single.row)
 
 							} else if ( 0 != length(subtable) ) {
 
@@ -1685,7 +1685,7 @@ GraphManager <- function() {
 										}
 									}
 								}
-								single.row <- rm.cols(single.row, cols.to.rm)
+								single.row <- GraphManager()$rm.cols(single.row, cols.to.rm)
 
 								# Add row count column
 								if ( add.count ) {
@@ -1694,7 +1694,7 @@ GraphManager <- function() {
 								}
 
 								# Re-order columns, just in case
-								single.row <- sort.table.cols(single.row)
+								single.row <- GraphManager()$sort.table.cols(single.row)
 							}
 
 							return(single.row)
@@ -2258,7 +2258,7 @@ GraphManager <- function() {
 			),
 			n_count_attr=T,
 			e_count_attr=T,
-			default_layout='GRID',
+			default_layout='grid',
 			cores=1
 		) {
 			# Perform network merge
@@ -2389,7 +2389,7 @@ GraphManager <- function() {
 			print('convert.extremities.to.v.id.based.on.table')
 			e.attr.table <- GraphManager()$convert.extremities.to.v.id.based.on.table(e.attr.table.shrink,
 				v.attr.table, 'tea_identity')
-
+			
 			# Updated IDs
 			e.attr.table <- GraphManager()$update.row.ids(e.attr.table)
 			e.attr.table <- GraphManager()$add.prefix.to.col(e.attr.table, 'id', 'e')
