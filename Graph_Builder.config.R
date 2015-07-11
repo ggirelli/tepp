@@ -37,6 +37,9 @@ attr.table=NULL
 white.list=list()
 black.list=list()
 
+# Whether to build co-occurrency only for vertices in the dependency graph
+cleanVertices=T
+
 # Clean mode removes all the genes that are not in the white.list
 clean=F
 
