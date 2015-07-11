@@ -2429,7 +2429,7 @@ GraphManager <- function() {
 			V(g)$clonal.occ <- unlist(lapply(V(g)$clonality.status, FUN=call.value, v='clonal'))
 			V(g)$subclonal.occ <- unlist(lapply(V(g)$clonality.status, FUN=call.value, v='subclonal'))
 
-			write.graph(g, paste0(new_name, '.graphml'), format='graphml')
+			write.graph(g, new_name, format='graphml')
 
 			cat('~ END ~')
 
@@ -3111,7 +3111,7 @@ GraphManager <- function() {
 			}
 			V(g)$x <- round(coords[,1], 0)
 			V(g)$y <- round(coords[,2], 0)
-			write.graph(g, paste0(new_name, '.graphml'), format='graphml')
+			write.graph(g, new_name, format='graphml')
 
 			cat('~ END ~')
 
