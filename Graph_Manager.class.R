@@ -2291,7 +2291,7 @@ GraphManager <- function() {
 					g <- read.graph(network, format='graphml')
 
 					# Build attribute tables
-					graph.list <- Graph_Manager()$graph.to.attr.table(g, cores)
+					graph.list <- GraphManager()$graph.to.attr.table(g, cores)
 					v.attr.table <- graph.list$nodes
 					e.attr.table <- graph.list$edges
 
@@ -2308,25 +2308,25 @@ GraphManager <- function() {
 					}
 
 					# Expand with missing attributes
-					v.attr.table <- Graph_Manager()$expand.attr.table(v.attr.table,
+					v.attr.table <- GraphManager()$expand.attr.table(v.attr.table,
 						c(v.identity.list, names(n_behavior)))
 					
 					# Add vertex identity column
-					v.attr.table <- Graph_Manager()$add.collapsed.col(v.attr.table,
+					v.attr.table <- GraphManager()$add.collapsed.col(v.attr.table,
 						v.identity.list, 'tea_identity', '~')
 					
 					# Sort v.attr.table columns
-					v.attr.table <- Graph_Manager()$sort.table.cols(v.attr.table)
+					v.attr.table <- GraphManager()$sort.table.cols(v.attr.table)
 
 					# EDGES #
 					
 					cat('\t- Edges\n')
 
 					# Add extremities
-					e.attr.table <- Graph_Manager()$add.edges.extremities(e.attr.table, g, F)
+					e.attr.table <- GraphManager()$add.edges.extremities(e.attr.table, g, F)
 
 					# Convert edge extremities to v.identity
-					e.attr.table <- Graph_Manager()$convert.extremities.to.v.identity(e.attr.table, v.attr.table,
+					e.attr.table <- GraphManager()$convert.extremities.to.v.identity(e.attr.table, v.attr.table,
 						'tea_identity', g)
 
 					# Get attributes for edge identity
@@ -2339,19 +2339,19 @@ GraphManager <- function() {
 					e.identity.list <- unique(e.identity.list)
 
 					# Expand with missing attributes
-					e.attr.table <- Graph_Manager()$expand.attr.table(e.attr.table,
+					e.attr.table <- GraphManager()$expand.attr.table(e.attr.table,
 						c(e.identity.list, names(e_behavior)))
 
 					# Add edge identity column
-					e.attr.table <- Graph_Manager()$add.collapsed.col(e.attr.table,
+					e.attr.table <- GraphManager()$add.collapsed.col(e.attr.table,
 						e.identity.list, 'tea_identity', '~')
 
 					# Sort edge attribute table
-					e.attr.table <- Graph_Manager()$sort.table.cols(e.attr.table)
+					e.attr.table <- GraphManager()$sort.table.cols(e.attr.table)
 
 					# MAKE LISTS #
-					v.attr.table.list <- Graph_Manager()$append.to.table.list(v.attr.table.list, v.attr.table)
-					e.attr.table.list <- Graph_Manager()$append.to.table.list(e.attr.table.list, e.attr.table)
+					v.attr.table.list <- GraphManager()$append.to.table.list(v.attr.table.list, v.attr.table)
+					e.attr.table.list <- GraphManager()$append.to.table.list(e.attr.table.list, e.attr.table)
 					graph.list <- append(graph.list, g)
 				}
 			}
@@ -2362,54 +2362,54 @@ GraphManager <- function() {
 
 			# Merge tables from table.list
 			print('v.attr.table.merged')
-			v.attr.table.merged <- Graph_Manager()$merge.tables.from.table.list(v.attr.table.list, cores)
+			v.attr.table.merged <- GraphManager()$merge.tables.from.table.list(v.attr.table.list, cores)
 
 			# Apply behavior
 			print('v.attr.table.shrink')
-			v.attr.table.shrink <- Graph_Manager()$apply.fun.based.on.identity(v.attr.table.merged,
+			v.attr.table.shrink <- GraphManager()$apply.fun.based.on.identity(v.attr.table.merged,
 				'tea_identity', n_behavior, n_count_attr, 'merge_count', cores=cores)
 
 			# Update IDs
-			v.attr.table <- Graph_Manager()$update.row.ids(v.attr.table.shrink)
-			v.attr.table <- Graph_Manager()$add.prefix.to.col(v.attr.table, 'id', 'n')
+			v.attr.table <- GraphManager()$update.row.ids(v.attr.table.shrink)
+			v.attr.table <- GraphManager()$add.prefix.to.col(v.attr.table, 'id', 'n')
 
 			# EDGES #
 
 			cat('> Merging Edges\n')
 			# Merge table from table.list
 			print('e.attr.table.merged')
-			e.attr.table.merged <- Graph_Manager()$merge.tables.from.table.list(e.attr.table.list, cores)
+			e.attr.table.merged <- GraphManager()$merge.tables.from.table.list(e.attr.table.list, cores)
 
 			# Apply behavior
 			print('e.attr.table.shrink')
-			e.attr.table.shrink <- Graph_Manager()$apply.fun.based.on.identity(e.attr.table.merged,
+			e.attr.table.shrink <- GraphManager()$apply.fun.based.on.identity(e.attr.table.merged,
 				'tea_identity', e_behavior, e_count_attr, 'merge_count', cores=cores)
 
 			# Convert extremities to IDs
 			print('convert.extremities.to.v.id.based.on.table')
-			e.attr.table <- Graph_Manager()$convert.extremities.to.v.id.based.on.table(e.attr.table.shrink,
+			e.attr.table <- GraphManager()$convert.extremities.to.v.id.based.on.table(e.attr.table.shrink,
 				v.attr.table, 'tea_identity')
 
 			# Updated IDs
-			e.attr.table <- Graph_Manager()$update.row.ids(e.attr.table)
-			e.attr.table <- Graph_Manager()$add.prefix.to.col(e.attr.table, 'id', 'e')
+			e.attr.table <- GraphManager()$update.row.ids(e.attr.table)
+			e.attr.table <- GraphManager()$add.prefix.to.col(e.attr.table, 'id', 'e')
 
 			# CONCLUSION #
 
 			cat('> Output\n')
 
 			# Remove identity columns
-			if ( 'name' %in% Graph_Manager()$get.col.names(v.attr.table) ) {
-				v.attr.table <- Graph_Manager()$rename.col(v.attr.table, 'name', 'name.bak')
-				v.attr.table <- Graph_Manager()$rename.col(v.attr.table, 'tea_identity', 'name')
+			if ( 'name' %in% GraphManager()$get.col.names(v.attr.table) ) {
+				v.attr.table <- GraphManager()$rename.col(v.attr.table, 'name', 'name.bak')
+				v.attr.table <- GraphManager()$rename.col(v.attr.table, 'tea_identity', 'name')
 			} else {
-				v.attr.table <- Graph_Manager()$rename.col(v.attr.table, 'tea_identity', 'name')
+				v.attr.table <- GraphManager()$rename.col(v.attr.table, 'tea_identity', 'name')
 			}
-			e.attr.table <- Graph_Manager()$rm.cols(e.attr.table, 'tea_identity')
+			e.attr.table <- GraphManager()$rm.cols(e.attr.table, 'tea_identity')
 
 			# Write GraphML
 			print('attr.tables.to.graph')
-			g <- Graph_Manager()$attr.tables.to.graph(v.attr.table, e.attr.table)
+			g <- GraphManager()$attr.tables.to.graph(v.attr.table, e.attr.table)
 			if ( 'grid' == default_layout) {
 				coords <- layout.grid(g)*1000
 			} else if ( 'circle' == default_layout ) {
