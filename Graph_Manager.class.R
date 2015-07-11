@@ -2923,8 +2923,201 @@ GraphManager <- function() {
 			cat('~ END ~')
 
 			return(g)
-		}
+		},
 
+		intersect = function(
+			new_name,
+			networks,
+			n_identity=list(
+				HUGO=T,
+				abe.type=T
+			),
+			n_behavior=list(),
+			e_identity=list(
+				source=T,
+				target=T
+			),
+			e_behavior=list(),
+			default_layout='grid',
+			cores=1
+		) {
+			# Perform network interseciont
+			# 
+			# Args:
+			# 	new_name: the output name of the merge operation result
+			# 	networks: a list of file paths to the networks to be intersected
+			# 	n_identity: the attributes to be used to 'identify' nodes
+			# 	n_behavior: how to behave with attribute of nodes to be merged
+			# 	e_identity: the attributes to be used to 'identify' edges
+			# 	e_behavior: how to behave with attribute of edges to be merged
+			# 	default_layout: either 'grid' or 'circle'
+			# 	cores: number of cores for parallel computation
+			# 	
+			# Returns:
+			# 	Intersects networks
+			
+			graph.counter <- 0
+			graph.list <- list()
+			v.attr.table.list <- list()
+			e.attr.table.list <- list()
+
+			# For each selected network
+			for (network in networks) {
+
+				cat('> Work on graph "', network, '"\n')
+
+				if ( file.exists(network) ) {
+					graph.counter <- graph.counter + 1
+
+					# Read network
+					g <- read.graph(network, format='graphml')
+
+					# Build attribute tables
+					graph.list <- GraphManager()$graph.to.attr.table(g, cores)
+					v.attr.table <- graph.list$nodes
+					e.attr.table <- graph.list$edges
+
+					# VERTICES #
+
+					cat('\t- Vertices\n')
+
+					# Get attributes for vertex identity
+					v.identity.list <- c()
+					for (attr in names(n_identity)) {
+						if (as.logical(n_identity[attr])) {
+							v.identity.list <- append(v.identity.list, attr)
+						}
+					}
+
+					# Expand with missing attributes
+					v.attr.table <- GraphManager()$expand.attr.table(v.attr.table,
+						c(v.identity.list, names(n_behavior)))
+
+					# Add vertex identity column
+					v.attr.table <- GraphManager()$add.collapsed.col(v.attr.table,
+						v.identity.list, 'tea_identity', '~')
+
+					# Sort v.attr.table columns
+					v.attr.table <- GraphManager()$sort.table.cols(v.attr.table)
+
+					# EDGES #
+					
+					cat('\t- Edges\n')
+
+					# Add extremities
+					e.attr.table <- GraphManager()$add.edges.extremities(e.attr.table, g, F)
+
+					# Convert edge extremities to v.identity
+					e.attr.table <- GraphManager()$convert.extremities.to.v.identity(e.attr.table, v.attr.table,
+						'tea_identity', g)
+
+					# Get attributes for edge identity
+					e.identity.list <- c('source', 'target')
+					for (attr in names(e.identity.list)) {
+						if (as.logical(e.identity.list[attr])) {
+							e.identity.list <- append(e.identity.list, attr)
+						}
+					}
+					e.identity.list <- unique(e.identity.list)
+
+					# Expand with missing attributes
+					e.attr.table <- GraphManager()$expand.attr.table(e.attr.table,
+						c(e.identity.list, names(e_behavior)))
+
+					# Add edge identity column
+					e.attr.table <- GraphManager()$add.collapsed.col(e.attr.table,
+						e.identity.list, 'tea_identity', '~')
+
+					# Sort edge attribute table
+					e.attr.table <- GraphManager()$sort.table.cols(e.attr.table)
+
+					# MAKE LISTS #
+					v.attr.table.list <- GraphManager()$append.to.table.list(v.attr.table.list, v.attr.table)
+					e.attr.table.list <- GraphManager()$append.to.table.list(e.attr.table.list, e.attr.table)
+					graph.list <- append(graph.list, g)
+				}
+			}
+			
+			# VERTICES #
+
+			cat('> Merging Vertices\n')
+
+			# Merge tables from table.list
+			v.attr.table.merged <- GraphManager()$merge.tables.from.table.list(v.attr.table.list, cores)
+			
+			# Filter: remove those v.rows that do not appear length(networks) times
+			v.identity.col.id <- which('tea_identity' == colnames(v.attr.table.merged))
+			v.identity.col <- v.attr.table.merged[, v.identity.col.id]
+			if ( !is.null(nrow(v.attr.table.merged)) ) {
+				v.attr.table.merged <- v.attr.table.merged[which(
+					v.identity.col %in% names(table(v.identity.col))[which(
+						table(v.identity.col) == graph.counter)]),]
+			} else {
+				v.attr.table.merged <- NULL
+			}
+			
+			# Apply behavior
+			v.attr.table.shrink <- GraphManager()$apply.fun.based.on.identity(v.attr.table.merged,
+				'tea_identity', n_behavior, F, 'merge_count', cores=cores)
+
+			# Update IDs
+			v.attr.table <- GraphManager()$update.row.ids(v.attr.table.shrink)
+			v.attr.table <- GraphManager()$add.prefix.to.col(v.attr.table, 'id', 'n')
+
+			# EDGES #
+
+			cat('> Merging Edges\n')
+
+			# Merge table from table.list
+			e.attr.table.merged <- GraphManager()$merge.tables.from.table.list(e.attr.table.list, cores)
+			
+			# Filter: remove those e.rows that do not appear length(networks) times
+			e.identity.col.id <- which('tea_identity' == colnames(e.attr.table.merged))
+			e.identity.col <- e.attr.table.merged[, e.identity.col.id]
+			if ( !is.null(nrow(e.attr.table.merged)) ) {
+				e.attr.table.merged <- e.attr.table.merged[which(
+					e.identity.col %in% names(table(e.identity.col))[which(
+						table(e.identity.col) == graph.counter)]),]
+			} else {
+				e.attr.table.merged <- NULL
+			}
+			
+			# Apply behavior
+			e.attr.table.shrink <- GraphManager()$apply.fun.based.on.identity(e.attr.table.merged,
+				'tea_identity', e_behavior, F, 'merge_count', cores=cores)
+
+			# Convert extremities to IDs
+			e.attr.table <- GraphManager()$convert.extremities.to.v.id.based.on.table(e.attr.table.shrink,
+				v.attr.table, 'tea_identity')
+
+			# Updated IDs
+			e.attr.table <- GraphManager()$update.row.ids(e.attr.table)
+			e.attr.table <- GraphManager()$add.prefix.to.col(e.attr.table, 'id', 'e')
+
+			# CONCLUSION #
+			
+			cat('> Output\n')
+
+			# Remove identity columns
+			v.attr.table <- GraphManager()$rm.cols(v.attr.table, 'tea_identity')
+			e.attr.table <- GraphManager()$rm.cols(e.attr.table, 'tea_identity')
+
+			# Write GraphML
+			g <- GraphManager()$attr.tables.to.graph(v.attr.table, e.attr.table)
+			if ( 'grid' == default_layout) {
+				coords <- layout.grid(g)*1000
+			} else if ( 'circle' == default_layout ) {
+				coords <- layout.circle(g)*1000
+			}
+			V(g)$x <- round(coords[,1], 0)
+			V(g)$y <- round(coords[,2], 0)
+			write.graph(g, paste0(new_name, '.graphml'), format='graphml')
+
+			cat('~ END ~')
+
+			return(g)
+			
+		}
 
 	)
 
